@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('role')->default('user');
             $table->rememberToken();
             $table->timestamps();
         });
@@ -25,7 +26,6 @@ return new class extends Migration
             $table->string('email')->primary();
             $table->string('token');
             $table->timestamp('created_at')->nullable();
-            $table->string('type'); //Ajustar en el controlador de reseteo de contraseña
         });
 
         Schema::create('sessions', function (Blueprint $table) {
@@ -35,7 +35,6 @@ return new class extends Migration
             $table->text('user_agent')->nullable();
             $table->longText('payload');
             $table->integer('last_activity')->index();
-            $table->string('type'); //Ajustar en el controlador de autenticación
         });
     }
 
