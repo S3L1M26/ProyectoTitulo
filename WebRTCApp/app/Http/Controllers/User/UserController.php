@@ -9,8 +9,8 @@ use Inertia\Response;
 
 class UserController extends Controller
 {
-    public function index(): Response
+    public function index() //Response
     {
-        return Inertia::render('Dashboard/Index');
+        return inertia('Dashboard/Index');
     }
 }
