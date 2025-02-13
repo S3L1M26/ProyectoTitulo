@@ -12,9 +12,9 @@ export default function Dialer() {
 
         const configuration = {
             sockets: [socket],
-            uri: "sip:39001@webrtc.connect360.cl",
-            authorizationUser: "39001",
-            password: "P@ssw0rd39001!",
+            uri: "sip:103@webrtc.connect360.cl",
+            authorizationUser: "103",
+            password: "ContrasenaRobusta",
             register: true,
         };
 

@@ -1,7 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
+import CreateSipUserForm from '../UserManagement/CreateSipUserForm';
 
-export default function AdminDashboard() {
+export default function AdminDashboard({ users }) {
     return (
         <AuthenticatedLayout
             header={
@@ -17,6 +18,7 @@ export default function AdminDashboard() {
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <div className="p-6 text-gray-900">
                             You're logged in!
+                            <CreateSipUserForm className="mt-8" users={users}/>
                         </div>
                     </div>
                 </div>

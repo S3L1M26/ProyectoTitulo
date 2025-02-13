@@ -62,6 +62,22 @@ return [
             ]) : [],
         ],
 
+        'asterisk' => [
+            'driver' => env('DB_ASTERISK_CONNECTION', 'mysql'),
+            'host' => env('DB_ASTERISK_HOST', '127.0.0.1'),
+            'port' => env('DB_ASTERISK_PORT', '3306'),
+            'database' => env('DB_ASTERISK_DATABASE', 'asterisk'),
+            'username' => env('DB_ASTERISK_USERNAME', 'root'),
+            'password' => env('DB_ASTERISK_PASSWORD', ''),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),
