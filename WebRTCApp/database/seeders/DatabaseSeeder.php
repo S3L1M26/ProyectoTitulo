@@ -18,7 +18,7 @@ class DatabaseSeeder extends Seeder
                 'id' => 1,
                 'name' => 'User',
                 'email' => 'user@gmail.com',
-                'password' => '12345678',
+                'password' => '$2y$12$TQfg7J51zW8ut/gQEtDbPue66HY2cFcZl4WCBaT4DmoCYcuC41yWS',
                 'role' => 'user',
             ],
     
@@ -26,7 +26,7 @@ class DatabaseSeeder extends Seeder
                 'id' => 2,
                 'name' => 'Admin',
                 'email' => 'admin@gmail.com',
-                'password' => '123456789',
+                'password' => '$2y$12$pnRJU2kQAwkfhpqgaKNc1uEPijMfhKbmdMNkfkaFO73lsWiFBik8i',
                 'role' => 'admin',
             ],
         ]);
