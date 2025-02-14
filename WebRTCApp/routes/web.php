@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Sip\SipUserController;
 use App\Http\Controllers\User\UserController;
 use App\Http\Controllers\Admin\AdminController;
 use Illuminate\Foundation\Application;
@@ -39,5 +40,7 @@ Route::middleware(['auth', 'userMiddleware'])->group(function () {
 Route::middleware(['auth', 'adminMiddleware'])->group(function () {
 
     Route::get('/admin/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
+    Route::get('/sip-users/create', [SipUserController::class, 'create'])->name('sip-users.create');
+    Route::post('/sip-users', [SipUserController::class, 'store'])->name('sip-users.store');
 
 });
