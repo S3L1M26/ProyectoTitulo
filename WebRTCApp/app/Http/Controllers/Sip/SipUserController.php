@@ -40,19 +40,22 @@ class SipUserController extends Controller
                 'username' => $request->sip_id
             ]);
 
-            SipEndpoint::create([
-                'id' => $request->sip_id,
-                'transport' => 'transport-wss',
-                'aors' => $request->sip_id,
-                'auth' => $request->sip_id,
-                'context' => 'from-internal',
-                'disallow' => 'all',
-                'allow' => implode(',', $request->codecs),
-                'direct_media' => $request->direct_media ? 'yes' : 'no',
-                'deny' => '0.0.0.0/0',
-                'permit' => '0.0.0.0/0',
-                'mailboxes' => $request->mailboxes
-            ]);
+            SipEndpoint::create(array_merge(
+                [
+                    'id' => $request->sip_id,
+                    'transport' => 'transport-wss',
+                    'aors' => $request->sip_id,
+                    'auth' => $request->sip_id,
+                    'context' => 'from-internal',
+                    'disallow' => 'all',
+                    'allow' => implode(',', $request->codecs),
+                    'direct_media' => $request->direct_media ? 'yes' : 'no',
+                    'deny' => '0.0.0.0/0',
+                    'permit' => '0.0.0.0/0',
+                    'mailboxes' => $request->mailboxes
+                ],
+                SipEndpoint::getDefaultValues() //Valores predeterminados
+            ));
         });
         return redirect()->back()->with('success', 'SIP account created successfully');
     }
