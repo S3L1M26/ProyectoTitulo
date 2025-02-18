@@ -12,10 +12,13 @@ class AdminController extends Controller
 {
     public function index(): Response
     {
-        $users = User::where('role', '!=', 'admin')->get();
+        $users = User::where('role', '!=', 'admin')->whereDoesntHave('sipAccount')->get();
+
+        $allUsersHaveSipAccount = $users->isEmpty();
 
         return Inertia::render('Admin/Dashboard/Index', [
             'users' => $users,
+            'allUsersHaveSipAccount' => $allUsersHaveSipAccount
         ]);
     }
 }

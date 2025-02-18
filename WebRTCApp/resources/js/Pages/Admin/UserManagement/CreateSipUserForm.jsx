@@ -5,8 +5,9 @@ import TextInput from '@/Components/TextInput';
 import Checkbox from '@/Components/Checkbox';
 import { Transition } from '@headlessui/react';
 import { useForm, usePage } from '@inertiajs/react';
+import { all } from 'axios';
 
-export default function CreateSipUserForm({ className = '', users = [] }) {
+export default function CreateSipUserForm({ className = '', users = [], allUsersHaveSip }) {
     const { data, setData, post, errors, processing, recentlySuccessful, reset } = useForm({
         sip_id: '',
         password: '',
@@ -41,12 +42,20 @@ export default function CreateSipUserForm({ className = '', users = [] }) {
                 <h2 className="text-lg font-medium text-gray-900">
                     Create New SIP User
                 </h2>
-                <p className="mt-1 text-sm text-gray-600">
-                    Configure a new SIP endpoint for VoIP communications
-                </p>
+                {!allUsersHaveSip ? (
+                    <p className="mt-1 text-sm text-gray-600">
+                        Configure a new SIP endpoint for VoIP communications
+                    </p>
+                ) : 
+                (
+                    <p className="mt-1 text-sm text-red-600">
+                        Todos los usuarios ya tienen cuentas SIP asignadas
+                    </p>
+                )}
             </header>
 
-            <form onSubmit={submit} className="mt-6 space-y-6">
+            {!allUsersHaveSip && (
+                <form onSubmit={submit} className="mt-6 space-y-6">
                 {/* SIP ID */}
                 <div>
                     <InputLabel htmlFor="sip_id" value="SIP User ID" />
@@ -59,7 +68,9 @@ export default function CreateSipUserForm({ className = '', users = [] }) {
                         required
                         isFocused
                     />
-                    <InputError className="mt-2" message={errors.sip_id} />
+                    {errors.sip_id && (
+                        <InputError message={errors.sip_id} className="mt-2" />
+                    )}
                 </div>
 
                 {/* Password */}
@@ -149,19 +160,6 @@ export default function CreateSipUserForm({ className = '', users = [] }) {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <PrimaryButton disabled={processing}>Create User</PrimaryButton>
-
-                    <Transition
-                        show={recentlySuccessful}
-                        enter="transition ease-in-out"
-                        enterFrom="opacity-0"
-                        leave="transition ease-in-out"
-                        leaveTo="opacity-0"
-                    >
-                        <p className="text-sm text-gray-600">User created successfully!</p>
-                    </Transition>
-                </div>
                 <div>
                     <InputLabel htmlFor="user_id" value="Assign to User" />
                     <select
@@ -178,9 +176,27 @@ export default function CreateSipUserForm({ className = '', users = [] }) {
                             </option>
                         ))}
                     </select>
-                    <InputError className="mt-2" message={errors.user_id} />
+                    {errors.user_id && (
+                        <InputError message={errors.user_id} className="mt-2" />
+                    )}
                 </div>
+
+                <div className="flex items-center gap-4">
+                    <PrimaryButton disabled={processing || allUsersHaveSip}>Create User</PrimaryButton>
+
+                    <Transition
+                        show={recentlySuccessful}
+                        enter="transition ease-in-out"
+                        enterFrom="opacity-0"
+                        leave="transition ease-in-out"
+                        leaveTo="opacity-0"
+                    >
+                        <p className="text-sm text-gray-600">User created successfully!</p>
+                    </Transition>
+                </div>
+                
             </form>
+            )}
         </section>
     );
 }
