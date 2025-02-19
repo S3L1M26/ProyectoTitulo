@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import JsSIP from "jssip";
 
-export default function Dialer() {
+export default function Dialer({ sip_account }) {
     const [status, setStatus] = useState("Esperando acción...");
     const [dialedNumber, setDialedNumber] = useState("");
     const [ua, setUa] = useState(null);
     const [currentSession, setCurrentSession] = useState(null);
+
+    console.log(sip_account);
 
     useEffect(() => {
         const socket = new JsSIP.WebSocketInterface("wss://webrtc.connect360.cl:8089/ws");
