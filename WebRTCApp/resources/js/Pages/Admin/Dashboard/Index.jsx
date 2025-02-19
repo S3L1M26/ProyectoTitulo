@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
 import CreateSipUserForm from '../UserManagement/CreateSipUserForm';
+import DeleteUserFormAdmin from '@/Pages/Profile/Partials/DeleteUserFormAdmin';
 
 export default function AdminDashboard({ users, allUsersHaveSip }) {
     return (
@@ -14,13 +15,16 @@ export default function AdminDashboard({ users, allUsersHaveSip }) {
             <Head title="Dashboard" />
 
             <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                        <div className="p-6 text-gray-900">
-                            You're logged in!
-                            <CreateSipUserForm className="mt-8" users={users} allUsersHaveSip={allUsersHaveSip}/>
-                        </div>
+                <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
+                        
+                    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
+                        <CreateSipUserForm className="mt-8" users={users} allUsersHaveSip={allUsersHaveSip}/>
                     </div>
+                    
+                    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
+                        <DeleteUserFormAdmin className="mt-8" />
+                    </div>
+                        
                 </div>
             </div>
         </AuthenticatedLayout>

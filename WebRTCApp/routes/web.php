@@ -40,6 +40,7 @@ Route::middleware(['auth', 'userMiddleware'])->group(function () {
 Route::middleware(['auth', 'adminMiddleware'])->group(function () {
 
     Route::get('/admin/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
+    Route::delete('/admin/users/{id}', [AdminController::class, 'destroyUser'])->name('admin.users.destroy');
     Route::get('/sip-users/create', [SipUserController::class, 'create'])->name('sip-users.create');
     Route::post('/sip-users', [SipUserController::class, 'store'])->name('sip-users.store');
 
