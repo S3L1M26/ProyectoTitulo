@@ -21,6 +21,7 @@
         "vite": "^6.0.11"
     },
     "dependencies": {
+        "bcryptjs": "^3.0.2",
         "jssip": "^3.10.1",
         "ziggy-js": "^2.5.1"
     }

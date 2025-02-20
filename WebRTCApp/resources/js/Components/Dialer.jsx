@@ -1,24 +1,32 @@
 import { useState, useEffect } from "react";
 import JsSIP from "jssip";
+import bcrypt from 'bcryptjs';
 
-export default function Dialer({ sip_account }) {
+export default function Dialer({ sip_account, ps_auth }) {
     const [status, setStatus] = useState("Esperando acción...");
     const [dialedNumber, setDialedNumber] = useState("");
     const [ua, setUa] = useState(null);
     const [currentSession, setCurrentSession] = useState(null);
-
-    console.log(sip_account);
+    console.log(bcrypt.compareSync(ps_auth.password, sip_account.password))
 
     useEffect(() => {
         const socket = new JsSIP.WebSocketInterface("wss://webrtc.connect360.cl:8089/ws");
 
         const configuration = {
             sockets: [socket],
-            uri: "sip:103@webrtc.connect360.cl",
-            authorizationUser: "103",
-            password: "ContrasenaRobusta",
+            uri: `sip:${sip_account.sip_user_id}@webrtc.connect360.cl`,
+            authorizationUser: `${sip_account.sip_user_id}`,
+            password: bcrypt.compareSync(ps_auth.password, sip_account.password) ? ps_auth.password : null,
             register: true,
         };
+
+        // const configuration = {
+        //     sockets: [socket],
+        //     uri: "sip:103@webrtc.connect360.cl",
+        //     authorizationUser: "103",
+        //     password: "ContrasenaRobusta",
+        //     register: true,
+        // };
 
         const userAgent = new JsSIP.UA(configuration);
 
