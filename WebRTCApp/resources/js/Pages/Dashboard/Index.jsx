@@ -21,11 +21,13 @@ export default function Dashboard({ sip_account, ps_auth }) {
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <div className="p-6 text-gray-900">
-                            <p>You are logged in!</p>
                             { sip_account ? (
                                 <Dialer sip_account={sip_account} ps_auth={ps_auth}/>
                                 ) : (
-                                <p>No tienes una cuenta SIP asignada</p>
+                                <div>
+                                    <h4>Bienvenido!</h4>
+                                    <p>No tienes una cuenta SIP asignada</p>
+                                </div>
                                 ) }
                         </div>
                     </div>

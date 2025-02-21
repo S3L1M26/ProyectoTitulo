@@ -18,9 +18,14 @@ class UserController extends Controller
         $user = Auth::user();
         $sip_account = SipAccount::with('user')->where('user_id', $user->id)->first();
 
+        $ps_auth = null;
+        if($sip_account){
+            $ps_auth = SipAuth::where('id', $sip_account->sip_user_id)->first();
+        }
+
         return Inertia::render('Dashboard/Index', [
             'sip_account' => $sip_account,
-            'ps_auth' => SipAuth::where('id', $sip_account->sip_user_id)->first(),
+            'ps_auth' => $ps_auth,
         ]);
     }
 }

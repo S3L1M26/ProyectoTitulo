@@ -23,9 +23,13 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
+        $user = Auth::user();
+        $sip_account = SipAccount::with('user')->where('user_id', $user->id)->first();
+
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
+            'sip_account' => $sip_account,
         ]);
     }
 

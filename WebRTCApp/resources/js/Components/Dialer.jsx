@@ -7,7 +7,6 @@ export default function Dialer({ sip_account, ps_auth }) {
     const [dialedNumber, setDialedNumber] = useState("");
     const [ua, setUa] = useState(null);
     const [currentSession, setCurrentSession] = useState(null);
-    console.log(bcrypt.compareSync(ps_auth.password, sip_account.password))
 
     useEffect(() => {
         const socket = new JsSIP.WebSocketInterface("wss://webrtc.connect360.cl:8089/ws");
@@ -30,7 +29,7 @@ export default function Dialer({ sip_account, ps_auth }) {
 
         const userAgent = new JsSIP.UA(configuration);
 
-        userAgent.on("registered", () => setStatus("Usuario 39001 registrado en Asterisk."));
+        userAgent.on("registered", () => setStatus(`Usuario ${sip_account.sip_user_id} registrado en Asterisk.`));
         userAgent.on("registrationFailed", (ev) => setStatus("Error al registrar: " + ev.cause));
         userAgent.on("disconnected", () => setStatus("Desconectado."));
         userAgent.on("newRTCSession", (data) => {
@@ -97,7 +96,7 @@ export default function Dialer({ sip_account, ps_auth }) {
 
     return (
         <div className="text-center bg-gray-100 p-4 rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold mb-4">WebRTC con Asterisk (Usuario 39001)</h2>
+            <h2 className="text-xl font-semibold mb-4">WebRTC con Asterisk (Usuario {sip_account.sip_user_id})</h2>
             <div className="text-green-500 font-bold text-lg mb-2">{status}</div>
 
             <input
@@ -123,7 +122,7 @@ export default function Dialer({ sip_account, ps_auth }) {
                 className="bg-orange-500 text-white px-4 py-2 rounded mb-4"
                 onClick={deleteLastDigit}
             >
-                🡠 Borrar
+                  Borrar
             </button>
 
             <div className="flex justify-center gap-2">
