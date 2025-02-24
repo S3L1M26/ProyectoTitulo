@@ -22,7 +22,11 @@ export default function Dashboard({ sip_account, ps_auth }) {
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <div className="p-6 text-gray-900">
                             { sip_account ? (
-                                <Dialer sip_account={sip_account} ps_auth={ps_auth}/>
+                                <div>
+                                    <h4>Bienvenido!</h4>
+                                    <p>Usuario SIP: {sip_account.sip_user_id}</p>
+                                    <Dialer sip_account={sip_account} ps_auth={ps_auth}/>
+                                </div>
                                 ) : (
                                 <div>
                                     <h4>Bienvenido!</h4>
