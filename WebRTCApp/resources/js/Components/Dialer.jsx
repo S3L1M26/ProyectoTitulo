@@ -7,6 +7,7 @@ export default function Dialer({ sip_account, ps_auth }) {
     const [dialedNumber, setDialedNumber] = useState("");
     const [ua, setUa] = useState(null);
     const [currentSession, setCurrentSession] = useState(null);
+    const [isRegistered, setIsRegistered] = useState(false);
 
     useEffect(() => {
         const socket = new JsSIP.WebSocketInterface("wss://webrtc.connect360.cl:8089/ws");
@@ -29,9 +30,18 @@ export default function Dialer({ sip_account, ps_auth }) {
 
         const userAgent = new JsSIP.UA(configuration);
 
-        userAgent.on("registered", () => setStatus(`Usuario ${sip_account.sip_user_id} registrado en Asterisk.`));
-        userAgent.on("registrationFailed", (ev) => setStatus("Error al registrar: " + ev.cause));
-        userAgent.on("disconnected", () => setStatus("Desconectado."));
+        userAgent.on("registered", () => {
+            setStatus(`Usuario ${sip_account.sip_user_id} registrado en Asterisk.`);
+            setIsRegistered(true);
+        });
+        userAgent.on("registrationFailed", (ev) => {
+            setStatus("Error al registrar: " + ev.cause); 
+            setIsRegistered(false)
+        });
+        userAgent.on("disconnected", () => {
+            setStatus("Desconectado."); 
+            setIsRegistered(false)
+        });
         userAgent.on("newRTCSession", (data) => {
             if (data.originator === "remote") {
                 const session = data.session;
@@ -63,6 +73,7 @@ export default function Dialer({ sip_account, ps_auth }) {
     function makeCall() {
         if (!dialedNumber.trim()) return setStatus("No hay número para llamar.");
         if (currentSession) return setStatus("Ya tienes una llamada en curso.");
+        if (!isRegistered) return setStatus("No registrado en Asterisk.");
 
         const options = {
             mediaConstraints: { audio: true, video: false },
@@ -95,47 +106,54 @@ export default function Dialer({ sip_account, ps_auth }) {
     }
 
     return (
-        <div className="text-center bg-gray-100 p-4 rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold mb-4">WebRTC con Asterisk (Usuario {sip_account.sip_user_id})</h2>
-            <div className="text-green-500 font-bold text-lg mb-2">{status}</div>
-
-            <input
-                type="text"
-                className="w-full text-lg text-center border p-2 rounded mb-4"
-                value={dialedNumber}
-                readOnly
-            />
-
-            <div className="grid grid-cols-3 gap-2 mb-4">
-                {["1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#"].map((num) => (
+        <>
+            { isRegistered ? (
+                <div className="text-center bg-gray-100 p-4 rounded-lg shadow-md">
+                    <h2 className="text-xl font-semibold mb-4">WebRTC con Asterisk (Usuario {sip_account.sip_user_id})</h2>
+                    <div className="text-green-500 font-bold text-lg mb-2">{status}</div>
+        
+                    <input
+                        type="text"
+                        className="w-full text-lg text-center border p-2 rounded mb-4"
+                        value={dialedNumber}
+                        readOnly
+                    />
+        
+                    <div className="grid grid-cols-3 gap-2 mb-4">
+                        {["1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#"].map((num) => (
+                            <button
+                                key={num}
+                                className="bg-gray-200 p-3 rounded hover:bg-blue-500 hover:text-white"
+                                onClick={() => appendDigit(num)}
+                            >
+                                {num}
+                            </button>
+                        ))}
+                    </div>
+        
                     <button
-                        key={num}
-                        className="bg-gray-200 p-3 rounded hover:bg-blue-500 hover:text-white"
-                        onClick={() => appendDigit(num)}
+                        className="bg-orange-500 text-white px-4 py-2 rounded mb-4"
+                        onClick={deleteLastDigit}
                     >
-                        {num}
+                        Borrar
                     </button>
-                ))}
-            </div>
-
-            <button
-                className="bg-orange-500 text-white px-4 py-2 rounded mb-4"
-                onClick={deleteLastDigit}
-            >
-                  Borrar
-            </button>
-
-            <div className="flex justify-center gap-2">
-                <button className="bg-green-500 text-white px-4 py-2 rounded" onClick={registerSip}>
-                    Registrar
-                </button>
-                <button className="bg-blue-500 text-white px-4 py-2 rounded" onClick={makeCall}>
-                    Llamar
-                </button>
-                <button className="bg-red-500 text-white px-4 py-2 rounded" onClick={hangUp}>
-                    Colgar
-                </button>
-            </div>
-        </div>
+        
+                    <div className="flex justify-center gap-2">
+                        <button className="bg-blue-500 text-white px-4 py-2 rounded" onClick={makeCall}>
+                            Llamar
+                        </button>
+                        <button className="bg-red-500 text-white px-4 py-2 rounded" onClick={hangUp}>
+                            Colgar
+                        </button>
+                    </div>
+                </div>
+            ):(
+                <div className="flex justify-center gap-2">
+                    <button className="bg-blue-500 text-white px-4 py-2 rounded" onClick={registerSip}>
+                        Registrar
+                    </button>
+                </div>
+            )}
+        </>
     );
 }
