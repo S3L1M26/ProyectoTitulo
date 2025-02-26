@@ -23,14 +23,33 @@ export default function AuthenticatedLayout({ header, children }) {
                                 </Link>
                             </div>
 
-                            <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                                <NavLink
-                                    href={route('dashboard')}
-                                    active={route().current('dashboard')}
-                                >
-                                    Dashboard
-                                </NavLink>
-                            </div>
+                            
+                            {user.role === 'admin' ? (
+                                <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                                    <NavLink
+                                        href={route('admin.users')}
+                                        active={route().current('admin.users')}
+                                    >
+                                        Usuarios
+                                    </NavLink>
+                                    <NavLink
+                                        href={route('admin.dashboard')}
+                                        active={route().current('admin.dashboard')}
+                                    >
+                                        Crear Usuario SIP
+                                    </NavLink>
+                                </div>
+                            ) : (
+                                <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                                    <NavLink
+                                        href={route('dashboard')}
+                                        active={route().current('dashboard')}
+                                    >
+                                        Dashboard
+                                    </NavLink>
+                                </div>
+                            )}
+                            
                         </div>
 
                         <div className="hidden sm:ms-6 sm:flex sm:items-center">
@@ -127,15 +146,25 @@ export default function AuthenticatedLayout({ header, children }) {
                         ' sm:hidden'
                     }
                 >
-                    <div className="space-y-1 pb-3 pt-2">
-                        <ResponsiveNavLink
-                            href={route('dashboard')}
-                            active={route().current('dashboard')}
-                        >
-                            Dashboard
-                        </ResponsiveNavLink>
-                    </div>
-
+                    {user.role === 'admin' ? (
+                        <div className="space-y-1 pb-3 pt-2">
+                            <ResponsiveNavLink href={route('admin.dashboard')} active={route().current('admin.dashboard')}>
+                                Crear Usuario SIP
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink href={route('admin.users')} active={route().current('admin.users')}>
+                                Usuarios
+                            </ResponsiveNavLink>
+                        </div>
+                    ):(
+                        <div className="space-y-1 pb-3 pt-2">
+                            <ResponsiveNavLink
+                                href={route('dashboard')}
+                                active={route().current('dashboard')}
+                            >
+                                Dashboard
+                            </ResponsiveNavLink>
+                        </div>
+                    )}
                     <div className="border-t border-gray-200 pb-1 pt-4">
                         <div className="px-4">
                             <div className="text-base font-medium text-gray-800">

@@ -27,6 +27,20 @@ class AdminController extends Controller
         ]);
     }
 
+    public function users() {
+        $users = User::where('role', '!=', 'admin')->get();
+        $sipUsers = SipAccount::with('user')->get();
+        $ps_aors = SipAor::select('id', 'max_contacts', 'qualify_frequency')->get();
+        $ps_endpoints = SipEndpoint::select('id', 'allow', 'direct_media', 'mailboxes')->get();
+
+        return Inertia::render('Admin/Dashboard/Users', [
+            'users' => $users,
+            'sipUsers' => $sipUsers,
+            'ps_aors' => $ps_aors,
+            'ps_endpoints' => $ps_endpoints
+        ]);
+    }
+
     public function destroyUser(Request $request) {
 
         $request->validate([
