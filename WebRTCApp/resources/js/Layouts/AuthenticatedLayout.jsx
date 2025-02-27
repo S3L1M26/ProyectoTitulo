@@ -27,16 +27,16 @@ export default function AuthenticatedLayout({ header, children }) {
                             {user.role === 'admin' ? (
                                 <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                                     <NavLink
-                                        href={route('admin.users')}
-                                        active={route().current('admin.users')}
-                                    >
-                                        Usuarios
-                                    </NavLink>
-                                    <NavLink
                                         href={route('admin.dashboard')}
                                         active={route().current('admin.dashboard')}
                                     >
                                         Crear Usuario SIP
+                                    </NavLink>
+                                    <NavLink
+                                        href={route('admin.users')}
+                                        active={route().current('admin.users')}
+                                    >
+                                        Usuarios
                                     </NavLink>
                                 </div>
                             ) : (

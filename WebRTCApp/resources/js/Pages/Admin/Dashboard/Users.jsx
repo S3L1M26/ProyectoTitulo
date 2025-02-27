@@ -1,6 +1,6 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import * as React from 'react';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import PropTypes from 'prop-types';
 import { useState } from 'react';
 
@@ -31,12 +31,35 @@ function Row({ row }) {
                                     </li>
                                 ))}
                             </ul>
+                            <h4 className="font-semibold mt-4">AORs</h4>
+                            <ul>
+                                {row.ps_aors.map((aor) => (
+                                    <li key={aor.id}>
+                                        Max Contacts: {aor.max_contacts}, Qualify Frequency: {aor.qualify_frequency}
+                                    </li>
+                                ))}
+                            </ul>
+                            <h4 className="font-semibold mt-4">Endpoints</h4>
+                            <ul>
+                                {row.ps_endpoints.map((endpoint) => (
+                                    <li key={endpoint.id}>
+                                        Allow: {endpoint.allow}, Direct Media: {endpoint.direct_media ? 'Yes' : 'No'}, Mailboxes: {endpoint.mailboxes}
+                                    </li>
+                                ))}
+                            </ul>
+                            <button onClick={() => editUser(row.id) } className="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                                Editar
+                            </button>
                         </div>
                     </td>
                 </tr>
             )}
         </React.Fragment>
     );
+}
+
+function editUser(id) {
+    router.visit(route('admin.users.edit', id));
 }
 
 Row.propTypes = {
@@ -51,23 +74,52 @@ Row.propTypes = {
                 user_id: PropTypes.number.isRequired,
             })
         ).isRequired,
+        ps_aors: PropTypes.arrayOf(
+            PropTypes.shape({
+                id: PropTypes.string.isRequired,
+                max_contacts: PropTypes.number.isRequired,
+                qualify_frequency: PropTypes.number.isRequired,
+            })
+        ).isRequired,
+        ps_endpoints: PropTypes.arrayOf(
+            PropTypes.shape({
+                id: PropTypes.string.isRequired,
+                allow: PropTypes.string.isRequired,
+                direct_media: PropTypes.bool.isRequired,
+                mailboxes: PropTypes.string.isRequired,
+            })
+        ).isRequired,
     }).isRequired,
 };
 
 export default function Users({ users, sipUsers, ps_aors, ps_endpoints}) {
-    const rows = users.map((user) => ({
-        ...user,
-        sipAccounts: sipUsers.filter((sipUser) => sipUser.user_id === user.id).map(sipUser => ({
+    const rows = users.map((user) => {
+        const userSipAccounts = sipUsers.filter((sipUser) => sipUser.user_id === user.id).map(sipUser => ({
             ...sipUser,
-            sip_user_id: String(sipUser.sip_user_id), // Ensure sip_user_id is a string
-        })),
-    }));
+            sip_user_id: String(sipUser.sip_user_id),
+        }));
+
+        const userSipUserIds = userSipAccounts.map(sipAccount => sipAccount.sip_user_id);
+
+        const userAors = ps_aors.filter((aor) => userSipUserIds.includes(aor.id));
+        const userEndpoints = ps_endpoints.filter((endpoint) => userSipUserIds.includes(endpoint.id)).map(endpoint => ({
+            ...endpoint,
+            direct_media: endpoint.direct_media === 'yes' ? true : false,
+        }));
+
+        return {
+            ...user,
+            sipAccounts: userSipAccounts,
+            ps_aors: userAors,
+            ps_endpoints: userEndpoints,
+        };
+    });
 
     return (
         <AuthenticatedLayout 
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Admin Dashboard
+                    Ver Usuarios
                 </h2>
             }
         >
@@ -96,7 +148,6 @@ export default function Users({ users, sipUsers, ps_aors, ps_endpoints}) {
                     </div>
                 </div>
             </div>
-
         </AuthenticatedLayout>
     );
 

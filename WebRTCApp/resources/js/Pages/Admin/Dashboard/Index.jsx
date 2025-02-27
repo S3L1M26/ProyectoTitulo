@@ -8,7 +8,7 @@ export default function AdminDashboard({ users, allUsersHaveSip }) {
         <AuthenticatedLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Admin Dashboard
+                    Crear Usuario SIP
                 </h2>
             }
         >

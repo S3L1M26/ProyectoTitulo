@@ -41,6 +41,23 @@ class AdminController extends Controller
         ]);
     }
 
+    public function editUser($id) {
+        $user = User::find($id);
+        $sipUser = SipAccount::with('user')->where('user_id', $user->id)->first();
+        $ps_aor = SipAor::where('id', $sipUser->sip_user_id)->first();
+        $ps_endpoint = SipEndpoint::where('id', $sipUser->sip_user_id)->first();
+        return Inertia::render('Admin/Dashboard/Edit', [
+            'user' => $user,
+            'sipUser' => $sipUser,
+            'ps_aor' => $ps_aor,
+            'ps_endpoint' => $ps_endpoint
+        ]);
+    }
+
+    public function updateUser() {
+
+    }
+
     public function destroyUser(Request $request) {
 
         $request->validate([

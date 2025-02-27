@@ -44,5 +44,7 @@ Route::middleware(['auth', 'adminMiddleware'])->group(function () {
     Route::get('/sip-users/create', [SipUserController::class, 'create'])->name('sip-users.create');
     Route::post('/sip-users', [SipUserController::class, 'store'])->name('sip-users.store');
     Route::get('/admin/users', [AdminController::class, 'users'])->name('admin.users');
+    Route::get('/admin/users/{id}/edit', [AdminController::class, 'editUser'])->name('admin.users.edit');
+    Route::put('/admin/users/{id}', [AdminController::class, 'updateUser'])->name('admin.users.update');
 
 });
