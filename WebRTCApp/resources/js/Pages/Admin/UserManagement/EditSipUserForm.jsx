@@ -4,16 +4,16 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import Checkbox from '@/Components/Checkbox';
 import { Transition } from '@headlessui/react';
-import { useForm, usePage } from '@inertiajs/react';
+import { useForm } from '@inertiajs/react';
 import { useEffect } from 'react';
 
-export default function EditSipUserForm({className = '', user, sipUser, ps_aor, ps_endpoint }) {
+export default function EditSipUserForm({ className = '', user, sipUser, ps_aor, ps_endpoint }) {
     const { data, setData, put, errors, processing, recentlySuccessful, reset } = useForm({
         sip_id: sipUser.sip_user_id || '',
         max_contacts: ps_aor.max_contacts || 2,
         qualify_frequency: ps_aor.qualify_frequency || 30,
         codecs: ps_endpoint.allow ? ps_endpoint.allow.split(',') : ['opus', 'ulaw', 'alaw', 'gsm'],
-        direct_media: ps_endpoint.direct_media || false,
+        direct_media: ps_endpoint.direct_media === 'yes', // Convertir 'yes'/'no' a booleano
         mailboxes: ps_endpoint.mailboxes || '',
         user_id: user.id || ''
     });
@@ -30,8 +30,17 @@ export default function EditSipUserForm({className = '', user, sipUser, ps_aor, 
 
     const submit = (e) => {
         e.preventDefault();
+        console.log('Submitting form with data:', data); // Add logging for debugging
+        // Convertir codecs de array a cadena separada por comas
+        const formattedData = {
+            ...data,
+            allow: data.codecs.join(','), // Convertir array a string
+            direct_media: data.direct_media ? 'yes' : 'no', // Convertir booleano a 'yes'/'no'
+        };
+
         put(route('admin.users.update', user.id), {
-            onSuccess: () => reset()
+            data: formattedData, // Enviar los datos formateados
+            onSuccess: () => reset(),
         });
     };
 
@@ -58,6 +67,7 @@ export default function EditSipUserForm({className = '', user, sipUser, ps_aor, 
                         onChange={(e) => setData('sip_id', e.target.value)}
                         required
                         isFocused
+                        disabled
                     />
                     {errors.sip_id && (
                         <InputError message={errors.sip_id} className="mt-2" />

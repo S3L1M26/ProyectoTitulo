@@ -14,8 +14,10 @@ export default function Edit({ user, sipUser, ps_aor, ps_endpoint }) {
 
             <Head title="Dashboard" />
             <div className="py-12">
-                <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">           
-                    <EditSipUserForm className="mt-8" user={user} sipUser={sipUser} ps_aor={ps_aor} ps_endpoint={ps_endpoint}/>              
+                <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
+                    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">           
+                        <EditSipUserForm className="mt-8" user={user} sipUser={sipUser} ps_aor={ps_aor} ps_endpoint={ps_endpoint}/>              
+                    </div>
                 </div>
             </div>
         </AuthenticatedLayout>

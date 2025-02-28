@@ -11,7 +11,9 @@ use App\Models\Sip\SipAccount;
 use App\Models\Sip\SipAor;
 use App\Models\Sip\SipEndpoint;
 use App\Models\Sip\SipAuth;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redirect;
 
 class AdminController extends Controller
 {
@@ -54,8 +56,39 @@ class AdminController extends Controller
         ]);
     }
 
-    public function updateUser() {
-
+    public function updateUser(Request $request): RedirectResponse {
+        $request->validate([
+            'id' => ['required', 'integer', 'exists:users,id'],
+            'max_contacts' => ['required', 'integer'],
+            'qualify_frequency' => ['required', 'integer'],
+            'allow' => ['required', 'string'], // Aceptar cadena de codecs
+            'direct_media' => ['required', 'string', 'in:yes,no'], // Aceptar solo 'yes' o 'no'
+            'mailboxes' => ['required', 'string']
+        ]);
+    
+        $user = User::find($request['id']);
+        $sipUser = SipAccount::with('user')->where('user_id', $user->id)->first();
+    
+        if (!$sipUser) {
+            return Redirect::route('admin.users')->withErrors(['sipUser' => 'SIP User not found']);
+        }
+    
+        DB::connection('asterisk')->transaction(function() use ($sipUser, $request) {
+            SipEndpoint::where('id', $sipUser->sip_user_id)->update([
+                'allow' => $request['allow'], // Cadena de codecs
+                'direct_media' => $request['direct_media'], // 'yes' o 'no'
+                'mailboxes' => $request['mailboxes']
+            ]);
+        });
+    
+        DB::connection('asterisk')->transaction(function() use ($sipUser, $request) {
+            SipAor::where('id', $sipUser->sip_user_id)->update([
+                'max_contacts' => $request['max_contacts'],
+                'qualify_frequency' => $request['qualify_frequency']
+            ]);
+        });
+    
+        return Redirect::route('admin.users')->with('success', 'User updated successfully');
     }
 
     public function destroyUser(Request $request) {
