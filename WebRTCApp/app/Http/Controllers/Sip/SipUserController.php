@@ -27,7 +27,7 @@ class SipUserController extends Controller
 
             $sipAccount = SipAccount::create([
                 'user_id' => $validated['user_id'],
-                'sip_user_id' => $validated['sip_id'],
+                'sip_user_id' => (int) $validated['sip_id'],
                 'password' => bcrypt($validated['password']),
             ]);
             
@@ -35,25 +35,27 @@ class SipUserController extends Controller
 
          // Crear en base de datos Asterisk
          DB::connection('asterisk')->transaction(function () use ($validated) {
+            $sipIdString = (string) $validated['sip_id'];
+
             SipAor::create([
-                'id' => $validated['sip_id'],
+                'id' => $sipIdString,
                 'max_contacts' => $validated['max_contacts'],
                 'qualify_frequency' => $validated['qualify_frequency']
             ]);
 
             SipAuth::create([
-                'id' => $validated['sip_id'],
+                'id' => $sipIdString,
                 'auth_type' => 'userpass',
                 'password' => $validated['password'],
-                'username' => $validated['sip_id']
+                'username' => $sipIdString
             ]);
 
             SipEndpoint::create(array_merge(
                 [
-                    'id' => $validated['sip_id'],
+                    'id' => $sipIdString,
                     'transport' => 'transport-wss',
-                    'aors' => $validated['sip_id'],
-                    'auth' => $validated['sip_id'],
+                    'aors' => $sipIdString,
+                    'auth' => $sipIdString,
                     'context' => 'from-internal',
                     'disallow' => 'all',
                     'allow' => implode(',', $validated['codecs']),

@@ -13,7 +13,7 @@ export default function EditSipUserForm({ className = '', user, sipUser, ps_aor,
         max_contacts: ps_aor.max_contacts || 2,
         qualify_frequency: ps_aor.qualify_frequency || 30,
         codecs: ps_endpoint.allow ? ps_endpoint.allow.split(',') : ['opus', 'ulaw', 'alaw', 'gsm'],
-        direct_media: ps_endpoint.direct_media === 'yes', // Convertir 'yes'/'no' a booleano
+        direct_media: ps_endpoint.direct_media === 'yes' ? 'yes' : 'no', // Convert 'yes'/'no' to string
         mailboxes: ps_endpoint.mailboxes || '',
         user_id: user.id || ''
     });
@@ -31,15 +31,21 @@ export default function EditSipUserForm({ className = '', user, sipUser, ps_aor,
     const submit = (e) => {
         e.preventDefault();
         console.log('Submitting form with data:', data); // Add logging for debugging
-        // Convertir codecs de array a cadena separada por comas
+        // Convert codecs array to comma-separated string
         const formattedData = {
-            ...data,
-            allow: data.codecs.join(','), // Convertir array a string
-            direct_media: data.direct_media ? 'yes' : 'no', // Convertir booleano a 'yes'/'no'
+            id: user.id, // Ensure the ID is included
+            sip_id: String(data.sip_id), // Ensure sip_id is a string
+            max_contacts: data.max_contacts,
+            qualify_frequency: data.qualify_frequency,
+            allow: data.codecs.join(','),
+            direct_media: data.direct_media, // Already 'yes'/'no'
+            mailboxes: data.mailboxes
         };
 
+        console.log('Formatted Data:', formattedData); // Verify data before sending
+
         put(route('admin.users.update', user.id), {
-            data: formattedData, // Enviar los datos formateados
+            data: formattedData,
             onSuccess: () => reset(),
         });
     };
@@ -138,10 +144,10 @@ export default function EditSipUserForm({ className = '', user, sipUser, ps_aor,
                             id="direct_media"
                             className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
                             value={data.direct_media}
-                            onChange={(e) => setData('direct_media', e.target.value === 'true')}
+                            onChange={(e) => setData('direct_media', e.target.value)}
                         >
-                            <option value={false}>Disabled</option>
-                            <option value={true}>Enabled</option>
+                            <option value="no">Disabled</option>
+                            <option value="yes">Enabled</option>
                         </select>
                         <InputError className="mt-2" message={errors.direct_media} />
                     </div>

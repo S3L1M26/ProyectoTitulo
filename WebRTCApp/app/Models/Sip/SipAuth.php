@@ -20,5 +20,5 @@ class SipAuth extends Model
         'username',
     ];
 
-    protected $keyType = 'int';
+    protected $keyType = 'string';
 }

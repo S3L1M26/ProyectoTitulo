@@ -19,5 +19,5 @@ class SipAor extends Model
         'qualify_frequency',
     ];
 
-    protected $keytype = 'int';
+    protected $keytype = 'string';
 }

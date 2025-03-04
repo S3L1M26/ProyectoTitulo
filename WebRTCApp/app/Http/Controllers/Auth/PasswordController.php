@@ -44,7 +44,7 @@ class PasswordController extends Controller
 
         if($sipUser){
             $newSipPassword = $request->input('new_sip_password');
-            $hashedPassword = bcrypt($newSipPassword);
+            $hashedPassword = Hash::make($newSipPassword);
 
             $sipUser->password = $hashedPassword;
             $sipUser->save();

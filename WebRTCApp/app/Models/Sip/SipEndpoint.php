@@ -297,5 +297,5 @@ class SipEndpoint extends Model
         ];
     }
 
-    protected $keyType = 'int';
+    protected $keyType = 'string';
 }
