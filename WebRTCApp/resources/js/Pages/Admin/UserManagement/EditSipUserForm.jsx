@@ -9,10 +9,11 @@ import { useEffect } from 'react';
 
 export default function EditSipUserForm({ className = '', user, sipUser, ps_aor, ps_endpoint }) {
     const { data, setData, put, errors, processing, recentlySuccessful, reset } = useForm({
+        id: user.id || '', // Ensure the ID is included
         sip_id: sipUser.sip_user_id || '',
         max_contacts: ps_aor.max_contacts || 2,
         qualify_frequency: ps_aor.qualify_frequency || 30,
-        codecs: ps_endpoint.allow ? ps_endpoint.allow.split(',') : ['opus', 'ulaw', 'alaw', 'gsm'],
+        allow: ps_endpoint.allow ? ps_endpoint.allow.split(',') : ['opus', 'ulaw', 'alaw', 'gsm'],
         direct_media: ps_endpoint.direct_media === 'yes' ? 'yes' : 'no', // Convert 'yes'/'no' to string
         mailboxes: ps_endpoint.mailboxes || '',
         user_id: user.id || ''
@@ -21,31 +22,28 @@ export default function EditSipUserForm({ className = '', user, sipUser, ps_aor,
     const codecOptions = ['opus', 'ulaw', 'alaw', 'gsm', 'g729', 'h263', 'h264'];
 
     const handleCodecChange = (codec) => {
-        const updatedCodecs = data.codecs.includes(codec)
-            ? data.codecs.filter(c => c !== codec)
-            : [...data.codecs, codec];
+        const updatedCodecs = data.allow.includes(codec)
+            ? data.allow.filter(c => c !== codec)
+            : [...data.allow, codec];
             
-        setData('codecs', updatedCodecs.sort());
+        setData('allow', updatedCodecs.sort());
     };
 
     const submit = (e) => {
         e.preventDefault();
-        console.log('Submitting form with data:', data); // Add logging for debugging
-        // Convert codecs array to comma-separated string
         const formattedData = {
-            id: user.id, // Ensure the ID is included
-            sip_id: String(data.sip_id), // Ensure sip_id is a string
-            max_contacts: data.max_contacts,
-            qualify_frequency: data.qualify_frequency,
-            allow: data.codecs.join(','),
-            direct_media: data.direct_media, // Already 'yes'/'no'
+            id: user.id,
+            max_contacts: parseInt(data.max_contacts, 10), // Convertir a entero
+            qualify_frequency: parseInt(data.qualify_frequency, 10),
+            allow: data.allow.join(','), // 👈 Convertir array a string
+            direct_media: data.direct_media,
             mailboxes: data.mailboxes
         };
 
-        console.log('Formatted Data:', formattedData); // Verify data before sending
-
-        put(route('admin.users.update', user.id), {
-            data: formattedData,
+        console.log(formattedData);
+    
+        // Enviar formattedData directamente (sin clave "data")
+        put(route('admin.users.update', user.id), formattedData, { // 👈 Corrección aquí
             onSuccess: () => reset(),
         });
     };
@@ -114,14 +112,14 @@ export default function EditSipUserForm({ className = '', user, sipUser, ps_aor,
                         {codecOptions.map((codec) => (
                             <label key={codec} className="flex items-center space-x-2">
                                 <Checkbox
-                                    checked={data.codecs.includes(codec)}
+                                    checked={data.allow.includes(codec)}
                                     onChange={() => handleCodecChange(codec)}
                                 />
                                 <span className="text-sm text-gray-600">{codec.toUpperCase()}</span>
                             </label>
                         ))}
                     </div>
-                    <InputError className="mt-2" message={errors.codecs} />
+                    <InputError className="mt-2" message={errors.allow} />
                 </div>
 
                 {/* Advanced Settings */}

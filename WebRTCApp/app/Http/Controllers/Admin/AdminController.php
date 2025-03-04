@@ -58,63 +58,87 @@ class AdminController extends Controller
     }
 
     public function updateUser(Request $request): RedirectResponse {
-        $validated = $request->validate([
-            'id' => ['required', 'integer', 'exists:users,id'],
-            'max_contacts' => ['required', 'integer', 'min:1'],
-            'qualify_frequency' => ['required', 'integer', 'min:10'],
-            'allow' => ['required', 'string'], // Aceptar cadena de codecs
-            'direct_media' => ['required', 'string', 'in:yes,no'], // Aceptar solo 'yes' o 'no'
-            'mailboxes' => ['required', 'string']
-        ]);
-    
-        $user = User::find($validated['id']);
-        $sipUser = SipAccount::with('user')->where('user_id', $user->id)->first();
-    
-        if (!$sipUser) {
-            return Redirect::route('admin.users')->withErrors(['sipUser' => 'SIP User not found']);
+        Log::info('Entering updateUser method');
+        Log::info('Request data:', $request->all());
+        
+        // Convertir "allow" a string si es un array
+        if (is_array($request->allow)) {
+            $request->merge([
+                'allow' => implode(',', $request->allow), // 👈 Convertir array a string
+            ]);
         }
 
-    //     // Actualizar ps_endpoints
-    //     DB::connection('asterisk')
-    //     ->table('ps_endpoints')
-    //     ->where('id', $sipUser->sip_user_id) // ✅ ID correcto
-    //     ->update([
-    //         'allow' => $validated['allow'],
-    //         'direct_media' => $validated['direct_media'],
-    //         'mailboxes' => $validated['mailboxes']
-    //     ]);
+        Log::info('Processed Request data:', $request->all());
 
-    // // Actualizar ps_aors usando el ID dinámico
-    //      DB::connection('asterisk')
-    //     ->table('ps_aors')
-    //     ->where('id', $sipUser->sip_user_id) // ✅ ID correcto
-    //     ->update([
-    //         'max_contacts' => $validated['max_contacts'],
-    //         'qualify_frequency' => $validated['qualify_frequency']
-    //     ]);
+        try {
+            $validated = $request->validate([
+                'id' => ['required', 'integer', 'exists:users,id'],
+                'max_contacts' => ['required', 'integer', 'min:1'],
+                'qualify_frequency' => ['required', 'integer', 'min:10'],
+                'allow' => ['required', 'string'],
+                'direct_media' => ['required', 'string', 'in:yes,no'],
+                'mailboxes' => ['required', 'string']
+            ]);
     
-        DB::connection('asterisk')->transaction(function() use ($sipUser, $validated) {
-            Log::info('Updating SipEndpoint:', [
-                'id' => $sipUser->sip_user_id,
-                'data' => [
+            Log::info('Validation passed', ['validated_data' => $validated]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Validation failed', ['errors' => $e->errors()]);
+            return Redirect::route('admin.users')->withErrors($e->errors());
+        }
+    
+        Log::info('Validation passed', ['validated_data' => $validated]);
+    
+        $user = User::find($validated['id']);
+        Log::info('User found', ['user' => $user]);
+    
+        $sipUser = SipAccount::with('user')->where('user_id', $user->id)->first();
+        Log::info('SIP User query executed', ['sipUser' => $sipUser]);
+    
+        if (!$sipUser) {
+            Log::info('SIP User not found', ['user_id' => $validated['id']]);
+            return Redirect::route('admin.users')->withErrors(['sipUser' => 'SIP User not found']);
+        }
+    
+        Log::info('Updating SIP User:', [
+            'sip_user_id' => $sipUser->sip_user_id,
+            'validated_data' => $validated
+        ]);
+    
+        try {
+            DB::connection('asterisk')->transaction(function() use ($sipUser, $validated) {
+                Log::info('Updating SipEndpoint:', [
+                    'id' => (string) $sipUser->sip_user_id,
+                    'data' => [
+                        'allow' => $validated['allow'],
+                        'direct_media' => $validated['direct_media'],
+                        'mailboxes' => $validated['mailboxes']
+                    ]
+                ]);
+    
+                SipEndpoint::where('id', (string) $sipUser->sip_user_id)->update([
                     'allow' => $validated['allow'],
                     'direct_media' => $validated['direct_media'],
                     'mailboxes' => $validated['mailboxes']
-                ]
-            ]);
-        
-            SipEndpoint::where('id', $sipUser->sip_user_id)->update([
-                'allow' => $validated['allow'],
-                'direct_media' => $validated['direct_media'],
-                'mailboxes' => $validated['mailboxes']
-            ]);
-
-            SipAor::where('id', $sipUser->sip_user_id)->update([
-                'max_contacts' => $validated['max_contacts'],
-                'qualify_frequency' => $validated['qualify_frequency']
-            ]);
-        });
-
+                ]);
+    
+                Log::info('Updating SipAor:', [
+                    'id' => (string) $sipUser->sip_user_id,
+                    'data' => [
+                        'max_contacts' => $validated['max_contacts'],
+                        'qualify_frequency' => $validated['qualify_frequency']
+                    ]
+                ]);
+    
+                SipAor::where('id', (string) $sipUser->sip_user_id)->update([
+                    'max_contacts' => $validated['max_contacts'],
+                    'qualify_frequency' => $validated['qualify_frequency']
+                ]);
+            });
+        } catch (\Exception $e) {
+            Log::error('Error updating SIP User', ['exception' => $e->getMessage()]);
+            return Redirect::route('admin.users')->withErrors(['error' => 'Failed to update SIP User']);
+        }
+    
         return Redirect::route('admin.users')->with('success', 'User updated successfully');
     }
 
