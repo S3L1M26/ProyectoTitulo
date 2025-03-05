@@ -36,11 +36,7 @@ export default function ResetSipPassword({ className = '' }) {
                         reset('new_sip_password', 'new_sip_password_confirmation');
                         passwordInput.current.focus();
                     }
-    
-                    if (errors.current_sip_password) {
-                        reset('current_sip_password');
-                        currentPasswordInput.current.focus();
-                    }
+
                 },
             });
         };

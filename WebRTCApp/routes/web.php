@@ -46,5 +46,6 @@ Route::middleware(['auth', 'adminMiddleware'])->group(function () {
     Route::get('/admin/users', [AdminController::class, 'users'])->name('admin.users');
     Route::get('/admin/users/{id}/edit', [AdminController::class, 'editUser'])->name('admin.users.edit');
     Route::put('/admin/users/{id}', [AdminController::class, 'updateUser'])->name('admin.users.update');
-
+    Route::put('/admin/users/{id}/password', [AdminController::class, 'resetPassword'])->name('admin.users.reset-password');
+    Route::put('/admin/users/{id}/sip-password', [AdminController::class, 'resetSipPassword'])->name('admin.users.reset-sip-password');
 });
