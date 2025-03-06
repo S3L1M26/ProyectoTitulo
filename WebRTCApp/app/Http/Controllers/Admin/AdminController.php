@@ -144,25 +144,24 @@ class AdminController extends Controller
         return Redirect::route('admin.users')->with('success', 'User updated successfully');
     }
 
-    public function resetPassword(Request $request): RedirectResponse {
+    public function resetPassword(Request $request, $id): RedirectResponse {
         $validated = $request->validate([
             'password' => ['required', Password::defaults(), 'confirmed'],
         ]);
 
-        $request->user()->update([
+        $user = User::find($id);
+        $user->update([
             'password' => Hash::make($validated['password']),
         ]);
-
         return back();
     }
 
-    public function resetSipPassword(Request $request): RedirectResponse {
+    public function resetSipPassword(Request $request, $id): RedirectResponse {
         $request->validate([
             'new_sip_password' => ['required', Password::defaults(), 'confirmed'],
         ]);
 
-        $user = $request->user();
-        $sipUser = SipAccount::with('user')->where('user_id', $user->id)->first();
+        $sipUser = SipAccount::with('user')->where('sip_user_id', $id)->first();
 
         if($sipUser){
             $newSipPassword = $request->input('new_sip_password');
@@ -175,9 +174,9 @@ class AdminController extends Controller
                 SipAuth::where('id', $sipUser->sip_user_id)->update(['password' => $newSipPassword]);
             });
 
-            return Redirect::route('profile.edit')->with('status', 'Clave SIP actualizada.');
+            return back()->with('success', 'SIP password updated successfully');
         }
-        return Redirect::route('profile.edit')->with('error', 'No se encontró una cuenta SIP asociada a este usuario.');
+        return back()->withErrors(['error' => 'Failed to update SIP password']);
     }
 
     public function destroyUser(Request $request) {

@@ -7,39 +7,36 @@ import { useForm } from '@inertiajs/react';
 import { useRef } from 'react';
 
 
-export default function ResetSipPassword({ className = '' }) {
+export default function ResetSipPassword({ className = '', sipUser }) {
     const passwordInput = useRef();
-        const currentPasswordInput = useRef();
     
-        const {
-            data,
-            setData,
-            errors,
-            put,
-            reset,
-            processing,
-            recentlySuccessful,
-        } = useForm({
-            current_sip_password: '',
-            new_sip_password: '',
-            new_sip_password_confirmation: '',
-        });
-    
-        const updatePassword = (e) => {
-            e.preventDefault();
-    
-            put(route('sip-password.update'), {
-                preserveScroll: true,
-                onSuccess: () => reset(),
-                onError: (errors) => {
-                    if (errors.new_sip_password) {
-                        reset('new_sip_password', 'new_sip_password_confirmation');
-                        passwordInput.current.focus();
-                    }
+    const {
+        data,
+        setData,
+        errors,
+        put,
+        reset,
+        processing,
+        recentlySuccessful,
+    } = useForm({
+        new_sip_password: '',
+        new_sip_password_confirmation: '',
+    });
 
-                },
-            });
-        };
+    const updatePassword = (e) => {
+        e.preventDefault();
+
+        put(route('admin.users.reset-sip-password', sipUser.sip_user_id), {
+            preserveScroll: true,
+            onSuccess: () => reset(),
+            onError: (errors) => {
+                if (errors.new_sip_password) {
+                    reset('new_sip_password', 'new_sip_password_confirmation');
+                    passwordInput.current.focus();
+                }
+            },
+        });
+    };
 
     return (
         <section className={className}>

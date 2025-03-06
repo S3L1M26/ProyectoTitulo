@@ -7,10 +7,8 @@ import { useForm } from '@inertiajs/react';
 import { useRef } from 'react';
 
 
-export default function ResetUserPassword({ className = '' }) {
+export default function ResetUserPassword({ className = '', user }) {
     const passwordInput = useRef();
-    const currentPasswordInput = useRef();
-
     const {
         data,
         setData,
@@ -20,7 +18,6 @@ export default function ResetUserPassword({ className = '' }) {
         processing,
         recentlySuccessful,
     } = useForm({
-        current_password: '',
         password: '',
         password_confirmation: '',
     });
@@ -28,7 +25,7 @@ export default function ResetUserPassword({ className = '' }) {
     const updatePassword = (e) => {
         e.preventDefault();
 
-        put(route('password.update'), {
+        put(route('admin.users.reset-password', user.id), {
             preserveScroll: true,
             onSuccess: () => reset(),
             onError: (errors) => {
