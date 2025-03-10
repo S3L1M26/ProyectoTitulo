@@ -16,8 +16,9 @@ class SipAuth extends Model
     protected $fillable = [
         'id',
         'auth_type',
-        'password',
+        'md5_cred',
         'username',
+        'realm',
     ];
 
     protected $keyType = 'string';

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import JsSIP from "jssip";
 import bcrypt from 'bcryptjs';
+import CryptoJS from "crypto-js";
 
 export default function Dialer({ sip_account, ps_auth }) {
     const [status, setStatus] = useState("Esperando acción...");
@@ -16,7 +17,7 @@ export default function Dialer({ sip_account, ps_auth }) {
             sockets: [socket],
             uri: `sip:${sip_account.sip_user_id}@webrtc.connect360.cl`,
             authorizationUser: `${sip_account.sip_user_id}`,
-            password: bcrypt.compareSync(ps_auth.password, sip_account.password) ? ps_auth.password : null,
+            password: ps_auth.md5_cred,
             register: true,
         };
 

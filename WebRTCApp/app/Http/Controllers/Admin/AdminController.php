@@ -171,7 +171,7 @@ class AdminController extends Controller
             $sipUser->save();
 
             DB::connection('asterisk')->transaction(function() use ($sipUser, $newSipPassword) {
-                SipAuth::where('id', $sipUser->sip_user_id)->update(['password' => $newSipPassword]);
+                SipAuth::where('id', $sipUser->sip_user_id)->update(['md5_cred' => md5($newSipPassword)]);
             });
 
             return back()->with('success', 'SIP password updated successfully');

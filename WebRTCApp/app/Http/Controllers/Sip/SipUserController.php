@@ -25,7 +25,7 @@ class SipUserController extends Controller
 
         DB::connection('mysql')->transaction(function () use ($validated){
 
-            $sipAccount = SipAccount::create([
+            SipAccount::create([
                 'user_id' => $validated['user_id'],
                 'sip_user_id' => (int) $validated['sip_id'],
                 'password' => bcrypt($validated['password']),
@@ -33,8 +33,8 @@ class SipUserController extends Controller
             
         });
 
-         // Crear en base de datos Asterisk
-         DB::connection('asterisk')->transaction(function () use ($validated) {
+        // Crear en base de datos Asterisk
+        DB::connection('asterisk')->transaction(function () use ($validated) {
             $sipIdString = (string) $validated['sip_id'];
 
             SipAor::create([
@@ -45,9 +45,10 @@ class SipUserController extends Controller
 
             SipAuth::create([
                 'id' => $sipIdString,
-                'auth_type' => 'userpass',
-                'password' => $validated['password'],
-                'username' => $sipIdString
+                'auth_type' => 'md5',
+                'md5_cred' => md5($validated['password']),
+                'username' => $sipIdString,
+                'realm' => 'webrtc.connect360.cl'
             ]);
 
             SipEndpoint::create(array_merge(
@@ -81,7 +82,7 @@ class SipUserController extends Controller
                 Rule::unique('asterisk.ps_aors', 'id'),
                 Rule::unique('asterisk.ps_auths', 'id'),
                 Rule::unique('asterisk.ps_endpoints', 'id'),
-                function ($attribute, $value, $fail) {
+                function ($value, $fail) {
                     $existInApp = SipAccount::where('sip_user_id', $value)->exists();
                     $existInAsterisk = SipAor::where('id', $value)->exists() || SipAuth::where('id', $value)->exists() || SipEndpoint::where('id', $value)->exists();
 
