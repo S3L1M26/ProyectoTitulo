@@ -44,13 +44,13 @@ class PasswordController extends Controller
 
         if($sipUser){
             $newSipPassword = $request->input('new_sip_password');
-            $hashedPassword = Hash::make($newSipPassword);
+            $hashedPassword = md5($newSipPassword);
 
             $sipUser->password = $hashedPassword;
             $sipUser->save();
 
             DB::connection('asterisk')->transaction(function() use ($sipUser, $newSipPassword) {
-                SipAuth::where('id', $sipUser->sip_user_id)->update(['password' => md5($newSipPassword)]);
+                SipAuth::where('id', $sipUser->sip_user_id)->update(['md5_cred' => md5($newSipPassword)]);
             });
 
             return Redirect::route('profile.edit')->with('status', 'Clave SIP actualizada.');

@@ -23,12 +23,14 @@ class AdminController extends Controller
     public function index(): Response
     {
         $users = User::where('role', '!=', 'admin')->whereDoesntHave('sipAccount')->get();
+        $allUsers = User::where('role', '!=', 'admin')->get();
 
         $allUsersHaveSipAccount = $users->isEmpty();
 
         return Inertia::render('Admin/Dashboard/Index', [
             'users' => $users,
-            'allUsersHaveSipAccount' => $allUsersHaveSipAccount
+            'allUsersHaveSipAccount' => $allUsersHaveSipAccount,
+            'allUsers' => $allUsers
         ]);
     }
 
@@ -165,7 +167,7 @@ class AdminController extends Controller
 
         if($sipUser){
             $newSipPassword = $request->input('new_sip_password');
-            $hashedPassword = Hash::make($newSipPassword);
+            $hashedPassword = md5($newSipPassword);
 
             $sipUser->password = $hashedPassword;
             $sipUser->save();

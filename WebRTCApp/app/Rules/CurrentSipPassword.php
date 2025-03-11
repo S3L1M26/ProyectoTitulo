@@ -28,7 +28,7 @@ class CurrentSipPassword implements ValidationRule
 
         $sipAuth = SipAuth::where('id', $sipUser->sip_user_id)->first();
 
-        if (!$sipAuth || md5($value) !== $sipAuth->password) { // 👈 Compare MD5 hashes
+        if (!$sipAuth || md5($value) !== $sipAuth->md5_cred) { // 👈 Compare MD5 hashes
             $fail('La contraseña SIP actual es incorrecta.');
         }
     }

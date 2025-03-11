@@ -28,7 +28,7 @@ class SipUserController extends Controller
             SipAccount::create([
                 'user_id' => $validated['user_id'],
                 'sip_user_id' => (int) $validated['sip_id'],
-                'password' => bcrypt($validated['password']),
+                'password' => md5($validated['password']),
             ]);
             
         });

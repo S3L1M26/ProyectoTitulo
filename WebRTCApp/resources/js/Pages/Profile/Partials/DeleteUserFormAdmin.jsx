@@ -7,7 +7,7 @@ import TextInput from '@/Components/TextInput';
 import { useForm } from '@inertiajs/react';
 import { useRef, useState } from 'react';
 
-export default function DeleteUserFormAdmin({ className = '' }) {
+export default function DeleteUserFormAdmin({ className = '', allUsers }) {
     const [confirmingUserDeletion, setConfirmingUserDeletion] = useState(false);
     const passwordInput = useRef();
     const user_idInput = useRef();
@@ -112,27 +112,27 @@ export default function DeleteUserFormAdmin({ className = '' }) {
                     <div className="mt-6">
                         <InputLabel
                             htmlFor="user_id"
-                            value="User ID"
-                            className="sr-only"
+                            value="User to Delete"
                         />
 
-                        <TextInput
+                        <select
                             id="user_id"
-                            type="number"
-                            name="user_id"
-                            ref={user_idInput}
+                            className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
                             value={data.user_id}
-                            onChange={(e) =>
-                                setData('user_id', e.target.value)
-                            }
-                            className="mt-1 block w-3/4"
-                            placeholder="User ID"
-                        />
+                            onChange={(e) => setData('user_id', e.target.value)}
+                            required
+                        >
+                            <option value="">Select User</option>
+                            {allUsers.map(user => (
+                                <option key={user.id} value={user.id}>
+                                    {user.name} ({user.email})
+                                </option>
+                            ))}
+                        </select>
 
-                        <InputError
-                            message={errors.user_id}
-                            className="mt-2"
-                        />
+                        {errors.user_id && (
+                            <InputError message={errors.user_id} className="mt-2" />
+                        )}
                     </div>
 
                     <div className="mt-6 flex justify-end">
