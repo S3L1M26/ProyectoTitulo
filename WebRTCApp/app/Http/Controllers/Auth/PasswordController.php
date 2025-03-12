@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use App\Rules\CurrentSipPassword;
+use Illuminate\Support\Facades\Crypt;
 
 class PasswordController extends Controller
 {
@@ -44,13 +45,13 @@ class PasswordController extends Controller
 
         if($sipUser){
             $newSipPassword = $request->input('new_sip_password');
-            $hashedPassword = md5($newSipPassword);
+            $hashedPassword = Crypt::encryptString($newSipPassword);
 
             $sipUser->password = $hashedPassword;
             $sipUser->save();
 
             DB::connection('asterisk')->transaction(function() use ($sipUser, $newSipPassword) {
-                SipAuth::where('id', $sipUser->sip_user_id)->update(['md5_cred' => md5($newSipPassword)]);
+                SipAuth::where('id', $sipUser->sip_user_id)->update(['md5_cred' => md5("{$sipUser->sip_user_id}:webrtc.connect360.cl:{$newSipPassword}")]);
             });
 
             return Redirect::route('profile.edit')->with('status', 'Clave SIP actualizada.');

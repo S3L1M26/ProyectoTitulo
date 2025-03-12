@@ -117,7 +117,7 @@ export default function DeleteUserFormAdmin({ className = '', allUsers }) {
 
                         <select
                             id="user_id"
-                            className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                            className="mt-1 block w-3/4 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
                             value={data.user_id}
                             onChange={(e) => setData('user_id', e.target.value)}
                             required

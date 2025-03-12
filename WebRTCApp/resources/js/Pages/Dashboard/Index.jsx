@@ -2,10 +2,9 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Dialer from '@/Components/Dialer';
 import { Head } from '@inertiajs/react';
 
-export default function Dashboard({ sip_account, ps_auth }) {
+export default function Dashboard({ sip_account, password }) {
 
     console.log(sip_account);
-    console.log(ps_auth);
 
     return (
         <AuthenticatedLayout
@@ -25,7 +24,7 @@ export default function Dashboard({ sip_account, ps_auth }) {
                                 <div>
                                     <h4>Bienvenido!</h4>
                                     <p>Usuario SIP: {sip_account.sip_user_id}</p>
-                                    <Dialer sip_account={sip_account} ps_auth={ps_auth}/>
+                                    <Dialer sip_account={sip_account} password={password}/>
                                 </div>
                                 ) : (
                                 <div>

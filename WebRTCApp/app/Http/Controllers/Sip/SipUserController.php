@@ -11,6 +11,7 @@ use App\Models\Sip\SipEndpoint;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Crypt;
 
 
 class SipUserController extends Controller
@@ -28,7 +29,7 @@ class SipUserController extends Controller
             SipAccount::create([
                 'user_id' => $validated['user_id'],
                 'sip_user_id' => (int) $validated['sip_id'],
-                'password' => md5($validated['password']),
+                'password' => Crypt::encryptString($validated['password']),
             ]);
             
         });
@@ -46,7 +47,7 @@ class SipUserController extends Controller
             SipAuth::create([
                 'id' => $sipIdString,
                 'auth_type' => 'md5',
-                'md5_cred' => md5($validated['password']),
+                'md5_cred' => md5("{$sipIdString}:webrtc.connect360.cl:{$validated['password']}"), //105:webrtc.connect360.cl:ContrasenaRobusta
                 'username' => $sipIdString,
                 'realm' => 'webrtc.connect360.cl'
             ]);

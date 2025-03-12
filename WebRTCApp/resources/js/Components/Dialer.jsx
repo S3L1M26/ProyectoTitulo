@@ -3,8 +3,8 @@ import JsSIP from "jssip";
 import bcrypt from 'bcryptjs';
 import CryptoJS from "crypto-js";
 
-export default function Dialer({ sip_account, ps_auth }) {
-    const [status, setStatus] = useState("Esperando acción...");
+export default function Dialer({ sip_account, password }) {
+    const [status, setStatus] = useState("Esperando registro...");
     const [dialedNumber, setDialedNumber] = useState("");
     const [ua, setUa] = useState(null);
     const [currentSession, setCurrentSession] = useState(null);
@@ -17,9 +17,14 @@ export default function Dialer({ sip_account, ps_auth }) {
             sockets: [socket],
             uri: `sip:${sip_account.sip_user_id}@webrtc.connect360.cl`,
             authorizationUser: `${sip_account.sip_user_id}`,
-            password: ps_auth.md5_cred,
+            password: `${password}`,
             register: true,
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' }
+            ],
         };
+
+        console.log(configuration);
 
         // const configuration = {
         //     sockets: [socket],
@@ -33,14 +38,17 @@ export default function Dialer({ sip_account, ps_auth }) {
 
         userAgent.on("registered", () => {
             setStatus(`Usuario ${sip_account.sip_user_id} registrado en Asterisk.`);
+            console.log(`Usuario ${sip_account.sip_user_id} registrado en Asterisk.`);
             setIsRegistered(true);
         });
         userAgent.on("registrationFailed", (ev) => {
-            setStatus("Error al registrar: " + ev.cause); 
-            setIsRegistered(false)
+            setStatus(`Error al registrar: ${ev.cause} (status_code: ${ev.response?.status_code}, reason_phrase: ${ev.response?.reason_phrase})`);
+            console.log(`Error al registrar: ${ev.cause} (status_code: ${ev.response?.status_code}, reason_phrase: ${ev.response?.reason_phrase})`);
+            setIsRegistered(false);
         });
         userAgent.on("disconnected", () => {
-            setStatus("Desconectado."); 
+            setStatus("Desconectado.");
+            console.log("Desconectado."); 
             setIsRegistered(false)
         });
         userAgent.on("newRTCSession", (data) => {
@@ -150,9 +158,13 @@ export default function Dialer({ sip_account, ps_auth }) {
                 </div>
             ):(
                 <div className="flex justify-center gap-2">
-                    <button className="bg-blue-500 text-white px-4 py-2 rounded" onClick={registerSip}>
-                        Registrar
-                    </button>
+                    <div className="text-center bg-gray-100 p-4 rounded-lg shadow-md">
+                        <h2 className="text-xl font-semibold mb-4">WebRTC con Asterisk</h2>
+                        <div className="text-green-500 font-bold text-lg mb-2">{status}</div>
+                        <button className="bg-blue-500 text-white px-4 py-2 rounded" onClick={registerSip}>
+                            Registrar
+                        </button>
+                    </div>
                 </div>
             )}
         </>
