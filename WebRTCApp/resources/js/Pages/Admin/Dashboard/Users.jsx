@@ -59,6 +59,7 @@ function Row({ row }) {
 }
 
 function editUser(id) {
+    console.log('Edit user', id);
     router.visit(route('admin.users.edit', id));
 }
 

@@ -52,6 +52,11 @@ class AdminController extends Controller
     public function editUser($id) {
         $user = User::find($id);
         $sipUser = SipAccount::with('user')->where('user_id', $user->id)->first();
+
+        if (!$sipUser) {
+            return Redirect::route('admin.users')->withErrors(['sipUser' => 'SIP User not found']);
+        }
+
         $ps_aor = SipAor::where('id', $sipUser->sip_user_id)->first();
         $ps_endpoint = SipEndpoint::where('id', $sipUser->sip_user_id)->first();
         return Inertia::render('Admin/Dashboard/Edit', [
