@@ -2,44 +2,56 @@
 @tailwind components;
 @tailwind utilities;
 
-/*=================Login css====================*/
-.body-custom{ height:100%;}
-.logincard{margin:auto; position:relative; top:50%; max-width:360px; transform: translate(0px, -50%);}
-.logincard .checkbox{ margin-left:0px;}
-.logincard .checkbox label{padding:0;}
-.logincard .dic{ margin-right:7px;}
-.logincard .card-header{ padding:0; margin:0px auto;}
-.loginlogo{ text-align:center; padding:30px 15px 10px;}
-.loginlogo a img{ max-width:100%;}
-.forgot-password{padding-top:8px;}
-.remember{ color:#999;}
-.redirection-link{ margin-top:30px; margin-bottom:30px;}
-.card-footer-no-border{ border-color:transparent; padding-top:0;}
-.card-footer-p16{ padding-left:20px; padding-right:20px; }
-.login-card h3,
-.register-card h3,
-.forgot-password-card h3{ color:rgba(0, 0, 0, 0.87); font-size:16px; margin-top:0; margin-bottom:20px;}
-.login-card .card-body,
-.register-card .card-body{ padding-bottom:10px; margin:0;}
-.register-card, .forgot-password-card{ display:none;}
-.register-card, .login-card, .forgot-password-card{ position:relative;}
-.register-card h3 span,
-.login-card h3 span{ color:rgba(0, 0, 0, 0.54);}
-.forgot-password-card h3 span{ font-size:14px; color:rgba(0, 0, 0, 0.54); width:80%; margin-top:5px; display:inline-block; line-height:18px;}
-.logincard .alert{ display:none;}
-.forgot-password-card .form-group.pmd-textfield{ margin-bottom:55px;}
-.card-footer .pmd-checkbox-label {display: inline-block;margin-top: -2px;}
-@media screen and (max-width: 768px) {
-.logincard{max-width:300px;}	
-.forgot-password a{font-size: 0.7rem;}
-}
-@media screen and (max-width: 480px) {
-.logincard .loginlogo img { height:60px;}
-.logincard .card { margin-bottom:0;}
-}
-@media (min-width: 321px) and (max-width: 480px) {
-.logincard { max-width: 330px;}
-}
-@media (max-width: 320px) {
-.logincard { max-width: 290px;}	
-}
+/* Replace your current CSS with this */
+.form-signin {
+    width: 100%;
+  }
+  
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+  
+  .input-group {
+    display: flex;
+    align-items: center;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 0.5rem;
+  }
+  
+  .input-group-addon {
+    padding-right: 0.5rem;
+    color: #666;
+  }
+  
+  .form-control {
+    flex: 1;
+    border: none;
+    outline: none;
+    padding: 0.5rem;
+  }
+  
+  .btn-primary {
+    background-color: #4f46e5;
+    color: white;
+    padding: 0.75rem;
+    border-radius: 4px;
+    width: 100%;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .btn-primary:hover {
+    background-color: #4338ca;
+  }
+  
+  .checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .forgot-password {
+    margin-top: 1rem;
+    text-align: center;
+  }

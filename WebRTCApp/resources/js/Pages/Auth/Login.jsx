@@ -25,72 +25,83 @@ export default function Login({ status, canResetPassword }) {
         <GuestLayout>
             <Head title="Log in" />
 
-            {status && (
-                <div className="mb-4 text-sm font-medium text-green-600">
-                    {status}
-                </div>
-            )}
-
-            <form onSubmit={submit}>
-                <div>
-                    <InputLabel htmlFor="email" value="Email" />
-
-                    <TextInput
-                        id="email"
-                        type="email"
-                        name="email"
-                        value={data.email}
-                        className="mt-1 block w-full"
-                        autoComplete="username"
-                        isFocused={true}
-                        onChange={(e) => setData('email', e.target.value)}
-                    />
-
-                    <InputError message={errors.email} className="mt-2" />
-                </div>
-
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Password" />
-
-                    <TextInput
-                        id="password"
-                        type="password"
-                        name="password"
-                        value={data.password}
-                        className="mt-1 block w-full"
-                        autoComplete="current-password"
-                        onChange={(e) => setData('password', e.target.value)}
-                    />
-
-                    <InputError message={errors.password} className="mt-2" />
-                </div>
-
-                <div className="mt-4 block">
-                    <label className="flex items-center">
-                        <Checkbox
-                            name="remember"
-                            checked={data.remember}
-                            onChange={(e) =>
-                                setData('remember', e.target.checked)
-                            }
-                        />
-                        <span className="ms-2 text-sm text-gray-600">
-                            Remember me
-                        </span>
-                    </label>
-                </div>
-
-                <div className="mt-4 flex items-center justify-end">
-                    {canResetPassword && (
-                        <Link
-                            href={route('password.request')}
-                            className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                        >
-                            Forgot your password?
-                        </Link>
+            <form className="form-signin" onSubmit={submit}>
+                <div className="pmd-card-title card-header-border text-center">
+                    {status && (
+                        <div className="alert alert-success text-center showAlert" role="alert">
+                            {status}
+                        </div>
                     )}
+                </div>
 
-                    <PrimaryButton className="ms-4" disabled={processing}>
+                <div className="pmd-card-body">
+                    {/* Email Field */}
+                    <div className="form-group pmd-textfield pmd-textfield-floating-label">
+                        <InputLabel htmlFor="email" value="Email" />
+                        <div className="input-group">
+                            <div className="input-group-addon">
+                                <i className="material-icons md-dark pmd-sm">perm_identity</i>
+                            </div>
+                            <TextInput
+                                id="email"
+                                type="email"
+                                name="email"
+                                value={data.email}
+                                className="form-control"
+                                autoComplete="username"
+                                isFocused={true}
+                                onChange={(e) => setData('email', e.target.value)}
+                            />
+                        </div>
+                        <InputError message={errors.email} className="mt-2" />
+                    </div>
+
+                    {/* Password Field */}
+                    <div className="form-group pmd-textfield pmd-textfield-floating-label">
+                        <InputLabel htmlFor="password" value="Password" />
+                        <div className="input-group">
+                            <div className="input-group-addon">
+                                <i className="material-icons md-dark pmd-sm">lock_outline</i>
+                            </div>
+                            <TextInput
+                                id="password"
+                                type="password"
+                                name="password"
+                                value={data.password}
+                                className="form-control"
+                                autoComplete="current-password"
+                                onChange={(e) => setData('password', e.target.value)}
+                            />
+                        </div>
+                        <InputError message={errors.password} className="mt-2" />
+                    </div>
+
+                    {/* Remember Me Checkbox */}
+                    <div className="form-group pmd-textfield pmd-textfield-floating-label mt-3">
+                        <label className="flex items-center checkbox">
+                            <Checkbox
+                                name="remember"
+                                checked={data.remember}
+                                onChange={(e) => setData('remember', e.target.checked)}
+                            />
+                            <span className="ms-2 text-sm remember">Remember me</span>
+                        </label>
+                    </div>
+                </div>
+
+                {/* Footer */}
+                <div className="pmd-card-footer card-footer-no-border card-footer-p16 text-center">
+                    {canResetPassword && (
+                        <div className="forgot-password">
+                            <Link
+                                href={route('password.request')}
+                                className="connect-color-2"
+                            >
+                                Forgot your password?
+                            </Link>
+                        </div>
+                    )}
+                    <PrimaryButton className="btn pmd-ripple-effect btn-primary btn-block mt-4" disabled={processing}>
                         Log in
                     </PrimaryButton>
                 </div>
