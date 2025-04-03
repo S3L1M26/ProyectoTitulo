@@ -73,6 +73,7 @@ export default function Login({ status, canResetPassword }) {
                         autoComplete="username"
                         isFocused={true}
                         onChange={(e) => setData('email', e.target.value)}
+                        required
                     />
                 </div>
                 <InputError message={errors.email} className="mt-1 text-red-600 text-sm" />
@@ -91,6 +92,7 @@ export default function Login({ status, canResetPassword }) {
                         className="w-full focus:outline-none"
                         autoComplete="current-password"
                         onChange={(e) => setData('password', e.target.value)}
+                        required
                     />
                 </div>
                 <InputError message={errors.password} className="mt-1 text-red-600 text-sm" />

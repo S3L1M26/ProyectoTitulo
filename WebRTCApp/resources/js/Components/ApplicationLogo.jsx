@@ -7,7 +7,7 @@ export default function ApplicationLogo() {
             <Link href="/">
                 <img 
                     src="images/logo.png" 
-                    className="h-12 w-auto" 
+                    className="h-10 w-auto" 
                     alt="Logo" 
                 />
             </Link>
