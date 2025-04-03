@@ -19,7 +19,11 @@ export default function AuthenticatedLayout({ header, children }) {
                         <div className="flex">
                             <div className="flex shrink-0 items-center">
                                 <Link href="/">
-                                    <ApplicationLogo className="block h-9 w-auto fill-current text-gray-800" />
+                                    <img
+                                        className='h-10 w-10 fill-current text-gray-500'
+                                        src="/images/favicons/apple-touch-icon.png" // Replace with the correct path to your logo
+                                        alt="Application Logo"
+                                    />
                                 </Link>
                             </div>
 

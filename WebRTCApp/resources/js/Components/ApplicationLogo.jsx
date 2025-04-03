@@ -1,9 +1,21 @@
-export default function ApplicationLogo(props) {
+import { Link } from '@inertiajs/react';
+
+export default function ApplicationLogo() {
     return (
-        <img
-            {...props}
-            src="/images/favicons/apple-touch-icon.png" // Replace with the correct path to your logo
-            alt="Application Logo"
-        />
+
+        <div className="flex justify-center py-4">
+            <Link href="/">
+                <img 
+                    src="images/logo.png" 
+                    className="h-12 w-auto" 
+                    alt="Logo" 
+                />
+            </Link>
+        </div>
+        // <img
+        //     {...props}
+        //     src="/images/favicons/apple-touch-icon.png" // Replace with the correct path to your logo
+        //     alt="Application Logo"
+        // />
     );
 }
