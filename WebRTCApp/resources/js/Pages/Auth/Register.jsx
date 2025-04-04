@@ -23,7 +23,7 @@ export default function Register() {
 
     const headerMsg = (
         <h3 className="text-gray-900 text-xl font-medium mb-6 text-center">
-            Regístrate en <strong className="text-green-600">Connect</strong>
+            Regístrate en <strong className="text-[#9fc031]">Connect</strong>
         </h3>
     );
 
@@ -41,7 +41,7 @@ export default function Register() {
                 <p className="text-sm text-gray-600">
                     ¿Ya tienes una cuenta?{' '}
                     <Link
-                        className="text-green-600 hover:underline"
+                        className="text-[#9fc031] hover:underline"
                         href={route('login')}
                     >
                         Inicia sesión aquí

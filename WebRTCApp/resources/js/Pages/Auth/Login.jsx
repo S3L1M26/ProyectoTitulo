@@ -24,7 +24,7 @@ export default function Login({ status, canResetPassword }) {
 
     const headerMsg = (
         <h3 className="text-gray-900 text-xl font-medium mb-6 text-center">
-            Inicia sesión en <strong className="text-green-600">Connect</strong>        
+            Inicia sesión en <strong className="text-[#9fc031]">Connect</strong>        
         </h3>
     );
     
@@ -40,7 +40,7 @@ export default function Login({ status, canResetPassword }) {
             <div className="text-center">
                 <p className="text-sm text-gray-600">
                     ¿Olvidaste tu contraseña?{' '}
-                    <Link className="text-green-600 hover:underline" href={route('password.request')}>
+                    <Link className="text-[#9fc031] hover:underline" href={route('password.request')}>
                         Recupérala aquí
                     </Link>
                 </p>

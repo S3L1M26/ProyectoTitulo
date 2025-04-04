@@ -17,7 +17,7 @@ export default function ForgotPassword({ status }) {
 
     const headerMsg = (
         <h3 className="text-gray-900 text-xl font-medium mb-6 text-center">
-            Recupera tu <strong className="text-green-600">contraseña</strong>
+            Recupera tu <strong className="text-[#9fc031]">contraseña</strong>
         </h3>
     );
 
@@ -43,7 +43,7 @@ export default function ForgotPassword({ status }) {
             </div>
 
             {status && (
-                <div className="mb-4 text-sm font-medium text-green-600">
+                <div className="mb-4 text-sm font-medium text-[#9fc031]">
                     {status}
                 </div>
             )}
