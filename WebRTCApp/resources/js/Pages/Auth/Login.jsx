@@ -50,7 +50,7 @@ export default function Login({ status, canResetPassword }) {
     
     return (
         <GuestLayout onSubmit={submit} headerMsg={headerMsg} footerElements={footerElements}>
-            <Head title="Log in" />
+            <Head title="Inicio Sesión" />
     
             {/* Status Message */}
             {status && (

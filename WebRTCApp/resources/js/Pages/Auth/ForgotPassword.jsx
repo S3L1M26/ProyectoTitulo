@@ -34,7 +34,7 @@ export default function ForgotPassword({ status }) {
 
     return (
         <GuestLayout onSubmit={submit} headerMsg={headerMsg} footerElements={footer}>
-            <Head title="Forgot Password" />
+            <Head title="Recuperar Contraseña" />
 
             <div className="mb-4 text-sm text-gray-600">
                 ¿Olvidaste tu contraseña? No hay problema. Solo déjanos tu dirección

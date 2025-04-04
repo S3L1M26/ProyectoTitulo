@@ -53,7 +53,7 @@ export default function Register() {
 
     return (
         <GuestLayout headerMsg={headerMsg} footerElements={footerElements} onSubmit={submit}>
-            <Head title="Register" />
+            <Head title="Registro" />
 
             <div className="mb-4">
                 <InputLabel htmlFor="name" value="Nombre" className="block text-sm font-medium text-gray-700 mb-1"/>
