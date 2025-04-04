@@ -7,9 +7,8 @@ export default function GuestLayout({ children, onSubmit, headerMsg, footerEleme
                 <div className="pt-4 px-4 pb-0 mb-4 border-b border-transparent rounded-tl-sm rounded-tr-sm text-center">
                     <ApplicationLogo />
                 </div>
-                <h3 className="text-gray-900 text-xl font-medium mb-6 text-center">
-                    {headerMsg}
-                </h3>
+                
+                {headerMsg}
 
                 <form onSubmit={onSubmit} className="px-6 pb-6 flex-grow flex flex-col">
                     <div className="space-y-4">

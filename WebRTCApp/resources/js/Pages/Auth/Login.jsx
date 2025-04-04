@@ -23,9 +23,9 @@ export default function Login({ status, canResetPassword }) {
     };
 
     const headerMsg = (
-        <p>
-            Inicia sesión en <strong className="text-green-600">Connect</strong>
-        </p>
+        <h3 className="text-gray-900 text-xl font-medium mb-6 text-center">
+            Inicia sesión en <strong className="text-green-600">Connect</strong>        
+        </h3>
     );
     
     const footerElements = (

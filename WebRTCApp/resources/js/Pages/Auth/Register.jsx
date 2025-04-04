@@ -22,9 +22,9 @@ export default function Register() {
     };
 
     const headerMsg = (
-        <p>
+        <h3 className="text-gray-900 text-xl font-medium mb-6 text-center">
             Regístrate en <strong className="text-green-600">Connect</strong>
-        </p>
+        </h3>
     );
 
     const footerElements = (
