@@ -21,7 +21,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                 <Link href="/">
                                     <img
                                         className='h-10 w-10 fill-current text-gray-500'
-                                        src="/images/favicons/apple-touch-icon.png" // Replace with the correct path to your logo
+                                        src="/images/favicons/faviconGrande.png" // Replace with the correct path to your logo
                                         alt="Application Logo"
                                     />
                                 </Link>

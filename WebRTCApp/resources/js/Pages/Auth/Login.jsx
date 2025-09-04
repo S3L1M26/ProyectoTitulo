@@ -24,7 +24,7 @@ export default function Login({ status, canResetPassword }) {
 
     const headerMsg = (
         <h3 className="text-gray-900 text-xl font-medium mb-6 text-center">
-            Inicia sesión en <strong className="text-[#9fc031]">Connect</strong>        
+            Inicia sesión en <strong className="text-[#ec3636]">Connect</strong>        
         </h3>
     );
     
@@ -54,7 +54,7 @@ export default function Login({ status, canResetPassword }) {
     
             {/* Status Message */}
             {status && (
-                <div className="bg-green-100 border border-green-200 text-green-700 text-sm font-medium p-4 rounded-md mb-4 text-center">
+                <div className="bg-green-100 border border-green-200 text-red-700 text-sm font-medium p-4 rounded-md mb-4 text-center">
                     {status}
                 </div>
             )}

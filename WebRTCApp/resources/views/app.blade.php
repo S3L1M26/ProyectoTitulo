@@ -10,8 +10,8 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-        <link href="/images/favicons/favicon-16x16.png" rel="icon" type="image/png" sizes="16x16">
-        <link href="/images/favicons/favicon-32x32.png" rel="icon" type="image/png" sizes="32x32">
+        <link href="/images/favicons/faviconV2.png" rel="icon" type="image/png" sizes="16x16">
+        <link href="/images/favicons/faviconV2-30x32.png" rel="icon" type="image/png" sizes="32x32">
 
         <!-- Scripts -->
         @routes
