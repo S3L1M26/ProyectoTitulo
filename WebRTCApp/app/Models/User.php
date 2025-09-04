@@ -50,4 +50,14 @@ class User extends Authenticatable
     {
         return $this->hasOne(SipAccount::class)->where('role', '!=', 'admin');
     }
+
+    public function aprendiz()
+    {
+        return $this->hasOne(Aprendiz::class);
+    }
+
+    public function mentor()
+    {
+        return $this->hasOne(Mentor::class);
+    }
 }

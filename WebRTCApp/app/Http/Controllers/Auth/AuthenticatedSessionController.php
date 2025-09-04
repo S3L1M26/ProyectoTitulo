@@ -16,9 +16,15 @@ class AuthenticatedSessionController extends Controller
     /**
      * Display the login view.
      */
-    public function create(): Response
+    public function create(string $role): Response
     {
-        return Inertia::render('Auth/Login', [
+        $view = match($role) {
+            'student' => 'Auth/Student/Login',
+            'mentor' => 'Auth/Mentor/Login',
+            default => 'Auth/Login'
+        };
+
+        return Inertia::render($view, [
             'canResetPassword' => Route::has('password.request'),
             'status' => session('status'),
         ]);
@@ -37,7 +43,14 @@ class AuthenticatedSessionController extends Controller
             return redirect(route('admin.dashboard'));
         }
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        // Redireccionar según el rol
+        $redirectRoute = match(Auth::user()->role) {
+            'mentor' => 'mentor.dashboard',
+            'student' => 'student.dashboard',
+            default => 'dashboard'
+        };
+
+        return redirect()->intended(route($redirectRoute));
     }
 
     /**

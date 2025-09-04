@@ -49,6 +49,15 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        // Verificar que el rol coincida con la ruta
+        $requestedRole = request()->route('role');
+        if ($requestedRole && Auth::user()->role !== $requestedRole) {
+            Auth::logout();
+            throw ValidationException::withMessages([
+                'email' => "Esta cuenta no tiene permisos de {$requestedRole}.",
+            ]);
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 

@@ -17,6 +17,22 @@ Route::get('/', function () {
     ]);
 });
 
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Rutas para estudiantes
+    Route::middleware('role:student')->group(function () {
+        Route::get('/student/dashboard', function () {
+            return Inertia::render('Student/Dashboard');
+        })->name('student.dashboard');
+    });
+
+    // Rutas para mentores
+    Route::middleware('role:mentor')->group(function () {
+        Route::get('/mentor/dashboard', function () {
+            return Inertia::render('Mentor/Dashboard');
+        })->name('mentor.dashboard');
+    });
+});
+
 // Route::get('/dashboard', function () {
 //     return Inertia::render('Dashboard');
 // })->middleware(['auth', 'verified'])->name('dashboard');

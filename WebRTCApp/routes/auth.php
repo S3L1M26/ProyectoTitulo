@@ -12,15 +12,22 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
-    Route::get('register', [RegisteredUserController::class, 'create'])
-        ->name('register');
+    // Rutas de registro
+    Route::get('register/{role}', [RegisteredUserController::class, 'create'])
+        ->name('register.show')
+        ->where('role', 'student|mentor');
 
-    Route::post('register', [RegisteredUserController::class, 'store']);
+    Route::post('register/{role}', [RegisteredUserController::class, 'store'])
+        ->name('register.store')
+        ->where('role', 'student|mentor');
 
-    Route::get('login', [AuthenticatedSessionController::class, 'create'])
-        ->name('login');
+    // Rutas de login
+    Route::get('login/{role}', [AuthenticatedSessionController::class, 'create'])
+        ->name('login.show')
+        ->where('role', 'student|mentor');
 
-    Route::post('login', [AuthenticatedSessionController::class, 'store']);
+    Route::post('login', [AuthenticatedSessionController::class, 'store'])
+        ->name('login.store');
 
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');
@@ -58,4 +65,13 @@ Route::middleware('auth')->group(function () {
 
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
+
+    // Rutas protegidas específicas por rol
+    Route::middleware('role:mentor')->group(function () {
+        // Rutas específicas para mentores
+    });
+
+    Route::middleware('role:student')->group(function () {
+        // Rutas específicas para estudiantes
+    });
 });
