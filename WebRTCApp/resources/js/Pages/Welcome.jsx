@@ -1,4 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
+import { useState } from 'react';
 
 export default function Welcome({ auth, laravelVersion, phpVersion }) {
     const handleImageError = () => {
@@ -10,6 +11,12 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
             .getElementById('docs-card-content')
             ?.classList.add('!flex-row');
         document.getElementById('background')?.classList.add('!hidden');
+    };
+
+    const [isOpen, setIsOpen] = useState(false);
+
+    const toggleDropdown = () => {
+        setIsOpen(!isOpen);
     };
 
     return (
@@ -46,8 +53,32 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                                         Dashboard
                                     </Link>
                                 ) : (
-                                    <>
-                                        <Link
+                                    <div className="relative">
+                                        <button
+                                            onClick={toggleDropdown}
+                                            className="rounded-md px-3 py-2 text-black ring-1 ring-transparent transition hover:text-black/70 focus:outline-none focus-visible:ring-[#FF2D20] dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white"
+                                        >
+                                            Ingresa
+                                        </button>
+                                        {isOpen && (
+                                            <div className="absolute right-0 mt-2 w-48 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-zinc-800">
+                                                <div className="py-1">
+                                                    <Link
+                                                        href={route('student.login')}
+                                                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-zinc-700"
+                                                    >
+                                                        Estudiantes
+                                                    </Link>
+                                                    <Link
+                                                        href={route('mentor.login')}
+                                                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-zinc-700"
+                                                    >
+                                                        Mentores
+                                                    </Link>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {/* <Link
                                             href={route('login')}
                                             className="rounded-md px-3 py-2 text-black ring-1 ring-transparent transition hover:text-black/70 focus:outline-none focus-visible:ring-[#FF2D20] dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white"
                                         >
@@ -58,8 +89,8 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                                             className="rounded-md px-3 py-2 text-black ring-1 ring-transparent transition hover:text-black/70 focus:outline-none focus-visible:ring-[#FF2D20] dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white"
                                         >
                                             Registrarse
-                                        </Link>
-                                    </>
+                                        </Link> */}
+                                    </div>
                                 )}
                             </nav>
                         </header>
