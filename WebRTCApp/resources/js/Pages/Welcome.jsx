@@ -64,13 +64,13 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                                             <div className="absolute right-0 mt-2 w-48 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-zinc-800">
                                                 <div className="py-1">
                                                     <Link
-                                                        href={route('register.show', 'student')}
+                                                        href={route('login', { role: 'student' })}
                                                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-zinc-700"
                                                     >
                                                         Estudiantes
                                                     </Link>
                                                     <Link
-                                                        href={route('register.show', 'mentor')}
+                                                        href={route('login', { role: 'mentor' })}
                                                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-white dark:hover:bg-zinc-700"
                                                     >
                                                         Mentores

@@ -18,13 +18,17 @@ class RegisteredUserController extends Controller
     /**
      * Display the registration view.
      */
-    public function create(string $role): Response
+    public function create(Request $role): Response
     {
+        $role = $role->query('role', 'student');
+
         if (!in_array($role, ['student', 'mentor'])) {
             abort(404);
         }
 
-        return Inertia::render("Auth/$role/Register");
+        return Inertia::render('Auth/Register', [
+            'role' => $role,
+        ]);
     }
 
     /**
@@ -39,47 +43,42 @@ class RegisteredUserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'role' => 'required|in:student,mentor',
         ];
 
         // Validaciones específicas según el rol
-        $roleValidations = [
-            'mentor' => [
+        $roleValidations = $request->role === 'mentor'
+            ? [
                 'experiencia' => 'required|string',
                 'especialidad' => 'required|string',
                 'disponibilidad' => 'required|string',
-            ],
-            'student' => [
+            ]
+            : [
                 'semestre' => 'required|integer|min:1|max:10',
                 'intereses' => 'required|array|min:1',
                 'intereses.*' => 'string',
-            ],
-        ];
+            ];
 
-        // Combinar validaciones según el rol
-        $validations = array_merge(
-            $baseValidation, 
-            $roleValidations[$request->role] ?? []
-        );
+        $validated = $request->validate(array_merge($baseValidation, $roleValidations));
 
-        $validated = $request->validate($validations);
 
         // Crear usuario base
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'role' => $request->role,
+            'role' => $validated['role'],
         ]);
 
         // Crear perfil específico según rol
-        if ($request->role === 'mentor') {
+        if ($validated['role'] === 'mentor') {
             $user->mentor()->create([
                 'experiencia' => $validated['experiencia'],
                 'especialidad' => $validated['especialidad'],
                 'disponibilidad' => $validated['disponibilidad'],
                 'calificacionPromedio' => 0.0,
             ]);
-        } elseif ($request->role === 'student') {
+        } else {
             $user->aprendiz()->create([
                 'semestre' => $validated['semestre'],
                 'intereses' => $validated['intereses'],
@@ -90,6 +89,6 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return redirect()->route($request->role === 'mentor' ? 'mentor.dashboard' : 'student.dashboard');
+        return redirect()->route($validated['role'] === 'mentor' ? 'mentor.dashboard' : 'student.dashboard');
     }
 }

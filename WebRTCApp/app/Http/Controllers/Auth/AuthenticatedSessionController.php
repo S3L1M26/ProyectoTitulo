@@ -16,15 +16,13 @@ class AuthenticatedSessionController extends Controller
     /**
      * Display the login view.
      */
-    public function create(string $role): Response
+    public function create(Request $request): Response
     {
-        $view = match($role) {
-            'student' => 'Auth/Student/Login',
-            'mentor' => 'Auth/Mentor/Login',
-            default => 'Auth/Login'
-        };
+        // Obtener el rol desde la query string
+        $role = $request->query('role', 'student');
 
-        return Inertia::render($view, [
+        return Inertia::render('Auth/Login', [
+            'role' => $role,
             'canResetPassword' => Route::has('password.request'),
             'status' => session('status'),
         ]);
@@ -39,8 +37,16 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        // Verificar que el rol del usuario coincida con el rol solicitado
+        if ($request->role && Auth::user()->role !== $request->role) {
+            Auth::logout();
+            return back()->withErrors([
+                'email' => 'Las credenciales no corresponden al tipo de usuario seleccionado.',
+            ]);
+        }
+
         if(Auth::user()->role === 'admin') {
-            return redirect(route('admin.dashboard'));
+            return redirect(route('admin.dashboard')); //se irá pronto
         }
 
         // Redireccionar según el rol
