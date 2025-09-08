@@ -12,6 +12,7 @@ export default function Login({ status, canResetPassword, role }) {
         email: '',
         password: '',
         remember: false,
+        role: role, 
     });
 
     const submit = (e) => {
@@ -22,9 +23,9 @@ export default function Login({ status, canResetPassword, role }) {
         });
     };
 
-    const switchRole = (newRole) => {
-        window.location.href = route('login.show', newRole);
-    };
+    // const switchRole = (newRole) => {
+    //     window.location.href = route('login.show', newRole);
+    // };
 
     const headerMsg = (
         <h3 className="text-gray-900 text-xl font-medium mb-6 text-center">

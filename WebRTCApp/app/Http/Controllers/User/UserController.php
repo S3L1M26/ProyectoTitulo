@@ -26,9 +26,9 @@ class UserController extends Controller
             $password = Crypt::decryptString($sip_account->password);
         }
 
-        return Inertia::render('Dashboard/Index', [
-            'sip_account' => $sip_account,
-            'password' => $password,
-        ]);
+        // return Inertia::render('Dashboard/Index', [
+        //     'sip_account' => $sip_account,
+        //     'password' => $password,
+        // ]);
     }
 }

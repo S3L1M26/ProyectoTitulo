@@ -45,15 +45,12 @@ class AuthenticatedSessionController extends Controller
             ]);
         }
 
-        if(Auth::user()->role === 'admin') {
-            return redirect(route('admin.dashboard')); //se irá pronto
-        }
-
         // Redireccionar según el rol
         $redirectRoute = match(Auth::user()->role) {
             'mentor' => 'mentor.dashboard',
             'student' => 'student.dashboard',
-            default => 'dashboard'
+            'admin' => 'admin.dashboard',
+            default => 'login'
         };
 
         return redirect()->intended(route($redirectRoute));

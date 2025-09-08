@@ -4,6 +4,8 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Sip\SipUserController;
 use App\Http\Controllers\User\UserController;
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Student\StudentController;
+use App\Http\Controllers\Mentor\MentorController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -17,19 +19,15 @@ Route::get('/', function () {
     ]);
 });
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth'])->group(function () {
     // Rutas para estudiantes
     Route::middleware('role:student')->group(function () {
-        Route::get('/student/dashboard', function () {
-            return Inertia::render('Student/Dashboard');
-        })->name('student.dashboard');
+        Route::get('/student/dashboard', [StudentController::class, 'index'])->name('student.dashboard');
     });
 
     // Rutas para mentores
     Route::middleware('role:mentor')->group(function () {
-        Route::get('/mentor/dashboard', function () {
-            return Inertia::render('Mentor/Dashboard');
-        })->name('mentor.dashboard');
+        Route::get('/mentor/dashboard', [MentorController::class, 'index'])->name('mentor.dashboard');
     });
 });
 
@@ -46,11 +44,11 @@ Route::middleware('auth')->group(function () {
 require __DIR__.'/auth.php';
 
 //rutas usuario
-Route::middleware(['auth', 'userMiddleware'])->group(function () {
+// Route::middleware(['auth', 'userMiddleware'])->group(function () {
 
-    Route::get('/dashboard', [UserController::class, 'index'])->name('dashboard');
+//     Route::get('/dashboard', [UserController::class, 'index'])->name('dashboard');
 
-});
+// });
 
 //rutas admin
 Route::middleware(['auth', 'adminMiddleware'])->group(function () {

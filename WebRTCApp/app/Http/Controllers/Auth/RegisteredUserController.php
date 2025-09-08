@@ -9,6 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rules;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -18,12 +19,16 @@ class RegisteredUserController extends Controller
     /**
      * Display the registration view.
      */
-    public function create(Request $role): Response
+    public function create(Request $role): Response|RedirectResponse
     {
         $role = $role->query('role', 'student');
 
         if (!in_array($role, ['student', 'mentor'])) {
             abort(404);
+        }
+
+        if (Auth::check()) {
+            return redirect()->route(Auth::user()->role === 'mentor' ? 'mentor.dashboard' : 'student.dashboard');
         }
 
         return Inertia::render('Auth/Register', [

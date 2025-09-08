@@ -11,7 +11,7 @@ export default function Register({ role }) {
         email: '',
         password: '',
         password_confirmation: '',
-        role: role || 'student',
+        role: role,
         // Campos extra
         semestre: '',
         intereses: [],
