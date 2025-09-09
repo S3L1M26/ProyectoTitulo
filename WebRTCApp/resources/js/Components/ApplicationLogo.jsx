@@ -6,9 +6,9 @@ export default function ApplicationLogo() {
         <div className="flex justify-center py-4">
             <Link href="/">
                 <img 
-                    src="images/logo_unab.png" 
+                    src="/images/logo_unab.png" 
                     className="h-12 w-auto" 
-                    alt="Logo" 
+                    alt="Logo UNAB" 
                 />
             </Link>
         </div>
