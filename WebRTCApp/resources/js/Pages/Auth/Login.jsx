@@ -50,7 +50,7 @@ export default function Login({ status, canResetPassword, role }) {
                 <p className="text-sm text-gray-600">
                     ¿No tienes cuenta?{' '}
                     <Link 
-                        className="text-[#9fc031] hover:underline" 
+                        className="text-[#f00808] hover:underline" 
                         href={route('register', {role: role})}
                     >
                         Regístrate aquí
@@ -59,7 +59,7 @@ export default function Login({ status, canResetPassword, role }) {
                 {canResetPassword && (
                     <p className="text-sm text-gray-600">
                         ¿Olvidaste tu contraseña?{' '}
-                        <Link className="text-[#9fc031] hover:underline" href={route('password.request')}>
+                        <Link className="text-[#f00808] hover:underline" href={route('password.request')}>
                             Recupérala aquí
                         </Link>
                     </p>

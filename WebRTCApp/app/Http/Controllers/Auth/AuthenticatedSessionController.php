@@ -38,12 +38,12 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
 
         // Verificar que el rol del usuario coincida con el rol solicitado
-        if ($request->role && Auth::user()->role !== $request->role) {
+        if ($request->role && Auth::user()->role !== $request->role && Auth::user()->role !== 'admin') {
             Auth::logout();
             return back()->withErrors([
                 'email' => 'Las credenciales no corresponden al tipo de usuario seleccionado.',
             ]);
-        }
+        } 
 
         // Redireccionar según el rol
         $redirectRoute = match(Auth::user()->role) {
