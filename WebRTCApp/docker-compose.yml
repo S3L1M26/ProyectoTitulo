@@ -1,0 +1,108 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev # change to runtime for production minimal image
+      args:
+        PHP_VERSION: "8.4.3"
+        NODE_VERSION: "20"
+        INSTALL_XDEBUG: 0
+    image: webrtcapp-php
+    container_name: webrtcapp-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html:cached
+      - ./vendor:/var/www/html/vendor:delegated
+      - ./storage:/var/www/html/storage:delegated
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost
+      LOG_CHANNEL: stack
+      DB_HOST: db
+      DB_DATABASE: laravel
+      DB_USERNAME: laravel
+      DB_PASSWORD: secret
+      CACHE_DRIVER: file
+      QUEUE_CONNECTION: database
+      SESSION_DRIVER: file
+      BROADCAST_DRIVER: log
+    healthcheck:
+      test: ["CMD", "php", "-v"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      db:
+        condition: service_healthy
+
+  queue:
+    image: webrtcapp-php
+    container_name: webrtcapp-queue
+    restart: unless-stopped
+    working_dir: /var/www/html
+    command: sh -c "php artisan migrate --force && php artisan queue:work --tries=3 --timeout=90"
+    volumes:
+      - ./:/var/www/html:cached
+    depends_on:
+      - app
+      - db
+
+  vite:
+    image: node:20-alpine
+    container_name: webrtcapp-vite
+    working_dir: /var/www/html
+    command: sh -c "npm install && npm run dev -- --host"
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./:/var/www/html:cached
+    depends_on:
+      - app
+
+  web:
+    image: nginx:1.27-alpine
+    container_name: webrtcapp-nginx
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./:/var/www/html:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./public:/var/www/html/public:ro
+    depends_on:
+      - app
+
+  db:
+    image: mysql:8.0
+    container_name: webrtcapp-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "3307:3306" # host 3307 to avoid conflict if local MySQL already on 3306
+    volumes:
+      - db_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: webrtcapp-mailhog
+    ports:
+      - "8025:8025"
+
+volumes:
+  db_data:
+    driver: local

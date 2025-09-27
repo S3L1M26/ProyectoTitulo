@@ -64,3 +64,17 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+Requisitos: Docker + Docker Compose
+Levantar entorno:
+  docker compose up -d --build
+Acceder:
+  App:       http://localhost:8000
+  Vite HMR:  http://localhost:5173
+  Mailhog:   http://localhost:8025
+Base de datos:
+  Host: 127.0.0.1  Puerto: 3307  Usuario: laravel  Password: secret  DB: laravel
+Comandos útiles:
+  docker compose exec app php artisan migrate
+  docker compose exec app composer install
+  docker compose restart vite
