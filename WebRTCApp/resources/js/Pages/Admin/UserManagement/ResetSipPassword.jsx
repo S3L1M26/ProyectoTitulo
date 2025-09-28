@@ -42,19 +42,18 @@ export default function ResetSipPassword({ className = '', sipUser }) {
         <section className={className}>
             <header>
                 <h2 className="text-lg font-medium text-gray-900">
-                    Update SIP Password
+                    Actualizar Contraseña SIP
                 </h2>
 
                 <p className="mt-1 text-sm text-gray-600">
-                    Ensure your SIP account is using a long, random password to stay
-                    secure.
+                    Asegúrate de que la cuenta SIP use una contraseña larga y aleatoria para mantenerla segura.
                 </p>
             </header>
 
             <form onSubmit={updatePassword} className="mt-6 space-y-6">
             
                 <div>
-                    <InputLabel htmlFor="new_sip_password" value="New SIP Password" />
+                    <InputLabel htmlFor="new_sip_password" value="Nueva Contraseña SIP" />
 
                     <TextInput
                         id="new_sip_password"
@@ -72,7 +71,7 @@ export default function ResetSipPassword({ className = '', sipUser }) {
                 <div>
                     <InputLabel
                         htmlFor="new_sip_password_confirmation"
-                        value="Confirm SIP Password"
+                        value="Confirmar Contraseña SIP"
                     />
 
                     <TextInput
@@ -93,7 +92,7 @@ export default function ResetSipPassword({ className = '', sipUser }) {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <PrimaryButton disabled={processing}>Save</PrimaryButton>
+                    <PrimaryButton disabled={processing}>Guardar</PrimaryButton>
 
                     <Transition
                         show={recentlySuccessful}
@@ -103,7 +102,7 @@ export default function ResetSipPassword({ className = '', sipUser }) {
                         leaveTo="opacity-0"
                     >
                         <p className="text-sm text-gray-600">
-                            Saved.
+                            Guardado.
                         </p>
                     </Transition>
                 </div>

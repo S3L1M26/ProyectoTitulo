@@ -43,7 +43,7 @@ export default function ResetPassword({ token, email }) {
             <Head title="Restablecer Contraseña" />
 
             <div>
-                <InputLabel htmlFor="email" value="Email" />
+                <InputLabel htmlFor="email" value="Correo electrónico" />
 
                 <TextInput
                     id="email"
@@ -59,7 +59,7 @@ export default function ResetPassword({ token, email }) {
             </div>
 
             <div className="mt-4">
-                <InputLabel htmlFor="password" value="Password" />
+                <InputLabel htmlFor="password" value="Contraseña" />
 
                 <TextInput
                     id="password"
@@ -78,7 +78,7 @@ export default function ResetPassword({ token, email }) {
             <div className="mt-4">
                 <InputLabel
                     htmlFor="password_confirmation"
-                    value="Confirm Password"
+                    value="Confirmar Contraseña"
                 />
 
                 <TextInput

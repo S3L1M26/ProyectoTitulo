@@ -48,12 +48,11 @@ export default function UpdateSipPasswordForm({ className = '' }) {
         <section className={className}>
             <header>
                 <h2 className="text-lg font-medium text-gray-900">
-                    Update SIP Password
+                    Actualizar Contraseña SIP
                 </h2>
 
                 <p className="mt-1 text-sm text-gray-600">
-                    Ensure your SIP account is using a long, random password to stay
-                    secure.
+                    Asegúrate de que tu cuenta SIP use una contraseña larga y aleatoria para mantenerla segura.
                 </p>
             </header>
 
@@ -61,7 +60,7 @@ export default function UpdateSipPasswordForm({ className = '' }) {
                 <div>
                     <InputLabel
                         htmlFor="current_sip_password"
-                        value="Current SIP Password"
+                        value="Contraseña SIP Actual"
                     />
 
                     <TextInput
@@ -83,7 +82,7 @@ export default function UpdateSipPasswordForm({ className = '' }) {
                 </div>
 
                 <div>
-                    <InputLabel htmlFor="new_sip_password" value="New SIP Password" />
+                    <InputLabel htmlFor="new_sip_password" value="Nueva Contraseña SIP" />
 
                     <TextInput
                         id="new_sip_password"
@@ -101,7 +100,7 @@ export default function UpdateSipPasswordForm({ className = '' }) {
                 <div>
                     <InputLabel
                         htmlFor="new_sip_password_confirmation"
-                        value="Confirm SIP Password"
+                        value="Confirmar Contraseña SIP"
                     />
 
                     <TextInput
@@ -122,7 +121,7 @@ export default function UpdateSipPasswordForm({ className = '' }) {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <PrimaryButton disabled={processing}>Save</PrimaryButton>
+                    <PrimaryButton disabled={processing}>Guardar</PrimaryButton>
 
                     <Transition
                         show={recentlySuccessful}
@@ -132,7 +131,7 @@ export default function UpdateSipPasswordForm({ className = '' }) {
                         leaveTo="opacity-0"
                     >
                         <p className="text-sm text-gray-600">
-                            Saved.
+                            Guardado.
                         </p>
                     </Transition>
                 </div>

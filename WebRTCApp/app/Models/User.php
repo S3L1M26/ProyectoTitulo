@@ -8,6 +8,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use App\Models\Sip\SipAccount;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Notifications\ResetPasswordNotification;
+use App\Notifications\VerifyEmailNotification;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -62,5 +64,21 @@ class User extends Authenticatable implements MustVerifyEmail
     public function mentor()
     {
         return $this->hasOne(Mentor::class);
+    }
+
+    /**
+     * Send a password reset notification to the user.
+     */
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new ResetPasswordNotification($token));
+    }
+
+    /**
+     * Send the email verification notification.
+     */
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new VerifyEmailNotification);
     }
 }

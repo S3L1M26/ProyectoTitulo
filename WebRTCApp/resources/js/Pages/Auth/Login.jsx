@@ -81,7 +81,7 @@ export default function Login({ status, canResetPassword, role }) {
     
             {/* Email Field */}
             <div className="mb-4">
-                <InputLabel htmlFor="email" value="Email" className="block text-sm font-medium text-gray-700 mb-1" />
+                <InputLabel htmlFor="email" value="Correo electrónico" className="block text-sm font-medium text-gray-700 mb-1" />
                 <div className="flex items-center border border-gray-300 rounded-md px-3 py-2 focus-within:ring-1 focus-within:ring-blue-500 focus-within:border-blue-500">
                     <span className="material-icons text-gray-500 mr-2">perm_identity</span>
                     <TextInput
