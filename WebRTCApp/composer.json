@@ -14,8 +14,10 @@
         "inertiajs/inertia-laravel": "^2.0",
         "laravel/framework": "^12.0",
         "laravel/sanctum": "^4.0",
+        "laravel/socialite": "^5.23",
         "laravel/tinker": "^2.9",
         "laravel/ui": "^4.6",
+        "socialiteproviders/microsoft-azure": "^5.2",
         "symfony/cache": "^7.3",
         "tightenco/ziggy": "^2.0"
     },
