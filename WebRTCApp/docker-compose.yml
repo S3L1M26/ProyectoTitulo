@@ -1,4 +1,6 @@
 services:
+  # Contenedor principal de la aplicación Laravel
+  # Ejecuta PHP-FPM y maneja las peticiones del backend
   app:
     build:
       context: .
@@ -39,6 +41,8 @@ services:
       db:
         condition: service_healthy
 
+  # Contenedor para procesar trabajos en cola (jobs)
+  # Ejecuta php artisan queue:work para tareas asíncronas
   queue:
     image: webrtcapp-php
     container_name: webrtcapp-queue
@@ -51,6 +55,8 @@ services:
       - app
       - db
 
+  # Contenedor para el servidor de desarrollo de Vite
+  # Compila y sirve los assets de frontend (JS, CSS) con hot reload
   vite:
     image: node:20-alpine
     container_name: webrtcapp-vite
@@ -63,6 +69,9 @@ services:
     depends_on:
       - app
 
+  # Servidor web Nginx
+  # Actúa como proxy reverso y sirve archivos estáticos
+  # Puerto principal de la aplicación: http://localhost:8000
   web:
     image: nginx:1.27-alpine
     container_name: webrtcapp-nginx
@@ -76,6 +85,9 @@ services:
     depends_on:
       - app
 
+  # Base de datos MySQL
+  # Almacena todos los datos de la aplicación
+  # Puerto externo: 3307 (para evitar conflictos con MySQL local)
   db:
     image: mysql:8.0
     container_name: webrtcapp-mysql
@@ -97,11 +109,30 @@ services:
       retries: 10
       start_period: 10s
 
+  # Servidor de correo para desarrollo
+  # Captura todos los emails enviados por la aplicación
+  # Interfaz web: http://localhost:8025
   mailhog:
     image: mailhog/mailhog:latest
     container_name: webrtcapp-mailhog
     ports:
       - "8025:8025"
+  
+  # Interfaz web para administrar la base de datos MySQL
+  # Permite ver tablas, ejecutar queries y generar diagramas ER
+  # Acceso: http://localhost:8090
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: webrtcapp-phpmyadmin
+    environment:
+      PMA_HOST: db
+      PMA_USER: laravel
+      PMA_PASSWORD: secret
+    ports:
+      - "8090:80"
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
   db_data:

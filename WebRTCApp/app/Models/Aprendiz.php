@@ -25,6 +25,7 @@ class Aprendiz extends Model
     protected $fillable = [
         'semestre',
         'intereses',
+        'objetivos',
         'user_id',
     ];
 
@@ -44,6 +45,14 @@ class Aprendiz extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * The areas of interest that belong to the student.
+     */
+    public function areasInteres()
+    {
+        return $this->belongsToMany(AreaInteres::class, 'aprendiz_area_interes');
     }
 
 }
