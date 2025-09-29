@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Models\Aprendiz;
+use App\Models\AreaInteres;
 
 class ProfileController extends Controller
 {
@@ -47,6 +49,47 @@ class ProfileController extends Controller
         $request->user()->save();
 
         return Redirect::route('profile.edit');
+    }
+
+    public function getAreasInteres()
+    {
+        $areas = AreaInteres::all(['id', 'nombre', 'descripcion']);
+    
+        return response()->json([
+            'success' => true,
+            'data' => $areas
+        ]);
+    }
+
+
+    /**
+     * Update the aprendiz profile information.
+     */
+    public function updateAprendizProfile(Request $request)
+    {
+        // Validación
+        $validated = $request->validate([
+            'semestre' => 'required|integer|min:1|max:10',
+            'objetivos' => 'nullable|string|max:1000',
+            'areas_interes' => 'required|array|min:1',
+            'areas_interes.*' => 'exists:areas_interes,id'
+        ]);
+
+        // Obtener o crear perfil de aprendiz
+        $aprendiz = Auth::user()->aprendiz ?? new Aprendiz(['user_id' => Auth::id()]);
+        
+        // Actualizar datos
+        $aprendiz->fill($validated);
+        $aprendiz->save();
+        
+        // Sincronizar áreas de interés (many-to-many)
+        $aprendiz->areasInteres()->sync($validated['areas_interes']);
+        
+        // Retornar perfil completo con relaciones
+        return response()->json([
+            'success' => true,
+            'data' => $aprendiz->load(['user', 'areasInteres'])
+        ]);
     }
 
     /**

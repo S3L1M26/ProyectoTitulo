@@ -167,7 +167,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                 href={route(redirectTo)}
                                 active={route().current(redirectTo)}
                             >
-                                Dashboard
+                                Panel de Usuario
                             </ResponsiveNavLink>
                         </div>
                     )}
