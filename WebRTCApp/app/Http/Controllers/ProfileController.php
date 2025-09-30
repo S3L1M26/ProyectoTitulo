@@ -28,6 +28,11 @@ class ProfileController extends Controller
         $user = Auth::user();
         $sip_account = SipAccount::with('user')->where('user_id', $user->id)->first();
 
+        // Cargar datos del aprendiz si es estudiante
+        if ($user->role === 'student') {
+            $user->load(['aprendiz.areasInteres']);
+        }
+
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
@@ -55,17 +60,14 @@ class ProfileController extends Controller
     {
         $areas = AreaInteres::all(['id', 'nombre', 'descripcion']);
     
-        return response()->json([
-            'success' => true,
-            'data' => $areas
-        ]);
+        return response()->json($areas);
     }
 
 
     /**
      * Update the aprendiz profile information.
      */
-    public function updateAprendizProfile(Request $request)
+    public function updateAprendizProfile(Request $request): RedirectResponse
     {
         // Validación
         $validated = $request->validate([
@@ -85,11 +87,7 @@ class ProfileController extends Controller
         // Sincronizar áreas de interés (many-to-many)
         $aprendiz->areasInteres()->sync($validated['areas_interes']);
         
-        // Retornar perfil completo con relaciones
-        return response()->json([
-            'success' => true,
-            'data' => $aprendiz->load(['user', 'areasInteres'])
-        ]);
+        return Redirect::route('profile.edit');
     }
 
     /**

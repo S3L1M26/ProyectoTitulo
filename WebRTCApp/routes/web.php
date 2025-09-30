@@ -44,11 +44,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     // Rutas para perfil de aprendiz
-    Route::put('/profile/aprendiz', [ProfileController::class, 'updateAprendizProfile'])
-        ->name('profile.aprendiz.update');
+    Route::patch('/profile/aprendiz', [ProfileController::class, 'updateAprendizProfile'])
+        ->name('profile.update-aprendiz');
     
-    Route::get('/areas-interes', [ProfileController::class, 'getAreasInteres'])
-        ->name('areas-interes.index');
+    Route::get('/api/areas-interes', [ProfileController::class, 'getAreasInteres'])
+        ->name('api.areas-interes');
 });
 
 require __DIR__.'/auth.php';

@@ -12,21 +12,7 @@ export default function Register({ role }) {
         password: '',
         password_confirmation: '',
         role: role,
-        // Campos extra
-        semestre: '',
-        intereses: [],
-        experiencia: '',
-        especialidad: '',
-        disponibilidad: '',
     });
-
-    const interesesOptions = [
-        'Programación',
-        'Diseño',
-        'Bases de Datos',
-        'Redes',
-        'Inteligencia Artificial',
-    ];
 
     const submit = (e) => {
         e.preventDefault();
@@ -110,111 +96,6 @@ export default function Register({ role }) {
                     </div>
                     <InputError message={errors.email} className="mt-1 text-red-600 text-sm" />
                 </div>
-                {/* Campos dinámicos por rol */}
-                {role === 'student' && (
-                    <>
-                        {/* Semestre */}
-                        <div>
-                            <InputLabel htmlFor="semestre" value="Semestre" />
-                            <div className="flex items-center border border-gray-300 rounded-md px-3 py-2">
-                                <span className="material-icons text-gray-500 mr-2">school</span>
-                                <select
-                                    id="semestre"
-                                    name="semestre"
-                                    value={data.semestre}
-                                    onChange={(e) => setData('semestre', e.target.value)}
-                                    className="w-full focus:outline-none bg-transparent"
-                                    required
-                                >
-                                    <option value="">Selecciona tu semestre</option>
-                                    {[...Array(10)].map((_, i) => (
-                                        <option key={i + 1} value={i + 1}>
-                                            Semestre {i + 1}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <InputError message={errors.semestre} className="mt-1 text-red-600 text-sm" />
-                        </div>
-                        {/* Intereses */}
-                        <div>
-                            <InputLabel htmlFor="intereses" value="Áreas de Interés" />
-                            <div className="flex flex-wrap gap-2 mt-1">
-                                {interesesOptions.map((option) => (
-                                    <label key={option} className="flex items-center text-sm">
-                                        <input
-                                            type="checkbox"
-                                            value={option}
-                                            checked={data.intereses.includes(option)}
-                                            onChange={(e) => {
-                                                const checked = e.target.checked;
-                                                setData('intereses', checked
-                                                    ? [...data.intereses, option]
-                                                    : data.intereses.filter((i) => i !== option)
-                                                );
-                                            }}
-                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                        />
-                                        <span className="ml-1">{option}</span>
-                                    </label>
-                                ))}
-                            </div>
-                            <InputError message={errors.intereses} className="mt-1 text-red-600 text-sm" />
-                        </div>
-                    </>
-                )}
-                {role === 'mentor' && (
-                    <>
-                        {/* Experiencia */}
-                        <div>
-                            <InputLabel htmlFor="experiencia" value="Experiencia" />
-                            <div className="flex items-center border border-gray-300 rounded-md px-3 py-2">
-                                <span className="material-icons text-gray-500 mr-2">work_outline</span>
-                                <TextInput
-                                    id="experiencia"
-                                    name="experiencia"
-                                    value={data.experiencia}
-                                    className="w-full focus:outline-none"
-                                    onChange={(e) => setData('experiencia', e.target.value)}
-                                    required
-                                />
-                            </div>
-                            <InputError message={errors.experiencia} className="mt-1 text-red-600 text-sm" />
-                        </div>
-                        {/* Especialidad */}
-                        <div>
-                            <InputLabel htmlFor="especialidad" value="Especialidad" />
-                            <div className="flex items-center border border-gray-300 rounded-md px-3 py-2">
-                                <span className="material-icons text-gray-500 mr-2">star_outline</span>
-                                <TextInput
-                                    id="especialidad"
-                                    name="especialidad"
-                                    value={data.especialidad}
-                                    className="w-full focus:outline-none"
-                                    onChange={(e) => setData('especialidad', e.target.value)}
-                                    required
-                                />
-                            </div>
-                            <InputError message={errors.especialidad} className="mt-1 text-red-600 text-sm" />
-                        </div>
-                        {/* Disponibilidad */}
-                        <div>
-                            <InputLabel htmlFor="disponibilidad" value="Disponibilidad" />
-                            <div className="flex items-center border border-gray-300 rounded-md px-3 py-2">
-                                <span className="material-icons text-gray-500 mr-2">schedule</span>
-                                <TextInput
-                                    id="disponibilidad"
-                                    name="disponibilidad"
-                                    value={data.disponibilidad}
-                                    className="w-full focus:outline-none"
-                                    onChange={(e) => setData('disponibilidad', e.target.value)}
-                                    required
-                                />
-                            </div>
-                            <InputError message={errors.disponibilidad} className="mt-1 text-red-600 text-sm" />
-                        </div>
-                    </>
-                )}
                 {/* Contraseña */}
                 <div>
                     <InputLabel htmlFor="password" value="Contraseña" />
