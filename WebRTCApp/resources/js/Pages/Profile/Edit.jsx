@@ -5,6 +5,7 @@ import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateSipPasswordForm from './Partials/UpdateSipPasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
 import UpdateAprendizProfile from './Partials/UpdateAprendizProfile';
+import ProfileProgress from '@/Components/ProfileProgress';
 
 export default function Edit({ mustVerifyEmail, status, sip_account }) {
     const { auth } = usePage().props;
@@ -13,7 +14,7 @@ export default function Edit({ mustVerifyEmail, status, sip_account }) {
         <AuthenticatedLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Profile
+                    Perfil
                 </h2>
             }
         >
@@ -21,6 +22,11 @@ export default function Edit({ mustVerifyEmail, status, sip_account }) {
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
+                    {/* Progreso del perfil para estudiantes */}
+                    {user.role === 'student' && (
+                        <ProfileProgress />
+                    )}
+
                     <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
                         <UpdateProfileInformationForm
                             mustVerifyEmail={mustVerifyEmail}

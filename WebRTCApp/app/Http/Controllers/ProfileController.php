@@ -25,7 +25,8 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
-        $user = Auth::user();
+        // Refrescar el usuario desde la base de datos para obtener los datos más actualizados
+        $user = Auth::user()->fresh();
         $sip_account = SipAccount::with('user')->where('user_id', $user->id)->first();
 
         // Cargar datos del aprendiz si es estudiante
@@ -87,7 +88,7 @@ class ProfileController extends Controller
         // Sincronizar áreas de interés (many-to-many)
         $aprendiz->areasInteres()->sync($validated['areas_interes']);
         
-        return Redirect::route('profile.edit');
+        return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
 
     /**

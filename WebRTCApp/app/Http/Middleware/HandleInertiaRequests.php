@@ -29,10 +29,17 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+        
+        // Cargar relaciones del aprendiz si es estudiante para el cálculo de progreso
+        if ($user && $user->role === 'student') {
+            $user->load(['aprendiz.areasInteres']);
+        }
+
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user,
             ],
         ];
     }

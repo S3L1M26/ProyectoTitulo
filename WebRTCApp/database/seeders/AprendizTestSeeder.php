@@ -44,7 +44,29 @@ class AprendizTestSeeder extends Seeder
             $aprendiz->areasInteres()->sync($areasIds);
         }
 
-        echo "Usuario estudiante de prueba creado: {$student->email}\n";
-        echo "Contraseña: password\n";
+        // Crear un segundo usuario con perfil incompleto para testing
+        $incompleteStudent = User::updateOrCreate(
+            ['email' => 'estudiante.incompleto@example.com'],
+            [
+                'name' => 'Estudiante Incompleto',
+                'password' => Hash::make('password'),
+                'role' => 'student',
+                'email_verified_at' => now(),
+            ]
+        );
+
+        // Crear perfil parcialmente completo (solo semestre)
+        Aprendiz::updateOrCreate(
+            ['user_id' => $incompleteStudent->id],
+            [
+                'semestre' => 3,
+                'objetivos' => '', // Sin objetivos
+            ]
+        );
+        // Sin áreas de interés
+
+        echo "Usuario estudiante completo creado: {$student->email}\n";
+        echo "Usuario estudiante incompleto creado: {$incompleteStudent->email}\n";
+        echo "Contraseña para ambos: password\n";
     }
 }
