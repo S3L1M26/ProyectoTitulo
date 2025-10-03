@@ -17,8 +17,10 @@ class Mentor extends Model
      */
     protected $fillable = [
         'experiencia',
-        'especialidad',
+        'biografia',
+        'años_experiencia',
         'disponibilidad',
+        'disponibilidad_detalle',
         'calificacionPromedio',
         'user_id',
     ];
@@ -30,6 +32,7 @@ class Mentor extends Model
      */
     protected $casts = [
         'calificacionPromedio' => 'float',
+        'años_experiencia' => 'integer',
     ];
 
     /**
@@ -38,6 +41,14 @@ class Mentor extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * The areas of interest that belong to the mentor.
+     */
+    public function areasInteres()
+    {
+        return $this->belongsToMany(AreaInteres::class, 'mentor_area_interes');
     }
 
     /**

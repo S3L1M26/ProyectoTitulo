@@ -109,12 +109,12 @@ class ProfileCompletenessMiddleware
     private function calculateMentorCompleteness($user): array
     {
         $completedFields = 0;
-        $totalFields = 4; // experiencia, especialidades, disponibilidad, descripcion
+        $totalFields = 5; // experiencia, biografia, años_experiencia, disponibilidad, areasInteres
         $missingFields = [];
 
         // Cargar relación solo si es necesario
         if (!$user->relationLoaded('mentor')) {
-            $user->load('mentor');
+            $user->load('mentor.areasInteres');
         }
 
         $mentor = $user->mentor;
@@ -126,11 +126,18 @@ class ProfileCompletenessMiddleware
             $missingFields[] = 'Experiencia profesional';
         }
 
-        // Verificar especialidades
-        if ($mentor && $mentor->especialidades && trim($mentor->especialidades) !== '') {
+        // Verificar biografía
+        if ($mentor && $mentor->biografia && trim($mentor->biografia) !== '') {
             $completedFields++;
         } else {
-            $missingFields[] = 'Especialidades';
+            $missingFields[] = 'Biografía';
+        }
+
+        // Verificar años de experiencia
+        if ($mentor && $mentor->años_experiencia && $mentor->años_experiencia > 0) {
+            $completedFields++;
+        } else {
+            $missingFields[] = 'Años de experiencia';
         }
 
         // Verificar disponibilidad
@@ -140,11 +147,11 @@ class ProfileCompletenessMiddleware
             $missingFields[] = 'Disponibilidad';
         }
 
-        // Verificar descripción del perfil
-        if ($mentor && $mentor->descripcion && trim($mentor->descripcion) !== '') {
+        // Verificar áreas de especialidad (relación many-to-many)
+        if ($mentor && $mentor->areasInteres && $mentor->areasInteres->count() > 0) {
             $completedFields++;
         } else {
-            $missingFields[] = 'Descripción del perfil';
+            $missingFields[] = 'Áreas de especialidad';
         }
 
         $percentage = round(($completedFields / $totalFields) * 100);

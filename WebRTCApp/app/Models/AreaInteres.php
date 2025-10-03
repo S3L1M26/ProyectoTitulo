@@ -29,4 +29,12 @@ class AreaInteres extends Model
     {
         return $this->belongsToMany(Aprendiz::class, 'aprendiz_area_interes');
     }
+
+    /**
+     * The mentors that belong to this area of interest.
+     */
+    public function mentores()
+    {
+        return $this->belongsToMany(Mentor::class, 'mentor_area_interes');
+    }
 }

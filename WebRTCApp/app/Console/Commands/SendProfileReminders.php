@@ -139,19 +139,20 @@ class SendProfileReminders extends Command
     private function calculateMentorCompleteness($user): array
     {
         $completedFields = 0;
-        $totalFields = 4;
+        $totalFields = 5; // experiencia, biografia, años_experiencia, disponibilidad, areasInteres
         $missingFields = [];
 
         // Verificar si existe el perfil de mentor
         if (!$user->mentor) {
             return [
                 'percentage' => 0,
-                'missing_fields' => ['Experiencia profesional', 'Especialidades', 'Disponibilidad', 'Descripción del perfil'],
+                'missing_fields' => ['Experiencia profesional', 'Biografía', 'Años de experiencia', 'Disponibilidad', 'Áreas de especialidad'],
                 'needs_reminder' => true
             ];
         }
 
         $mentor = $user->mentor;
+        $mentor->load('areasInteres'); // Cargar relación
 
         // Verificar experiencia
         if ($mentor->experiencia && !empty(trim($mentor->experiencia))) {
@@ -160,11 +161,18 @@ class SendProfileReminders extends Command
             $missingFields[] = 'Experiencia profesional';
         }
 
-        // Verificar especialidades
-        if ($mentor->especialidades && !empty(trim($mentor->especialidades))) {
+        // Verificar biografía
+        if ($mentor->biografia && !empty(trim($mentor->biografia))) {
             $completedFields++;
         } else {
-            $missingFields[] = 'Especialidades';
+            $missingFields[] = 'Biografía';
+        }
+
+        // Verificar años de experiencia
+        if ($mentor->años_experiencia && $mentor->años_experiencia > 0) {
+            $completedFields++;
+        } else {
+            $missingFields[] = 'Años de experiencia';
         }
 
         // Verificar disponibilidad
@@ -174,11 +182,11 @@ class SendProfileReminders extends Command
             $missingFields[] = 'Disponibilidad';
         }
 
-        // Verificar descripción
-        if ($mentor->descripcion && !empty(trim($mentor->descripcion))) {
+        // Verificar áreas de especialidad (relación many-to-many)
+        if ($mentor->areasInteres && $mentor->areasInteres->count() > 0) {
             $completedFields++;
         } else {
-            $missingFields[] = 'Descripción del perfil';
+            $missingFields[] = 'Áreas de especialidad';
         }
 
         $percentage = round(($completedFields / $totalFields) * 100);

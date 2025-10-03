@@ -78,6 +78,30 @@ class AprendizTestSeeder extends Seeder
             ]
         );
 
+        // Crear perfil completo de mentor
+        $mentorProfile = \App\Models\Mentor::updateOrCreate(
+            ['user_id' => $mentor->id],
+            [
+                'experiencia' => 'Tengo más de 8 años de experiencia en desarrollo de software, especializado en aplicaciones web modernas y arquitecturas escalables. He trabajado en empresas tecnológicas líderes y he mentoreado a más de 20 desarrolladores junior.',
+                'biografia' => 'Soy un desarrollador full-stack apasionado por la enseñanza y el crecimiento profesional. Mi objetivo es ayudar a los nuevos desarrolladores a acelerar su carrera profesional compartiendo conocimientos prácticos y mejores prácticas de la industria.',
+                'años_experiencia' => 8,
+                'disponibilidad' => 'Lunes a Viernes: 18:00-21:00, Sábados: 09:00-12:00',
+                'disponibilidad_detalle' => 'Prefiero sesiones de 1-2 horas por videollamada. Flexible con horarios para estudiantes que trabajan. Disponible para consultas urgentes vía mensaje.',
+                'calificacionPromedio' => 4.8,
+            ]
+        );
+
+        // Asociar áreas de interés al mentor completo
+        $mentorAreasIds = AreaInteres::whereIn('nombre', [
+            'Desarrollo Web Frontend',
+            'Desarrollo Web Backend',
+            'DevOps'
+        ])->pluck('id')->toArray();
+        
+        if (!empty($mentorAreasIds)) {
+            $mentorProfile->areasInteres()->sync($mentorAreasIds);
+        }
+
         $incompleteMentor = User::updateOrCreate(
             ['email' => 'mentor.incompleto@example.com'],
             [
@@ -85,6 +109,16 @@ class AprendizTestSeeder extends Seeder
                 'password' => Hash::make('password'),
                 'role' => 'mentor',
                 'email_verified_at' => now(),
+            ]
+        );
+
+        // Crear perfil parcialmente completo de mentor (solo algunos campos)
+        \App\Models\Mentor::updateOrCreate(
+            ['user_id' => $incompleteMentor->id],
+            [
+                'experiencia' => 'Desarrollador con experiencia en JavaScript.',
+                'años_experiencia' => 3,
+                // Sin biografia, disponibilidad, disponibilidad_detalle, ni áreas de interés
             ]
         );
 
