@@ -31,9 +31,13 @@ class HandleInertiaRequests extends Middleware
     {
         $user = $request->user();
         
-        // Cargar relaciones del aprendiz si es estudiante para el cálculo de progreso
-        if ($user && $user->role === 'student') {
-            $user->load(['aprendiz.areasInteres']);
+        // Cargar relaciones según el rol para el cálculo de progreso
+        if ($user) {
+            if ($user->role === 'student') {
+                $user->load(['aprendiz.areasInteres']);
+            } elseif ($user->role === 'mentor') {
+                $user->load(['mentor']);
+            }
         }
 
         return [

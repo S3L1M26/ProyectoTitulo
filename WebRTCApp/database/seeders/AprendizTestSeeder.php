@@ -65,8 +65,31 @@ class AprendizTestSeeder extends Seeder
         );
         // Sin áreas de interés
 
+        // Crear usuarios mentores de prueba
+        $mentor = User::updateOrCreate(
+            ['email' => 'mentor.completo@example.com'],
+            [
+                'name' => 'Mentor Completo',
+                'password' => Hash::make('password'),
+                'role' => 'mentor',
+                'email_verified_at' => now(),
+            ]
+        );
+
+        $incompleteMentor = User::updateOrCreate(
+            ['email' => 'mentor.incompleto@example.com'],
+            [
+                'name' => 'Mentor Incompleto',
+                'password' => Hash::make('password'),
+                'role' => 'mentor',
+                'email_verified_at' => now(),
+            ]
+        );
+
         echo "Usuario estudiante completo creado: {$student->email}\n";
         echo "Usuario estudiante incompleto creado: {$incompleteStudent->email}\n";
-        echo "Contraseña para ambos: password\n";
+        echo "Usuario mentor completo creado: {$mentor->email}\n";
+        echo "Usuario mentor incompleto creado: {$incompleteMentor->email}\n";
+        echo "Contraseña para todos: password\n";
     }
 }

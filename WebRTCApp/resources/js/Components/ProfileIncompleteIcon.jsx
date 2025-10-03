@@ -4,22 +4,40 @@ export default function ProfileIncompleteIcon({ className = '' }) {
     const { auth } = usePage().props;
     const user = auth.user;
 
-    // Solo para estudiantes
-    if (user.role !== 'student') return null;
+    // Para estudiantes y mentores
+    if (user.role !== 'student' && user.role !== 'mentor') return null;
 
     // Verificar si el perfil está incompleto
     const isProfileIncomplete = () => {
+        if (user.role === 'student') {
+            return isStudentProfileIncomplete();
+        } else if (user.role === 'mentor') {
+            return isMentorProfileIncomplete();
+        }
+        return false;
+    };
+
+    const isStudentProfileIncomplete = () => {
         const aprendiz = user.aprendiz;
-        
-        // Si no hay aprendiz creado, el perfil está incompleto
         if (!aprendiz) return true;
         
-        // Verificar campos requeridos
         const hasSemestre = aprendiz.semestre && aprendiz.semestre > 0;
         const hasAreas = aprendiz.areas_interes && Array.isArray(aprendiz.areas_interes) && aprendiz.areas_interes.length > 0;
         const hasObjetivos = aprendiz.objetivos && typeof aprendiz.objetivos === 'string' && aprendiz.objetivos.trim().length > 0;
 
         return !hasSemestre || !hasAreas || !hasObjetivos;
+    };
+
+    const isMentorProfileIncomplete = () => {
+        const mentor = user.mentor;
+        if (!mentor) return true;
+        
+        const hasExperiencia = mentor.experiencia && mentor.experiencia.trim().length > 0;
+        const hasEspecialidades = mentor.especialidades && mentor.especialidades.trim().length > 0;
+        const hasDisponibilidad = mentor.disponibilidad && mentor.disponibilidad.trim().length > 0;
+        const hasDescripcion = mentor.descripcion && mentor.descripcion.trim().length > 0;
+
+        return !hasExperiencia || !hasEspecialidades || !hasDisponibilidad || !hasDescripcion;
     };
 
     // No mostrar si el perfil está completo

@@ -17,10 +17,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
-        $middleware->alias([
+                $middleware->alias([
             'userMiddleware' => UserMiddleware::class,
             'adminMiddleware' => AdminMiddleware::class,
-            'role' => \App\Http\Middleware\CheckRole::class,
+            'profileCompleteness' => \App\Http\Middleware\ProfileCompletenessMiddleware::class,
+            'role' => \App\Http\Middleware\RoleMiddleware::class,
         ]);
 
         //

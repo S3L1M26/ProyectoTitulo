@@ -4,31 +4,35 @@ export default function ProfileProgress({ className = '' }) {
     const { auth } = usePage().props;
     const user = auth.user;
 
-    // Calcular progreso del perfil
+    // Calcular progreso del perfil para ambos roles
     const calculateProgress = () => {
+        if (user.role === 'student') {
+            return calculateStudentProgress();
+        } else if (user.role === 'mentor') {
+            return calculateMentorProgress();
+        }
+        
+        return { percentage: 100, missingFields: [] };
+    };
+
+    const calculateStudentProgress = () => {
         let completedFields = 0;
-        let totalFields = 3; // semestre, areas_interes, objetivos
-
-        if (user.role !== 'student') return { percentage: 100, missingFields: [] };
-
-        const aprendiz = user.aprendiz;
+        let totalFields = 3;
         const missingFields = [];
+        const aprendiz = user.aprendiz;
 
-        // Verificar semestre
         if (aprendiz?.semestre && aprendiz.semestre > 0) {
             completedFields++;
         } else {
             missingFields.push('Semestre');
         }
 
-        // Verificar áreas de interés
         if (aprendiz?.areas_interes && Array.isArray(aprendiz.areas_interes) && aprendiz.areas_interes.length > 0) {
             completedFields++;
         } else {
             missingFields.push('Áreas de interés');
         }
 
-        // Verificar objetivos
         if (aprendiz?.objetivos && typeof aprendiz.objetivos === 'string' && aprendiz.objetivos.trim().length > 0) {
             completedFields++;
         } else {
@@ -36,7 +40,40 @@ export default function ProfileProgress({ className = '' }) {
         }
 
         const percentage = Math.round((completedFields / totalFields) * 100);
-        
+        return { percentage, missingFields, completedFields, totalFields };
+    };
+
+    const calculateMentorProgress = () => {
+        let completedFields = 0;
+        let totalFields = 4;
+        const missingFields = [];
+        const mentor = user.mentor;
+
+        if (mentor?.experiencia && mentor.experiencia.trim().length > 0) {
+            completedFields++;
+        } else {
+            missingFields.push('Experiencia profesional');
+        }
+
+        if (mentor?.especialidades && mentor.especialidades.trim().length > 0) {
+            completedFields++;
+        } else {
+            missingFields.push('Especialidades');
+        }
+
+        if (mentor?.disponibilidad && mentor.disponibilidad.trim().length > 0) {
+            completedFields++;
+        } else {
+            missingFields.push('Disponibilidad');
+        }
+
+        if (mentor?.descripcion && mentor.descripcion.trim().length > 0) {
+            completedFields++;
+        } else {
+            missingFields.push('Descripción del perfil');
+        }
+
+        const percentage = Math.round((completedFields / totalFields) * 100);
         return { percentage, missingFields, completedFields, totalFields };
     };
 
@@ -86,7 +123,10 @@ export default function ProfileProgress({ className = '' }) {
             {/* CTA */}
             <div className="text-center">
                 <p className="text-xs text-blue-600">
-                    Completa tu perfil para recibir mejores recomendaciones de mentores
+                    {user.role === 'student' 
+                        ? 'Completa tu perfil para recibir mejores recomendaciones de mentores'
+                        : 'Completa tu perfil para atraer más estudiantes'
+                    }
                 </p>
             </div>
         </div>

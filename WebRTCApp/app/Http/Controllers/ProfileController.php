@@ -29,9 +29,11 @@ class ProfileController extends Controller
         $user = Auth::user()->fresh();
         $sip_account = SipAccount::with('user')->where('user_id', $user->id)->first();
 
-        // Cargar datos del aprendiz si es estudiante
+        // Cargar datos del perfil según el rol
         if ($user->role === 'student') {
             $user->load(['aprendiz.areasInteres']);
+        } elseif ($user->role === 'mentor') {
+            $user->load(['mentor']);
         }
 
         return Inertia::render('Profile/Edit', [

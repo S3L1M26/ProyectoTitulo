@@ -21,7 +21,7 @@ services:
     environment:
       APP_ENV: local
       APP_DEBUG: "true"
-      APP_URL: ${APP_URL}
+      APP_URL: "http://localhost:8000"
       LOG_CHANNEL: stack
       DB_HOST: db
       DB_DATABASE: laravel

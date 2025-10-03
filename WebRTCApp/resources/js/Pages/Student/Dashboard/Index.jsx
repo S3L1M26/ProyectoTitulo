@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Dialer from '@/Components/Dialer';
+import ProfileReminderNotification from '@/Components/ProfileReminderNotification';
 import { Head } from '@inertiajs/react';
 
 export default function Dashboard({ sip_account, password }) {
@@ -17,7 +18,10 @@ export default function Dashboard({ sip_account, password }) {
             <Head title="Panel de Control" />
 
             <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8 space-y-6">
+                    {/* Notificación de perfil incompleto */}
+                    <ProfileReminderNotification />
+                    
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <div className="p-6 text-gray-900">
                             { sip_account ? (
