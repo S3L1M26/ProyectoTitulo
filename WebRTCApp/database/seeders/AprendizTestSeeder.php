@@ -35,10 +35,12 @@ class AprendizTestSeeder extends Seeder
             ]
         );
 
-        // Asociar algunas áreas de interés
-        $areasIds = AreaInteres::whereIn('nombre', ['Programación', 'Bases de Datos', 'Desarrollo Web'])
-            ->pluck('id')
-            ->toArray();
+        // Asociar algunas áreas de interés (usando nombres correctos)
+        $areasIds = AreaInteres::whereIn('nombre', [
+            'Desarrollo Web Frontend', 
+            'Desarrollo Web Backend', 
+            'Análisis de Datos'
+        ])->pluck('id')->toArray();
             
         if (!empty($areasIds)) {
             $aprendiz->areasInteres()->sync($areasIds);

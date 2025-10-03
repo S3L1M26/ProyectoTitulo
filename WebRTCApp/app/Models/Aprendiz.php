@@ -24,7 +24,6 @@ class Aprendiz extends Model
      */
     protected $fillable = [
         'semestre',
-        'intereses',
         'objetivos',
         'user_id',
     ];
@@ -35,7 +34,6 @@ class Aprendiz extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'intereses' => 'array',
         'semestre' => 'integer',
     ];
 
