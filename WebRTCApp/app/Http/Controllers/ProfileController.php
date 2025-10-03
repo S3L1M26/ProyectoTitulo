@@ -17,6 +17,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use App\Models\Aprendiz;
 use App\Models\AreaInteres;
+use App\Models\Mentor;
 
 class ProfileController extends Controller
 {
@@ -33,7 +34,7 @@ class ProfileController extends Controller
         if ($user->role === 'student') {
             $user->load(['aprendiz.areasInteres']);
         } elseif ($user->role === 'mentor') {
-            $user->load(['mentor']);
+            $user->load(['mentor.areasInteres']);
         }
 
         return Inertia::render('Profile/Edit', [
@@ -91,6 +92,138 @@ class ProfileController extends Controller
         $aprendiz->areasInteres()->sync($validated['areas_interes']);
         
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
+    }
+
+    /**
+     * Update the mentor profile information.
+     */
+    public function updateMentorProfile(Request $request): RedirectResponse
+    {
+        // Validación compleja según criterios de aceptación
+        $validated = $request->validate([
+            'experiencia' => [
+                'required',
+                'string',
+                'min:50',
+                'max:2000',
+                function ($attribute, $value, $fail) {
+                    if (str_word_count($value) < 10) {
+                        $fail('La experiencia debe contener al menos 10 palabras descriptivas.');
+                    }
+                }
+            ],
+            'biografia' => [
+                'required',
+                'string',
+                'min:100',
+                'max:1000',
+            ],
+            'años_experiencia' => [
+                'required',
+                'integer',
+                'min:1',
+                'max:50',
+                function ($attribute, $value, $fail) use ($request) {
+                    // Validar coherencia entre años y descripción
+                    $experienciaText = $request->input('experiencia', '');
+                    if ($value >= 10 && !preg_match('/senior|líder|lead|manager|director/i', $experienciaText)) {
+                        $fail('Con ' . $value . ' años de experiencia se esperan roles senior o de liderazgo en la descripción.');
+                    }
+                }
+            ],
+            'disponibilidad' => 'required|string|min:10|max:200',
+            'disponibilidad_detalle' => 'nullable|string|max:500',
+            'areas_especialidad' => [
+                'required',
+                'array',
+                'min:1',
+                'max:5'
+            ],
+            'areas_especialidad.*' => 'exists:areas_interes,id'
+        ], [
+            // Mensajes personalizados
+            'experiencia.min' => 'La descripción de experiencia debe ser más detallada (mínimo 50 caracteres).',
+            'biografia.min' => 'La biografía debe ser más completa (mínimo 100 caracteres).',
+            'años_experiencia.min' => 'Debe tener al menos 1 año de experiencia.',
+            'años_experiencia.max' => 'El máximo permitido es 50 años de experiencia.',
+            'areas_especialidad.min' => 'Debe seleccionar al menos 1 área de especialidad.',
+            'areas_especialidad.max' => 'Máximo 5 áreas de especialidad permitidas.',
+        ]);
+
+        // Obtener o crear perfil de mentor
+        $mentor = Auth::user()->mentor ?? new \App\Models\Mentor(['user_id' => Auth::id()]);
+        
+        // Actualizar datos (excluyendo areas_especialidad que se maneja por separado)
+        $mentorData = collect($validated)->except('areas_especialidad')->toArray();
+        $mentor->fill($mentorData);
+        $mentor->save();
+        
+        // Sincronizar áreas de especialidad (many-to-many)
+        $mentor->areasInteres()->sync($validated['areas_especialidad']);
+        
+        return Redirect::route('profile.edit')->with('status', 'mentor-profile-updated');
+    }
+
+    /**
+     * Toggle mentor availability status.
+     */
+    public function toggleMentorDisponibilidad(Request $request)
+    {
+        $mentor = Auth::user()->mentor;
+        
+        if (!$mentor) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Perfil de mentor no encontrado.'
+            ], 404);
+        }
+
+        // Validar que tiene información mínima para estar disponible
+        if ($request->input('disponible', true)) {
+            $missingFields = [];
+            
+            if (!$mentor->experiencia || strlen(trim($mentor->experiencia)) < 50) {
+                $missingFields[] = 'experiencia detallada';
+            }
+            if (!$mentor->biografia || strlen(trim($mentor->biografia)) < 100) {
+                $missingFields[] = 'biografía completa';
+            }
+            if (!$mentor->años_experiencia || $mentor->años_experiencia < 1) {
+                $missingFields[] = 'años de experiencia';
+            }
+            if (!$mentor->areasInteres || $mentor->areasInteres->count() === 0) {
+                $missingFields[] = 'áreas de especialidad';
+            }
+
+            if (!empty($missingFields)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Para estar disponible debe completar: ' . implode(', ', $missingFields) . '.',
+                    'missing_fields' => $missingFields
+                ], 422);
+            }
+        }
+
+        // Toggle del estado de disponibilidad
+        $disponible = $request->input('disponible', !empty($mentor->disponibilidad));
+        
+        if ($disponible) {
+            // Si no tiene disponibilidad básica, establecer una por defecto
+            if (!$mentor->disponibilidad) {
+                $mentor->disponibilidad = 'Por definir - actualizar perfil';
+            }
+        } else {
+            // Mantener la información pero marcar como no disponible temporalmente
+            // Esto se podría manejar con un campo booleano adicional en el futuro
+        }
+
+        $mentor->save();
+
+        return response()->json([
+            'success' => true,
+            'disponible' => $disponible,
+            'message' => $disponible ? 'Ahora estás disponible para mentoría.' : 'Has pausado tu disponibilidad.'
+        ]);
     }
 
     /**

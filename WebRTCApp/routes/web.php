@@ -47,6 +47,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/profile/aprendiz', [ProfileController::class, 'updateAprendizProfile'])
         ->name('profile.update-aprendiz');
     
+    // Rutas para perfil de mentor
+    Route::patch('/profile/mentor', [ProfileController::class, 'updateMentorProfile'])
+        ->name('profile.update-mentor');
+    
+    Route::post('/profile/mentor/toggle-disponibilidad', [ProfileController::class, 'toggleMentorDisponibilidad'])
+        ->name('profile.mentor.toggle-disponibilidad');
+    
     Route::get('/api/areas-interes', [ProfileController::class, 'getAreasInteres'])
         ->name('api.areas-interes');
 });
