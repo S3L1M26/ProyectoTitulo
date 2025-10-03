@@ -21,6 +21,7 @@ class Mentor extends Model
         'años_experiencia',
         'disponibilidad',
         'disponibilidad_detalle',
+        'disponible_ahora',
         'calificacionPromedio',
         'user_id',
     ];
@@ -32,6 +33,7 @@ class Mentor extends Model
      */
     protected $casts = [
         'calificacionPromedio' => 'float',
+        'disponible_ahora' => 'boolean',
         'años_experiencia' => 'integer',
     ];
 

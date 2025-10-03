@@ -45,7 +45,13 @@ class AuthenticatedSessionController extends Controller
             ]);
         } 
 
-        // Redireccionar según el rol
+        // Verificar si hay una URL de destino específica
+        $intendedUrl = $request->query('intended');
+        if ($intendedUrl) {
+            session(['url.intended' => url($intendedUrl)]);
+        }
+
+        // Redireccionar según el rol o a la URL intendida
         $redirectRoute = match(Auth::user()->role) {
             'mentor' => 'mentor.dashboard',
             'student' => 'student.dashboard',

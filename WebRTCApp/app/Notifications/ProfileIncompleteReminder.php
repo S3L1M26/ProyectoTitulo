@@ -46,7 +46,14 @@ class ProfileIncompleteReminder extends Notification
         if (str_contains($baseUrl, 'devtunnels.ms') || str_contains($baseUrl, 'ngrok')) {
             $baseUrl = 'http://localhost:8000';
         }
-        $profileUrl = $baseUrl . '/profile';
+        
+        // Dirigir al login del rol correcto con intención de ir al perfil
+        $profilePath = '/profile';
+        if ($isStudent) {
+            $profileUrl = $baseUrl . '/login?role=student&intended=' . urlencode($profilePath);
+        } else {
+            $profileUrl = $baseUrl . '/login?role=mentor&intended=' . urlencode($profilePath);
+        }
         
         $message = (new MailMessage)
             ->subject('Completa tu perfil en Connect')

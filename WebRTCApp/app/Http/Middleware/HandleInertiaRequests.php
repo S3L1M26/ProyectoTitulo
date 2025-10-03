@@ -36,7 +36,7 @@ class HandleInertiaRequests extends Middleware
             if ($user->role === 'student') {
                 $user->load(['aprendiz.areasInteres']);
             } elseif ($user->role === 'mentor') {
-                $user->load(['mentor']);
+                $user->load(['mentor.areasInteres']);
             }
         }
 

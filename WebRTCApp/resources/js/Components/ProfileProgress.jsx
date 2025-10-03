@@ -49,28 +49,28 @@ export default function ProfileProgress({ className = '' }) {
         const missingFields = [];
         const mentor = user.mentor;
 
-        if (mentor?.experiencia && mentor.experiencia.trim().length > 0) {
+        if (mentor?.experiencia && mentor.experiencia.trim().length >= 50) {
             completedFields++;
         } else {
-            missingFields.push('Experiencia profesional');
+            missingFields.push('Experiencia profesional detallada');
         }
 
-        if (mentor?.especialidades && mentor.especialidades.trim().length > 0) {
+        if (mentor?.biografia && mentor.biografia.trim().length >= 100) {
             completedFields++;
         } else {
-            missingFields.push('Especialidades');
+            missingFields.push('Biografía personal');
         }
 
-        if (mentor?.disponibilidad && mentor.disponibilidad.trim().length > 0) {
+        if (mentor?.años_experiencia && mentor.años_experiencia > 0) {
             completedFields++;
         } else {
-            missingFields.push('Disponibilidad');
+            missingFields.push('Años de experiencia');
         }
 
-        if (mentor?.descripcion && mentor.descripcion.trim().length > 0) {
+        if (mentor?.areas_interes && Array.isArray(mentor.areas_interes) && mentor.areas_interes.length > 0) {
             completedFields++;
         } else {
-            missingFields.push('Descripción del perfil');
+            missingFields.push('Áreas de especialidad');
         }
 
         const percentage = Math.round((completedFields / totalFields) * 100);

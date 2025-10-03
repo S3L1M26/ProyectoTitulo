@@ -24,10 +24,10 @@ export default function ProfileReminderNotification({ className = '' }) {
             const total = 4;
             const mentor = user.mentor;
 
-            if (mentor?.experiencia && mentor.experiencia.trim().length > 0) completed++;
-            if (mentor?.especialidades && mentor.especialidades.trim().length > 0) completed++;
-            if (mentor?.disponibilidad && mentor.disponibilidad.trim().length > 0) completed++;
-            if (mentor?.descripcion && mentor.descripcion.trim().length > 0) completed++;
+            if (mentor?.experiencia && mentor.experiencia.trim().length >= 50) completed++;
+            if (mentor?.biografia && mentor.biografia.trim().length >= 100) completed++;
+            if (mentor?.años_experiencia && mentor.años_experiencia > 0) completed++;
+            if (mentor?.areas_interes && Array.isArray(mentor.areas_interes) && mentor.areas_interes.length > 0) completed++;
 
             return Math.round((completed / total) * 100);
         }

@@ -32,12 +32,12 @@ export default function ProfileIncompleteIcon({ className = '' }) {
         const mentor = user.mentor;
         if (!mentor) return true;
         
-        const hasExperiencia = mentor.experiencia && mentor.experiencia.trim().length > 0;
-        const hasEspecialidades = mentor.especialidades && mentor.especialidades.trim().length > 0;
-        const hasDisponibilidad = mentor.disponibilidad && mentor.disponibilidad.trim().length > 0;
-        const hasDescripcion = mentor.descripcion && mentor.descripcion.trim().length > 0;
+        const hasExperiencia = mentor.experiencia && mentor.experiencia.trim().length >= 50;
+        const hasBiografia = mentor.biografia && mentor.biografia.trim().length >= 100;
+        const hasAñosExperiencia = mentor.años_experiencia && mentor.años_experiencia > 0;
+        const hasAreas = mentor.areas_interes && Array.isArray(mentor.areas_interes) && mentor.areas_interes.length > 0;
 
-        return !hasExperiencia || !hasEspecialidades || !hasDisponibilidad || !hasDescripcion;
+        return !hasExperiencia || !hasBiografia || !hasAñosExperiencia || !hasAreas;
     };
 
     // No mostrar si el perfil está completo

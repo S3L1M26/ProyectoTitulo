@@ -167,15 +167,14 @@ class ProfileController extends Controller
     /**
      * Toggle mentor availability status.
      */
-    public function toggleMentorDisponibilidad(Request $request)
+    public function toggleMentorDisponibilidad(Request $request): RedirectResponse
     {
         $mentor = Auth::user()->mentor;
         
         if (!$mentor) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Perfil de mentor no encontrado.'
-            ], 404);
+            return Redirect::route('profile.edit')->withErrors([
+                'mentor' => 'Perfil de mentor no encontrado.'
+            ]);
         }
 
         // Validar que tiene información mínima para estar disponible
@@ -196,34 +195,28 @@ class ProfileController extends Controller
             }
 
             if (!empty($missingFields)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Para estar disponible debe completar: ' . implode(', ', $missingFields) . '.',
-                    'missing_fields' => $missingFields
-                ], 422);
+                return Redirect::route('profile.edit')->withErrors([
+                    'disponibilidad' => 'Para estar disponible debe completar: ' . implode(', ', $missingFields) . '.'
+                ]);
             }
         }
 
-        // Toggle del estado de disponibilidad
-        $disponible = $request->input('disponible', !empty($mentor->disponibilidad));
+        // Toggle del estado de disponibilidad  
+        $disponible = $request->input('disponible', false);
         
-        if ($disponible) {
-            // Si no tiene disponibilidad básica, establecer una por defecto
-            if (!$mentor->disponibilidad) {
-                $mentor->disponibilidad = 'Por definir - actualizar perfil';
-            }
-        } else {
-            // Mantener la información pero marcar como no disponible temporalmente
-            // Esto se podría manejar con un campo booleano adicional en el futuro
+        // Actualizar el estado de disponibilidad
+        $mentor->disponible_ahora = $disponible;
+        
+        // Si se activa pero no tiene horarios básicos, establecer mensaje
+        if ($disponible && !$mentor->disponibilidad) {
+            $mentor->disponibilidad = 'Horarios por coordinar';
         }
 
         $mentor->save();
 
-        return response()->json([
-            'success' => true,
-            'disponible' => $disponible,
-            'message' => $disponible ? 'Ahora estás disponible para mentoría.' : 'Has pausado tu disponibilidad.'
-        ]);
+        $message = $disponible ? 'Ahora estás disponible para mentoría.' : 'Has pausado tu disponibilidad.';
+        
+        return Redirect::route('profile.edit')->with('status', $message);
     }
 
     /**

@@ -43,6 +43,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    // Ruta para obtener áreas de interés
+    Route::get('/profile/areas-interes', [ProfileController::class, 'getAreasInteres'])
+        ->name('profile.areas-interes');
+    
     // Rutas para perfil de aprendiz
     Route::patch('/profile/aprendiz', [ProfileController::class, 'updateAprendizProfile'])
         ->name('profile.update-aprendiz');
