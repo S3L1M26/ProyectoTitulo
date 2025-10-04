@@ -23,10 +23,14 @@ class ProfileCompletenessMiddleware
         
         if ($user && in_array($user->role, ['student', 'mentor'])) {
             try {
-                $profileCompleteness = $this->calculateProfileCompleteness($user);
+                // Usar el nuevo método centralizado del modelo
+                $profileCompletenessData = $user->profile_completeness;
                 
-                // Agregar a la sesión para uso posterior
-                session(['profile_completeness' => $profileCompleteness]);
+                // Agregar tanto el porcentaje como los datos completos a la sesión
+                session([
+                    'profile_completeness' => $profileCompletenessData['percentage'],
+                    'profile_completeness_data' => $profileCompletenessData
+                ]);
             } catch (\Exception $e) {
                 // Si hay error, simplemente continuar sin bloquear la respuesta
                 logger()->error('Error calculating profile completeness: ' . $e->getMessage());
@@ -36,131 +40,5 @@ class ProfileCompletenessMiddleware
         return $response;
     }
 
-    /**
-     * Calcular el porcentaje de completitud del perfil para cualquier rol
-     */
-    private function calculateProfileCompleteness($user): array
-    {
-        if ($user->role === 'student') {
-            return $this->calculateStudentCompleteness($user);
-        } elseif ($user->role === 'mentor') {
-            return $this->calculateMentorCompleteness($user);
-        }
 
-        // Para otros roles, consideramos completo
-        return [
-            'percentage' => 100,
-            'missing_fields' => [],
-            'is_incomplete' => false,
-            'needs_reminder' => false
-        ];
-    }
-
-    /**
-     * Calcular completitud para estudiantes
-     */
-    private function calculateStudentCompleteness($user): array
-    {
-        $completedFields = 0;
-        $totalFields = 3; // semestre, areas_interes, objetivos
-        $missingFields = [];
-
-        // Cargar relación solo si es necesario
-        if (!$user->relationLoaded('aprendiz')) {
-            $user->load('aprendiz.areasInteres');
-        }
-
-        $aprendiz = $user->aprendiz;
-
-        // Verificar semestre
-        if ($aprendiz && $aprendiz->semestre && $aprendiz->semestre > 0) {
-            $completedFields++;
-        } else {
-            $missingFields[] = 'Semestre';
-        }
-
-        // Verificar áreas de interés
-        if ($aprendiz && $aprendiz->areasInteres && $aprendiz->areasInteres->count() > 0) {
-            $completedFields++;
-        } else {
-            $missingFields[] = 'Áreas de interés';
-        }
-
-        // Verificar objetivos
-        if ($aprendiz && $aprendiz->objetivos && trim($aprendiz->objetivos) !== '') {
-            $completedFields++;
-        } else {
-            $missingFields[] = 'Objetivos personales';
-        }
-
-        $percentage = round(($completedFields / $totalFields) * 100);
-
-        return [
-            'percentage' => $percentage,
-            'missing_fields' => $missingFields,
-            'is_incomplete' => $percentage < 100,
-            'needs_reminder' => $percentage < 80
-        ];
-    }
-
-    /**
-     * Calcular completitud para mentores
-     */
-    private function calculateMentorCompleteness($user): array
-    {
-        $completedFields = 0;
-        $totalFields = 5; // experiencia, biografia, años_experiencia, disponibilidad, areasInteres
-        $missingFields = [];
-
-        // Cargar relación solo si es necesario
-        if (!$user->relationLoaded('mentor')) {
-            $user->load('mentor.areasInteres');
-        }
-
-        $mentor = $user->mentor;
-
-        // Verificar experiencia
-        if ($mentor && $mentor->experiencia && trim($mentor->experiencia) !== '') {
-            $completedFields++;
-        } else {
-            $missingFields[] = 'Experiencia profesional';
-        }
-
-        // Verificar biografía
-        if ($mentor && $mentor->biografia && trim($mentor->biografia) !== '') {
-            $completedFields++;
-        } else {
-            $missingFields[] = 'Biografía';
-        }
-
-        // Verificar años de experiencia
-        if ($mentor && $mentor->años_experiencia && $mentor->años_experiencia > 0) {
-            $completedFields++;
-        } else {
-            $missingFields[] = 'Años de experiencia';
-        }
-
-        // Verificar disponibilidad
-        if ($mentor && $mentor->disponibilidad && trim($mentor->disponibilidad) !== '') {
-            $completedFields++;
-        } else {
-            $missingFields[] = 'Disponibilidad';
-        }
-
-        // Verificar áreas de especialidad (relación many-to-many)
-        if ($mentor && $mentor->areasInteres && $mentor->areasInteres->count() > 0) {
-            $completedFields++;
-        } else {
-            $missingFields[] = 'Áreas de especialidad';
-        }
-
-        $percentage = round(($completedFields / $totalFields) * 100);
-
-        return [
-            'percentage' => $percentage,
-            'missing_fields' => $missingFields,
-            'is_incomplete' => $percentage < 100,
-            'needs_reminder' => $percentage < 80
-        ];
-    }
 }

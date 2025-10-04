@@ -7,37 +7,16 @@ export default function ProfileIncompleteIcon({ className = '' }) {
     // Para estudiantes y mentores
     if (user.role !== 'student' && user.role !== 'mentor') return null;
 
-    // Verificar si el perfil está incompleto
+    // Verificación simplificada del perfil
     const isProfileIncomplete = () => {
         if (user.role === 'student') {
-            return isStudentProfileIncomplete();
+            const aprendiz = user.aprendiz;
+            return !aprendiz || !aprendiz.semestre || !aprendiz.areas_interes?.length || !aprendiz.objetivos?.trim();
         } else if (user.role === 'mentor') {
-            return isMentorProfileIncomplete();
+            const mentor = user.mentor;
+            return !mentor || !mentor.experiencia?.trim() || !mentor.biografia?.trim() || !mentor.años_experiencia || !mentor.areas_interes?.length;
         }
         return false;
-    };
-
-    const isStudentProfileIncomplete = () => {
-        const aprendiz = user.aprendiz;
-        if (!aprendiz) return true;
-        
-        const hasSemestre = aprendiz.semestre && aprendiz.semestre > 0;
-        const hasAreas = aprendiz.areas_interes && Array.isArray(aprendiz.areas_interes) && aprendiz.areas_interes.length > 0;
-        const hasObjetivos = aprendiz.objetivos && typeof aprendiz.objetivos === 'string' && aprendiz.objetivos.trim().length > 0;
-
-        return !hasSemestre || !hasAreas || !hasObjetivos;
-    };
-
-    const isMentorProfileIncomplete = () => {
-        const mentor = user.mentor;
-        if (!mentor) return true;
-        
-        const hasExperiencia = mentor.experiencia && mentor.experiencia.trim().length >= 50;
-        const hasBiografia = mentor.biografia && mentor.biografia.trim().length >= 100;
-        const hasAñosExperiencia = mentor.años_experiencia && mentor.años_experiencia > 0;
-        const hasAreas = mentor.areas_interes && Array.isArray(mentor.areas_interes) && mentor.areas_interes.length > 0;
-
-        return !hasExperiencia || !hasBiografia || !hasAñosExperiencia || !hasAreas;
     };
 
     // No mostrar si el perfil está completo

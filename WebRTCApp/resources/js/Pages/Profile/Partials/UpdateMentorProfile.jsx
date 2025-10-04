@@ -44,21 +44,22 @@ export default function UpdateMentorProfile({ className = '' }) {
 
     // Verificar disponibilidad actual
     useEffect(() => {
-        const hasMinimumInfo = mentor.experiencia && mentor.biografia && 
-                              mentor.años_experiencia && mentor.areas_interes?.length > 0;
         // Usar el campo disponible_ahora de la base de datos
         const currentAvailability = mentor.disponible_ahora === true;
-        console.log('Debug disponibilidad:', {
-            hasMinimumInfo,
-            experiencia: !!mentor.experiencia,
-            biografia: !!mentor.biografia, 
-            años_experiencia: !!mentor.años_experiencia,
-            areas_interes: mentor.areas_interes?.length || 0,
-            disponible_ahora: mentor.disponible_ahora,
-            currentAvailability
-        });
         setIsAvailable(currentAvailability);
     }, [mentor]);
+
+    // Función para verificar si todos los campos requeridos están completos
+    const isProfileComplete = () => {
+        return (
+            data.experiencia.trim().length >= 50 &&
+            data.biografia.trim().length >= 100 &&
+            data.años_experiencia > 0 &&
+            data.areas_especialidad.length > 0 &&
+            data.disponibilidad.trim().length > 0 &&
+            data.disponibilidad_detalle.trim().length > 0
+        );
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -67,10 +68,7 @@ export default function UpdateMentorProfile({ className = '' }) {
         patch(route('profile.update-mentor'), {
             preserveScroll: true,
             onSuccess: () => {
-                // Actualizar la disponibilidad si el perfil está completo
-                const hasMinimumInfo = data.experiencia && data.biografia && 
-                                      data.años_experiencia > 0 && data.areas_especialidad.length > 0;
-                setIsAvailable(hasMinimumInfo);
+                // La disponibilidad se maneja por separado
             }
         });
     };
@@ -215,6 +213,42 @@ export default function UpdateMentorProfile({ className = '' }) {
                 <p className="mt-1 text-sm text-gray-600">
                     Completa tu información para atraer estudiantes y ofrecer mentorías efectivas.
                 </p>
+                
+                {/* Indicador de progreso en tiempo real */}
+                {(() => {
+                    const progress = [
+                        { field: 'experiencia', completed: data.experiencia.trim().length >= 50, weight: 30 },
+                        { field: 'areas', completed: data.areas_especialidad.length > 0, weight: 25 },
+                        { field: 'biografia', completed: data.biografia.trim().length >= 100, weight: 20 },
+                        { field: 'años', completed: data.años_experiencia > 0, weight: 15 },
+                        { field: 'disponibilidad', completed: data.disponibilidad_detalle.trim().length > 0, weight: 10 }
+                    ];
+                    const totalProgress = progress.reduce((sum, item) => sum + (item.completed ? item.weight : 0), 0);
+                    
+                    return (
+                        <div className="mt-3 bg-gray-50 rounded-lg p-3">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-medium text-gray-700">Progreso del perfil</span>
+                                <span className="text-sm font-bold text-blue-600">{totalProgress}%</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div 
+                                    className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                                    style={{ width: `${totalProgress}%` }}
+                                ></div>
+                            </div>
+                            {totalProgress < 100 ? (
+                                <p className="text-xs text-gray-500 mt-1">
+                                    💡 Puedes guardar tu progreso parcial. Completa todo para activar tu disponibilidad como mentor.
+                                </p>
+                            ) : (
+                                <p className="text-xs text-green-600 mt-1">
+                                    🎉 ¡Perfil completo! Ya puedes activar tu disponibilidad para recibir estudiantes.
+                                </p>
+                            )}
+                        </div>
+                    );
+                })()}
             </header>
 
             {/* Toggle Preview */}
@@ -394,28 +428,64 @@ export default function UpdateMentorProfile({ className = '' }) {
 
                 {/* Botones de acción */}
                 <div className="flex items-center gap-4">
-                    <PrimaryButton disabled={processing}>
-                        {processing && (
-                            <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                        )}
-                        {processing ? 'Guardando...' : 'Guardar Perfil'}
-                    </PrimaryButton>
+                    {/* Validación inteligente para el botón */}
+                    {(() => {
+                        const hasBasicInfo = data.experiencia.trim().length >= 10 && data.años_experiencia > 0;
+                        const isComplete = data.experiencia.trim().length >= 50 && 
+                                         data.biografia.trim().length >= 100 && 
+                                         data.años_experiencia > 0 && 
+                                         data.areas_especialidad.length > 0 &&
+                                         data.disponibilidad_detalle.trim().length > 0;
+                        
+                        return (
+                            <PrimaryButton 
+                                disabled={processing || !hasBasicInfo}
+                                className={`${!isComplete ? 'bg-yellow-600 hover:bg-yellow-700 focus:bg-yellow-700 active:bg-yellow-900 focus:ring-yellow-500' : ''}`}
+                            >
+                                {processing && (
+                                    <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                )}
+                                {processing ? 'Guardando...' : 
+                                 isComplete ? '✅ Guardar Perfil Completo' : 
+                                 hasBasicInfo ? '💾 Guardar Progreso' : 'Completa info básica'}
+                            </PrimaryButton>
+                        );
+                    })()}
 
-                    {/* Toggle de disponibilidad */}
-                    <button
-                        type="button"
-                        onClick={toggleAvailability}
-                        className={`px-4 py-2 rounded-md font-medium transition-colors ${
-                            isAvailable
-                                ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                                : 'bg-green-100 text-green-700 hover:bg-green-200'
-                        }`}
-                    >
-                        {isAvailable ? '⏸️ Pausar Disponibilidad' : '▶️ Activar Disponibilidad'}
-                    </button>
+                    {/* Toggle de disponibilidad - Solo visible si el perfil está completo */}
+                    {isProfileComplete() && (
+                        <button
+                            type="button"
+                            onClick={toggleAvailability}
+                            className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                                isAvailable
+                                    ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                    : 'bg-green-100 text-green-700 hover:bg-green-200'
+                            }`}
+                        >
+                            {isAvailable ? '⏸️ Pausar Disponibilidad' : '▶️ Activar Disponibilidad'}
+                        </button>
+                    )}
+
+                    {/* Mensaje informativo cuando el perfil no está completo */}
+                    {!isProfileComplete() && (
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                            <div className="flex items-start">
+                                <svg className="w-5 h-5 text-blue-500 mt-0.5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                </svg>
+                                <div>
+                                    <h4 className="text-sm font-medium text-blue-800">Completa tu perfil para activar disponibilidad</h4>
+                                    <p className="text-sm text-blue-700 mt-1">
+                                        El botón de disponibilidad aparecerá cuando hayas completado todos los campos requeridos del perfil.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     <Transition
                         show={recentlySuccessful}

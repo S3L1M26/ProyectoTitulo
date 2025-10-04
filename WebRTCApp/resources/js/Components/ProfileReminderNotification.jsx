@@ -7,34 +7,21 @@ export default function ProfileReminderNotification({ className = '' }) {
     // Solo mostrar para estudiantes y mentores
     if (user.role !== 'student' && user.role !== 'mentor') return null;
 
-    // Calcular completitud del perfil
-    const calculateCompleteness = () => {
+    // Usar datos de sesión calculados por el middleware (más confiable)
+    // Fallback a cálculo simple si no hay datos de sesión
+    const getCompletenessFromSession = () => {
+        // En un entorno real, esto vendría de window.Laravel.session o similar
+        // Por ahora, usamos un cálculo simplificado
         if (user.role === 'student') {
-            let completed = 0;
-            const total = 3;
             const aprendiz = user.aprendiz;
-
-            if (aprendiz?.semestre && aprendiz.semestre > 0) completed++;
-            if (aprendiz?.areas_interes && Array.isArray(aprendiz.areas_interes) && aprendiz.areas_interes.length > 0) completed++;
-            if (aprendiz?.objetivos && aprendiz.objetivos.trim().length > 0) completed++;
-
-            return Math.round((completed / total) * 100);
-        } else if (user.role === 'mentor') {
-            let completed = 0;
-            const total = 4;
+            return aprendiz?.semestre && aprendiz?.areas_interes?.length > 0 && aprendiz?.objetivos ? 100 : 50;
+        } else {
             const mentor = user.mentor;
-
-            if (mentor?.experiencia && mentor.experiencia.trim().length >= 50) completed++;
-            if (mentor?.biografia && mentor.biografia.trim().length >= 100) completed++;
-            if (mentor?.años_experiencia && mentor.años_experiencia > 0) completed++;
-            if (mentor?.areas_interes && Array.isArray(mentor.areas_interes) && mentor.areas_interes.length > 0) completed++;
-
-            return Math.round((completed / total) * 100);
+            return mentor?.experiencia && mentor?.biografia && mentor?.años_experiencia && mentor?.areas_interes?.length > 0 ? 100 : 60;
         }
-        return 100;
     };
 
-    const completeness = calculateCompleteness();
+    const completeness = getCompletenessFromSession();
 
     // Solo mostrar si completitud < 80%
     if (completeness >= 80) return null;

@@ -46,17 +46,21 @@ class SendProfileReminders extends Command
         $remindersSent = 0;
 
         foreach ($users as $user) {
-            $profileData = $this->calculateProfileCompleteness($user);
+            // Usar el nuevo método centralizado del modelo
+            $completenessData = $user->profile_completeness;
+            $completenessPercentage = $completenessData['percentage'];
             
-            $this->line("📊 {$user->email} ({$user->role}): {$profileData['percentage']}% completo");
+            $this->line("📊 {$user->email} ({$user->role}): {$completenessPercentage}% completo");
             
             // Enviar recordatorio si el perfil está < 80% completo
-            if ($profileData['needs_reminder']) {
+            if ($completenessPercentage < 80) {
+                // Usar los datos completos del método centralizado
+                $profileData = $completenessData;
+                
                 $user->notify(new ProfileIncompleteReminder($profileData));
                 $remindersSent++;
                 
-                $this->info("✉️  Recordatorio enviado a: {$user->email} ({$profileData['percentage']}% completo)");
-                $this->line("   Campos faltantes: " . implode(', ', $profileData['missing_fields']));
+                $this->info("✉️  Recordatorio enviado a: {$user->email} ({$completenessPercentage}% completo)");
             } else {
                 $this->comment("✅ {$user->email} - Perfil completo o suficiente (≥80%)");
             }

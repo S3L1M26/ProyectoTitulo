@@ -23,7 +23,7 @@ export default function Edit({ mustVerifyEmail, status, sip_account }) {
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
-                    {/* Progreso del perfil para estudiantes y mentores */}
+                    {/* Estado general del perfil - Badge simple */}
                     {(user.role === 'student' || user.role === 'mentor') && (
                         <ProfileProgress />
                     )}

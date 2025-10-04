@@ -61,6 +61,36 @@ export default function UpdateAprendizProfile({ className = '' }) {
                 <p className="mt-1 text-sm text-gray-600">
                     Completa tu perfil de estudiante para recibir mejores recomendaciones de mentores.
                 </p>
+                
+                {/* Indicador de progreso en tiempo real */}
+                {(() => {
+                    const progress = [
+                        { field: 'areas', completed: data.areas_interes.length > 0, weight: 40 },
+                        { field: 'semestre', completed: data.semestre > 0, weight: 35 },
+                        { field: 'objetivos', completed: data.objetivos.trim().length >= 20, weight: 25 }
+                    ];
+                    const totalProgress = progress.reduce((sum, item) => sum + (item.completed ? item.weight : 0), 0);
+                    
+                    return (
+                        <div className="mt-3 bg-gray-50 rounded-lg p-3">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-medium text-gray-700">Progreso del perfil</span>
+                                <span className="text-sm font-bold text-blue-600">{totalProgress}%</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div 
+                                    className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                                    style={{ width: `${totalProgress}%` }}
+                                ></div>
+                            </div>
+                            {totalProgress < 100 && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                    💡 Puedes guardar tu progreso parcial, pero necesitas completar todo para recibir mejores recomendaciones
+                                </p>
+                            )}
+                        </div>
+                    );
+                })()}
             </header>
 
             <form onSubmit={submit} className="mt-6 space-y-6">
@@ -165,15 +195,30 @@ export default function UpdateAprendizProfile({ className = '' }) {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <PrimaryButton disabled={processing} className="relative">
-                        {processing && (
-                            <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                        )}
-                        {processing ? 'Guardando...' : 'Guardar Perfil'}
-                    </PrimaryButton>
+                    {/* Validación inteligente para el botón */}
+                    {(() => {
+                        const hasBasicInfo = data.semestre > 0;
+                        const isComplete = data.semestre > 0 && 
+                                         data.areas_interes.length > 0 && 
+                                         data.objetivos.trim().length >= 20;
+                        
+                        return (
+                            <PrimaryButton 
+                                disabled={processing || !hasBasicInfo} 
+                                className={`relative ${!isComplete ? 'bg-yellow-600 hover:bg-yellow-700 focus:bg-yellow-700 active:bg-yellow-900 focus:ring-yellow-500' : ''}`}
+                            >
+                                {processing && (
+                                    <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                )}
+                                {processing ? 'Guardando...' : 
+                                 isComplete ? '✅ Guardar Perfil Completo' : 
+                                 hasBasicInfo ? '💾 Guardar Progreso' : 'Selecciona tu semestre'}
+                            </PrimaryButton>
+                        );
+                    })()}
 
                     <Transition
                         show={recentlySuccessful}
