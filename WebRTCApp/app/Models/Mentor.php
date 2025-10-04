@@ -54,6 +54,24 @@ class Mentor extends Model
     }
 
     /**
+     * Get the rating in stars format.
+     */
+    public function getStarsRatingAttribute(): string
+    {
+        $rating = $this->calificacionPromedio ?? 0;
+        return number_format($rating, 1) . ' ⭐';
+    }
+
+    /**
+     * Get the rating as a percentage for progress bars.
+     */
+    public function getRatingPercentageAttribute(): int
+    {
+        $rating = $this->calificacionPromedio ?? 0;
+        return (int) (($rating / 5) * 100);
+    }
+
+    /**
      * Get the mentorships for the mentor.
      */
     // public function mentorias()

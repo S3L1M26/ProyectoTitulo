@@ -136,9 +136,17 @@ export default function UpdateMentorProfile({ className = '' }) {
                         </div>
                     </div>
                     
-                    <p className="text-gray-600 mt-1 text-sm">
-                        {data.años_experiencia} {data.años_experiencia === 1 ? 'año' : 'años'} de experiencia
-                    </p>
+                    <div className="flex items-center justify-between mt-1">
+                        <p className="text-gray-600 text-sm">
+                            {data.años_experiencia} {data.años_experiencia === 1 ? 'año' : 'años'} de experiencia
+                        </p>
+                        <div className="flex items-center">
+                            <span className="text-yellow-400 mr-1">★</span>
+                            <span className="text-sm font-medium text-gray-700">
+                                {mentor.calificacionPromedio ? Number(mentor.calificacionPromedio).toFixed(1) : '0.0'}/5
+                            </span>
+                        </div>
+                    </div>
 
                     {data.areas_especialidad.length > 0 && (
                         <div className="mt-3">
@@ -205,6 +213,9 @@ export default function UpdateMentorProfile({ className = '' }) {
             </div>
         </div>
     );
+
+
+
 
     return (
         <section className={className}>

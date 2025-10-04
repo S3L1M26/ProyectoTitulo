@@ -22,6 +22,7 @@ export default function Dashboard({ sip_account, password }) {
                     {/* Notificación de perfil incompleto */}
                     <ProfileReminderNotification />
                     
+                    
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <div className="p-6 text-gray-900">
                             { sip_account ? (
