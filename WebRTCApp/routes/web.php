@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\Sip\SipUserController;
 use App\Http\Controllers\User\UserController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Student\StudentController;
@@ -73,14 +72,10 @@ require __DIR__.'/auth.php';
 
 //rutas admin
 Route::middleware(['auth', 'adminMiddleware'])->group(function () {
-
     Route::get('/admin/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
-    Route::delete('/admin/users/{id}', [AdminController::class, 'destroyUser'])->name('admin.users.destroy');
-    Route::get('/sip-users/create', [SipUserController::class, 'create'])->name('sip-users.create');
-    Route::post('/sip-users', [SipUserController::class, 'store'])->name('sip-users.store');
-    Route::get('/admin/users', [AdminController::class, 'users'])->name('admin.users');
-    Route::get('/admin/users/{id}/edit', [AdminController::class, 'editUser'])->name('admin.users.edit');
-    Route::put('/admin/users/{id}', [AdminController::class, 'updateUser'])->name('admin.users.update');
-    Route::put('/admin/users/{id}/password', [AdminController::class, 'resetPassword'])->name('admin.users.reset-password');
-    Route::put('/admin/users/{id}/sip-password', [AdminController::class, 'resetSipPassword'])->name('admin.users.reset-sip-password');
+    Route::get('/admin/users', [AdminController::class, 'index'])->name('admin.users');
+    Route::get('/admin/users/{user}', [AdminController::class, 'show'])->name('admin.users.show');
+    Route::get('/admin/users/{user}/edit', [AdminController::class, 'edit'])->name('admin.users.edit');
+    Route::put('/admin/users/{user}', [AdminController::class, 'update'])->name('admin.users.update');
+    Route::delete('/admin/users/{user}', [AdminController::class, 'destroy'])->name('admin.users.destroy');
 });

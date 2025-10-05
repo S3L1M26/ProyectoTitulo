@@ -3,16 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
-use App\Models\Sip\SipAor;
-use App\Models\Sip\SipAuth;
-use App\Models\Sip\SipEndpoint;
-use App\Models\Sip\SipAccount;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use App\Models\Aprendiz;
@@ -28,7 +23,6 @@ class ProfileController extends Controller
     {
         // Refrescar el usuario desde la base de datos para obtener los datos más actualizados
         $user = Auth::user()->fresh();
-        $sip_account = SipAccount::with('user')->where('user_id', $user->id)->first();
 
         // Cargar datos del perfil según el rol
         if ($user->role === 'student') {
@@ -40,7 +34,6 @@ class ProfileController extends Controller
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
-            'sip_account' => $sip_account,
         ]);
     }
 
@@ -229,18 +222,6 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
-        $sipUser = SipAccount::with('user')->where('user_id', $user->id)->first();
-
-        if($sipUser){
-
-            DB::connection('asterisk')->transaction(function() use ($sipUser) {
-                SipAor::where('id', $sipUser->sip_user_id)->delete();
-                SipAuth::where('id', $sipUser->sip_user_id)->delete();
-                SipEndpoint::where('id', $sipUser->sip_user_id)->delete();
-            });
-
-            $sipUser->delete();
-        }
 
         Auth::logout();
 

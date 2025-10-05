@@ -43,29 +43,13 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        // Validación base para todos los usuarios
-        $baseValidation = [
+        // Validación básica para registro inicial
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'role' => 'required|in:student,mentor',
-        ];
-
-        // Validaciones específicas según el rol
-        $roleValidations = $request->role === 'mentor'
-            ? [
-                'experiencia' => 'required|string',
-                'especialidad' => 'required|string',
-                'disponibilidad' => 'required|string',
-            ]
-            : [
-                'semestre' => 'required|integer|min:1|max:10',
-                'intereses' => 'required|array|min:1',
-                'intereses.*' => 'string',
-            ];
-
-        $validated = $request->validate(array_merge($baseValidation, $roleValidations));
-
+        ]);
 
         // Crear usuario base
         $user = User::create([
@@ -75,18 +59,21 @@ class RegisteredUserController extends Controller
             'role' => $validated['role'],
         ]);
 
-        // Crear perfil específico según rol
+        // Crear perfiles básicos vacíos que se completarán después
         if ($validated['role'] === 'mentor') {
             $user->mentor()->create([
-                'experiencia' => $validated['experiencia'],
-                'especialidad' => $validated['especialidad'],
-                'disponibilidad' => $validated['disponibilidad'],
+                'experiencia' => null,
+                'biografia' => null,
+                'años_experiencia' => null,
+                'disponibilidad' => null,
+                'disponibilidad_detalle' => null,
+                'disponible_ahora' => false,
                 'calificacionPromedio' => 0.0,
             ]);
         } else {
             $user->aprendiz()->create([
-                'semestre' => $validated['semestre'],
-                'intereses' => $validated['intereses'],
+                'semestre' => null,
+                'objetivos' => null,
             ]);
         }
 

@@ -17,8 +17,13 @@ export default function Register({ role }) {
     const submit = (e) => {
         e.preventDefault();
 
-        post(route('register.store'), {
+        console.log('Submitting registration with data:', data);
+
+        post(route('register'), {
             onFinish: () => reset('password', 'password_confirmation'),
+            onError: (errors) => {
+                console.log('Registration errors:', errors);
+            }
         });
     };
 
@@ -45,7 +50,7 @@ export default function Register({ role }) {
                 <p className="text-sm text-gray-600">
                     ¿Ya tienes una cuenta?{' '}
                     <Link
-                        className="text-[#9fc031] hover:underline"
+                        className="text-[#f00808] hover:underline"
                         href={route('login', { role })}
                     >
                         Inicia sesión aquí

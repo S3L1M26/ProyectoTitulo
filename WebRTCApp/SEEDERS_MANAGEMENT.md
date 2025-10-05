@@ -1,6 +1,6 @@
-# 🛠️ Gestión de Usuarios de Prueba
+# 🛠️ Gestión de Datos de Desarrollo
 
-## 📋 Comando Disponible
+## 📋 Comandos Disponibles
 
 ### **`test:reset-users`** ⚡
 Comando especializado para eliminar usuarios de prueba y regenerarlos.
@@ -8,9 +8,9 @@ Comando especializado para eliminar usuarios de prueba y regenerarlos.
 
 #### **Funcionalidad:**
 - 🔍 Identifica automáticamente usuarios creados por seeders
-- 🗑️ Elimina usuarios de prueba y sus relaciones
-- 🌱 Ejecuta seeders para regenerar datos
-- �️ Protege usuarios reales (no los toca)
+- 🗑️ Elimina usuarios de prueba y sus relaciones (mentores, aprendices, áreas de interés)
+- 🌱 Ejecuta seeders completos para regenerar datos
+- 🛡️ Protege usuarios reales (no los toca)
 
 #### **Sintaxis:**
 ```bash
@@ -20,11 +20,45 @@ php artisan test:reset-users [--force]
 #### **Opciones:**
 - `--force` - Saltar confirmación (útil para scripts automatizados)
 
+#### **Ejemplos de uso:**
+```bash
+# Con confirmación (recomendado)
+php artisan test:reset-users
+
+# Sin confirmación para scripts
+php artisan test:reset-users --force
+
+# En Docker (desarrollo)
+docker compose exec app php artisan test:reset-users --force
+```
+
 ---
 
-## 🔍 Patrones de Detección
+### **`profile:send-reminders`** �
+Envía recordatorios por email a usuarios con perfiles incompletos.
 
-El comando identifica automáticamente usuarios de prueba usando estos patrones:
+#### **Sintaxis:**
+```bash
+php artisan profile:send-reminders [--test]
+```
+
+#### **Opciones:**
+- `--test` - Incluir usuarios recién creados para pruebas
+
+#### **Ejemplos de uso:**
+```bash
+# Enviar recordatorios normales
+php artisan profile:send-reminders
+
+# Incluir usuarios recientes para testing
+php artisan profile:send-reminders --test
+```
+
+---
+
+## �🔍 Patrones de Detección de Usuarios de Prueba
+
+El comando `test:reset-users` identifica automáticamente usuarios de prueba usando estos patrones:
 
 ### **Patrones de Email:**
 - `*.test@*` - Emails con .test
@@ -35,7 +69,7 @@ El comando identifica automáticamente usuarios de prueba usando estos patrones:
 
 ### **Patrones de Nombre:**
 - `Mentor *` - Nombres que empiecen con Mentor
-- `Estudiante *` - Nombres que empiecen con Estudiante
+- `Estudiante *` - Nombres que empiecen con Estudiante  
 - `Test *` - Nombres que empiecen con Test
 
 ### **⚠️ Usuarios Reales Protegidos:**
@@ -46,140 +80,84 @@ Los usuarios que NO coincidan con estos patrones permanecen intactos.
 ## 🔒 Seguridad
 
 ### **Protección de Entorno:**
-- ✅ **Solo entorno local**: El comando está completamente bloqueado fuera del entorno `local`
-- �️ **Identificación inteligente**: Solo elimina usuarios que coinciden con patrones de prueba
-- � **Vista previa**: Muestra qué usuarios serán eliminados antes de proceder
+- ✅ **Solo entorno local**: El comando `test:reset-users` está completamente bloqueado fuera del entorno `local`
+- 🔍 **Identificación inteligente**: Solo elimina usuarios que coinciden con patrones de prueba
+- 👁️ **Vista previa**: Muestra qué usuarios serán eliminados antes de proceder
 - ⚠️ **Confirmación**: Requiere confirmación manual (excepto con `--force`)
 
 ---
 
 ## 🎯 Casos de Uso Comunes
 
-### **🔄 Reset Estándar (Recomendado)**
-Elimina solo datos de prueba, mantiene usuarios reales:
+### **🔄 Development Workflow (Recomendado)**
 ```bash
-# Con confirmación
-php artisan seeders:manage reset
-
-# Sin confirmación
-php artisan seeders:manage reset --force
-
-# Comando rápido
-php artisan test:reset --quick
+# Reset completo de usuarios de prueba
+docker compose exec app php artisan test:reset-users --force
 ```
 
-### **👥 Solo Usuarios de Prueba**
+### **🌱 Solo Seeders (sin eliminar)**
 ```bash
-php artisan seeders:manage reset --only=users --force
+# Ejecutar seeders nativos de Laravel
+docker compose exec app php artisan db:seed --force
 ```
 
-### **🏷️ Solo Áreas de Interés**
+### **♻️ Fresh Database (⚠️ Elimina TODO)**
 ```bash
-php artisan seeders:manage reset --only=areas --force
+# Reiniciar toda la base de datos
+docker compose exec app php artisan migrate:fresh --seed
 ```
 
-### **🗑️ Truncate Total (⚠️ Peligroso)**
-Elimina TODO incluyendo usuarios reales:
+### **📧 Testing Profile Reminders**
 ```bash
-php artisan seeders:manage truncate
+# Probar sistema de recordatorios
+docker compose exec app php artisan profile:send-reminders --test
 ```
-
-### **♻️ Refresh Completo**
-Reinicia toda la base de datos:
-```bash
-# Completo
-php artisan seeders:manage refresh --force
-
-# Comando rápido
-php artisan test:reset --full --quick
-```
-
-### **🌱 Solo Seeders**
-Agrega datos sin eliminar existentes:
-```bash
-php artisan seeders:manage seed --force
-```
-
----
-
-## 🔍 Identificación de Datos de Seeder
-
-### **Usuarios de Prueba Detectados:**
-- Email contiene: `.test@`, `@example.com`
-- Email inicia con: `mentor@`, `aprendiz@`, `estudiante`
-- Nombre inicia con: `Mentor `, `Estudiante `
-
-### **Datos Seguros:**
-Los usuarios reales (registrados manualmente) se mantienen intactos en operaciones `reset`.
 
 ---
 
 ## 🚨 Advertencias Importantes
 
-### **⚠️ RESET vs TRUNCATE:**
-- **`reset`** = Solo datos de seeder (SEGURO)
-- **`truncate`** = TODO incluyendo usuarios reales (PELIGROSO)
+### **⚠️ DIFERENCIAS DE COMANDOS:**
+- **`test:reset-users`** = Solo usuarios de prueba (SEGURO)
+- **`migrate:fresh`** = TODO incluyendo usuarios reales (PELIGROSO)
 
 ### **💾 Backup Recomendado:**
 ```bash
-# Crear backup antes de operaciones peligrosas
-docker exec webrtcapp-mysql mysqldump -u laravel -psecret laravel > backup.sql
+# Crear backup antes de operaciones de base de datos
+docker exec webrtcapp-mysql mysqldump -u laravel -psecret laravel > backup_$(date +%Y%m%d_%H%M%S).sql
 ```
 
 ### **🔄 Restaurar Backup:**
 ```bash
 # Solo si es necesario
-docker exec -i webrtcapp-mysql mysql -u laravel -psecret laravel < backup.sql
+docker exec -i webrtcapp-mysql mysql -u laravel -psecret laravel < backup_YYYYMMDD_HHMMSS.sql
 ```
 
 ---
 
-## 📊 Información Post-Ejecución
+## � Comandos Docker
 
-Después de cada comando, verás:
-- ✅ Estado de la operación
-- 👥 Cantidad de usuarios por rol
-- 🏷️ Áreas de interés disponibles
-- 🔗 Links de acceso rápido
-
----
-
-## 🎮 Ejemplos Prácticos
-
-### **Desarrollo Diario:**
+### **Contenedores Disponibles:**
 ```bash
-# Reset rápido para pruebas
-php artisan test:reset --quick
+# Ver contenedores en ejecución
+docker ps
+
+# Acceder al contenedor principal
+docker compose exec app bash
+
+# Ver logs de la aplicación
+docker compose logs app -f
 ```
 
-### **Preparar Demo:**
+### **Comandos Artisan en Docker:**
 ```bash
-# Reset completo para demo limpia
-php artisan test:reset --full --quick
-```
+# Patrón general
+docker compose exec app php artisan [comando]
 
-### **Debugging:**
-```bash
-# Solo resetear usuarios manteniendo áreas
-php artisan seeders:manage reset --only=users --force
-```
-
-### **Fresh Start:**
-```bash
-# Empezar desde cero
-php artisan seeders:manage refresh --force
-```
-
-### **Ver Estado Actual:**
-```bash
-# Estadísticas básicas
-php artisan db:stats
-
-# Estadísticas detalladas
-php artisan db:stats --detailed
-
-# Solo datos de prueba
-php artisan db:stats --test-data
+# Ejemplos específicos
+docker compose exec app php artisan migrate:status
+docker compose exec app php artisan route:list
+docker compose exec app php artisan queue:work
 ```
 
 ---
@@ -189,37 +167,47 @@ php artisan db:stats --test-data
 ### **🛡️ Seguridad Automática:**
 - El comando `test:reset-users` está **completamente bloqueado** fuera del entorno `local`
 - No necesita configuración adicional para ser seguro en producción
-- Los usuarios reales nunca se ven afectados
+- Los usuarios reales nunca se ven afectados en comandos de testing
 
-### **� Para Producción:**
-Si necesitas gestionar datos en producción, usa los comandos nativos de Laravel:
+### **⚡ Para Producción:**
 ```bash
-# Ejecutar seeders en producción
-php artisan db:seed
-
-# Migración completa (cuidado)
-php artisan migrate:fresh --seed
+# Comandos seguros para producción
+php artisan db:seed                    # Ejecutar seeders
+php artisan profile:send-reminders     # Enviar recordatorios
+php artisan migrate --force            # Aplicar migraciones
 ```
 
 ---
 
-## 📝 Resumen
+## 📝 Resumen de Comandos
 
-| Comando | Entorno | Descripción |
-|---------|---------|-------------|
-| `test:reset-users` | 🟢 Solo Local | Elimina usuarios de prueba y ejecuta seeders |
-| `test:reset-users --force` | 🟢 Solo Local | Lo mismo sin confirmación |
-| `db:seed` | 🌍 Todos | Comando nativo de Laravel para seeders |
+| Comando | Entorno | Descripción | Seguridad |
+|---------|---------|-------------|-----------|
+| `test:reset-users` | 🟢 Solo Local | Elimina usuarios de prueba y ejecuta seeders | 🛡️ Protege usuarios reales |
+| `test:reset-users --force` | 🟢 Solo Local | Lo mismo sin confirmación | 🛡️ Protege usuarios reales |
+| `profile:send-reminders` | 🌍 Todos | Envía recordatorios de perfil | ✅ Solo notificaciones |
+| `profile:send-reminders --test` | 🌍 Todos | Incluye usuarios recientes | ✅ Solo notificaciones |
+| `db:seed` | 🌍 Todos | Comando nativo de Laravel | ⚠️ Agrega datos |
+| `migrate:fresh --seed` | 🌍 Todos | Reinicia DB completa | 🚨 Elimina TODO |
 
-### **✅ Ventajas:**
-- **Simple**: Un solo comando para el caso de uso más común
-- **Seguro**: Solo funciona en entorno local
-- **Inteligente**: Identifica automáticamente usuarios de prueba
-- **Rápido**: Perfecto para desarrollo diario
+### **✅ Flujo de Desarrollo Recomendado:**
+```bash
+# 1. Reset de usuarios de prueba
+docker compose exec app php artisan test:reset-users --force
+
+# 2. Verificar estado
+docker compose exec app php artisan tinker
+>>> User::count()
+>>> Mentor::count() 
+>>> Aprendiz::count()
+
+# 3. Probar recordatorios (opcional)
+docker compose exec app php artisan profile:send-reminders --test
+```
 
 ### **🎯 Caso de Uso Principal:**
-"Actualicé mi seeder de usuarios y necesito regenerar los datos de prueba sin tocar las áreas de interés ni usuarios reales"
+"Actualicé mis seeders y necesito regenerar solo los datos de prueba sin afectar usuarios reales"
 
 ```bash
-php artisan test:reset-users --force
+docker compose exec app php artisan test:reset-users --force
 ```

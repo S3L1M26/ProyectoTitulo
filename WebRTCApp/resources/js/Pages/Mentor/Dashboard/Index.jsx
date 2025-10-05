@@ -1,42 +1,28 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import Dialer from '@/Components/Dialer';
 import ProfileReminderNotification from '@/Components/ProfileReminderNotification';
 import { Head } from '@inertiajs/react';
 
-export default function Dashboard({ sip_account, password }) {
-
-    console.log(sip_account);
+export default function Dashboard() {
 
     return (
         <AuthenticatedLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Panel de Usuario
+                    Panel de Mentor
                 </h2>
             }
         >
-            <Head title="Panel de Usuario" />
+            <Head title="Panel de Mentor" />
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8 space-y-6">
                     {/* Notificación de perfil incompleto */}
                     <ProfileReminderNotification />
                     
-                    
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <div className="p-6 text-gray-900">
-                            { sip_account ? (
-                                <div>
-                                    <h4>Bienvenido!</h4>
-                                    <p>Usuario SIP: {sip_account.sip_user_id}</p>
-                                    <Dialer sip_account={sip_account} password={password}/>
-                                </div>
-                                ) : (
-                                <div>
-                                    <h4>Bienvenido!</h4>
-                                    <p>No tienes una cuenta SIP asignada</p>
-                                </div>
-                                ) }
+                            <h4 className="text-lg font-semibold text-gray-800 mb-4">¡Bienvenido a tu panel de mentor!</h4>
+                            <p className="text-gray-600">Aquí podrás gestionar tus sesiones de mentoría y ayudar a estudiantes en su orientación profesional.</p>
                         </div>
                     </div>
                 </div>

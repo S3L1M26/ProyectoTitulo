@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
-use App\Models\Sip\SipAccount;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -12,13 +11,7 @@ class StudentController extends Controller
 {
     public function index()
     {
-        $user = Auth::user();
-        $sip_account = SipAccount::with('user')->where('user_id', $user->id)->first();
-        $password = $sip_account ? decrypt($sip_account->password) : null;
-
         return Inertia::render('Student/Dashboard/Index', [
-            'sip_account' => $sip_account,
-            'password' => $password,
             'mentorSuggestions' => $this->getMentorSuggestions(),
         ]);
     }
@@ -54,6 +47,9 @@ class StudentController extends Controller
                         'experiencia' => $user->mentor->experiencia,
                         'biografia' => $user->mentor->biografia,
                         'años_experiencia' => $user->mentor->años_experiencia,
+                        'disponibilidad' => $user->mentor->disponibilidad,
+                        'disponibilidad_detalle' => $user->mentor->disponibilidad_detalle,
+                        'disponible_ahora' => $user->mentor->disponible_ahora,
                         'calificacionPromedio' => $user->mentor->calificacionPromedio,
                         'stars_rating' => $user->mentor->stars_rating,
                         'rating_percentage' => $user->mentor->rating_percentage,

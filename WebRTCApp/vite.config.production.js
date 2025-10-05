@@ -30,7 +30,7 @@ export default defineConfig({
                 manualChunks: {
                     vendor: ['react', 'react-dom'],
                     inertia: ['@inertiajs/react'],
-                    utils: ['axios', 'crypto-js', 'jssip'],
+                    utils: ['axios', 'crypto-js'],
                 },
                 
                 // Consistent file naming

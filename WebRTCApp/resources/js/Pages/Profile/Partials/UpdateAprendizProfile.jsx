@@ -119,7 +119,10 @@ export default function UpdateAprendizProfile({ className = '' }) {
 
                 {/* Áreas de Interés */}
                 <div>
-                    <InputLabel htmlFor="areas_interes" value="Áreas de Interés" />
+                    <InputLabel htmlFor="areas_interes" value="Áreas de Interés *" />
+                    <p className="mt-1 text-sm text-gray-600">
+                        Selecciona las áreas en las que te interesa recibir mentoría
+                    </p>
                     
                     {loadingAreas ? (
                         <div className="mt-2 text-sm text-gray-500 flex items-center">
@@ -127,37 +130,39 @@ export default function UpdateAprendizProfile({ className = '' }) {
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
-                            Cargando áreas de interés...
+                            Cargando áreas...
                         </div>
                     ) : (
-                        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                            {areasInteres.map((area) => (
-                                <label 
-                                    key={area.id} 
-                                    className="flex items-center p-2 rounded-md hover:bg-gray-50 transition-colors cursor-pointer"
-                                    title={area.descripcion || `Área de ${area.nombre}`}
+                        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {areasInteres.map(area => (
+                                <div
+                                    key={area.id}
+                                    onClick={() => handleAreaInteresChange(area.id)}
+                                    className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                                        data.areas_interes.includes(area.id)
+                                            ? 'border-blue-500 bg-blue-50 text-blue-900'
+                                            : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                                    }`}
                                 >
-                                    <input
-                                        type="checkbox"
-                                        value={area.id}
-                                        checked={data.areas_interes.includes(area.id)}
-                                        onChange={() => handleAreaInteresChange(area.id)}
-                                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                    />
-                                    <span className="ml-2 text-sm text-gray-700 flex items-center">
-                                        {area.nombre}
-                                        <svg 
-                                            className="w-3 h-3 text-gray-400 ml-1" 
-                                            fill="currentColor" 
-                                            viewBox="0 0 20 20"
-                                        >
-                                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                                        </svg>
-                                    </span>
-                                </label>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <h4 className="font-medium text-sm">{area.nombre}</h4>
+                                            <p className="text-xs text-gray-500 mt-1">{area.descripcion}</p>
+                                        </div>
+                                        {data.areas_interes.includes(area.id) && (
+                                            <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                            </svg>
+                                        )}
+                                    </div>
+                                </div>
                             ))}
                         </div>
                     )}
+                    
+                    <div className="mt-2 text-sm text-gray-600">
+                        Seleccionadas: {data.areas_interes.length}
+                    </div>
 
                     <FieldValidation 
                         value={data.areas_interes} 

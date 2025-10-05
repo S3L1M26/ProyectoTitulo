@@ -37,7 +37,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                         href={route('admin.dashboard')}
                                         active={route().current('admin.dashboard')}
                                     >
-                                        Crear Usuario SIP
+                                        Dashboard
                                     </NavLink>
                                     <NavLink
                                         href={route('admin.users')}
@@ -159,7 +159,7 @@ export default function AuthenticatedLayout({ header, children }) {
                     {user.role === 'admin' ? (
                         <div className="space-y-1 pb-3 pt-2">
                             <ResponsiveNavLink href={route('admin.dashboard')} active={route().current('admin.dashboard')}>
-                                Crear Usuario SIP
+                                Dashboard
                             </ResponsiveNavLink>
                             <ResponsiveNavLink href={route('admin.users')} active={route().current('admin.users')}>
                                 Usuarios

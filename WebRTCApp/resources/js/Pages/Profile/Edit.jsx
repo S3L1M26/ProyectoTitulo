@@ -2,13 +2,12 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, usePage } from '@inertiajs/react';
 import DeleteUserForm from './Partials/DeleteUserForm';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
-import UpdateSipPasswordForm from './Partials/UpdateSipPasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
 import UpdateAprendizProfile from './Partials/UpdateAprendizProfile';
 import UpdateMentorProfile from './Partials/UpdateMentorProfile';
 import ProfileProgress from '@/Components/ProfileProgress';
 
-export default function Edit({ mustVerifyEmail, status, sip_account }) {
+export default function Edit({ mustVerifyEmail, status }) {
     const { auth } = usePage().props;
     const user = auth.user;
     return (
@@ -53,12 +52,6 @@ export default function Edit({ mustVerifyEmail, status, sip_account }) {
                     <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
                         <UpdatePasswordForm className="max-w-xl" />
                     </div>
-
-                    {sip_account && (
-                        <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
-                            <UpdateSipPasswordForm className="max-w-xl" />
-                        </div>
-                    )}
 
                     <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
                         <DeleteUserForm className="max-w-xl" />

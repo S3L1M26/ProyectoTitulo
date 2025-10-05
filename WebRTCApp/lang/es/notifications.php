@@ -16,7 +16,7 @@ return [
     'verification-link-sent' => 'Se ha enviado un nuevo enlace de verificación a tu correo electrónico.',
     'profile-updated' => 'Perfil actualizado.',
     'password-updated' => 'Contraseña actualizada.',
-    'sip-password-updated' => 'Contraseña SIP actualizada.',
+
 
     // Traducciones para emails
     'Whoops!' => '¡Ups!',
