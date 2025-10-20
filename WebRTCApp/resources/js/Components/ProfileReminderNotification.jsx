@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
+import { memo } from 'react';
 
-export default function ProfileReminderNotification({ className = '' }) {
+const ProfileReminderNotification = memo(function ProfileReminderNotification({ className = '' }) {
     const { auth, profile_completeness } = usePage().props;
     const user = auth.user;
 
@@ -233,4 +234,6 @@ export default function ProfileReminderNotification({ className = '' }) {
             </div>
         </div>
     );
-}
+});
+
+export default ProfileReminderNotification;

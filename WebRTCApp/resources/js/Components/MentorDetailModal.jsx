@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 
-export default function MentorDetailModal({ isOpen, onClose, mentor }) {
+const MentorDetailModal = memo(function MentorDetailModal({ isOpen, onClose, mentor }) {
     if (!mentor) return null;
     
     // Debug: verificar los datos del mentor
@@ -167,4 +167,6 @@ export default function MentorDetailModal({ isOpen, onClose, mentor }) {
             </Dialog>
         </Transition>
     );
-}
+});
+
+export default MentorDetailModal;

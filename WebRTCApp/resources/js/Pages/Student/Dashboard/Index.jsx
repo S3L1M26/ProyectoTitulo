@@ -1,10 +1,12 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import ProfileReminderNotification from '@/Components/ProfileReminderNotification';
-import MentorDetailModal from '@/Components/MentorDetailModal';
 import { Head } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, lazy, Suspense, memo } from 'react';
 
-export default function Dashboard({ mentorSuggestions = [] }) {
+// OPTIMIZACIÓN: Lazy loading de componentes pesados
+const ProfileReminderNotification = lazy(() => import('@/Components/ProfileReminderNotification'));
+const MentorDetailModal = lazy(() => import('@/Components/MentorDetailModal'));
+
+const Dashboard = memo(function Dashboard({ mentorSuggestions = [] }) {
     const [selectedMentor, setSelectedMentor] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -32,8 +34,10 @@ export default function Dashboard({ mentorSuggestions = [] }) {
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8 space-y-6">
-                    {/* Notificación de perfil incompleto */}
-                    <ProfileReminderNotification />
+                    {/* Notificación de perfil incompleto - LAZY LOADED */}
+                    <Suspense fallback={<div className="animate-pulse h-20 bg-gray-200 rounded"></div>}>
+                        <ProfileReminderNotification />
+                    </Suspense>
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <div className="p-6 text-gray-900">
                             <h4 className="text-lg font-semibold text-gray-800 mb-4">¡Bienvenido a tu panel de estudiante!</h4>
@@ -133,12 +137,18 @@ export default function Dashboard({ mentorSuggestions = [] }) {
                 </div>
             </div>
 
-            {/* Modal de detalles del mentor */}
-            <MentorDetailModal
-                isOpen={isModalOpen}
-                onClose={closeMentorModal}
-                mentor={selectedMentor}
-            />
+            {/* Modal de detalles del mentor - LAZY LOADED */}
+            {isModalOpen && (
+                <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div></div>}>
+                    <MentorDetailModal
+                        isOpen={isModalOpen}
+                        onClose={closeMentorModal}
+                        mentor={selectedMentor}
+                    />
+                </Suspense>
+            )}
         </AuthenticatedLayout>
     );
-}
+});
+
+export default Dashboard;

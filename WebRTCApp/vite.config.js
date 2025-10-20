@@ -19,4 +19,33 @@ export default defineConfig({
             protocol: 'ws'
         }
     },
+    build: {
+        // OPTIMIZACIÓN: Configuraciones de build para performance
+        rollupOptions: {
+            output: {
+                // Code splitting por chunks
+                manualChunks: {
+                    vendor: ['react', 'react-dom'],
+                    ui: ['@headlessui/react'],
+                    utils: ['@inertiajs/react']
+                }
+            }
+        },
+        // Optimizaciones de assets
+        minify: 'terser',
+        terserOptions: {
+            compress: {
+                drop_console: true,
+                drop_debugger: true
+            }
+        },
+        // Configuración de chunks
+        chunkSizeWarningLimit: 1000,
+        // Compresión de assets
+        assetsInlineLimit: 4096
+    },
+    // OPTIMIZACIÓN: Configuraciones adicionales
+    optimizeDeps: {
+        include: ['react', 'react-dom', '@inertiajs/react', '@headlessui/react']
+    }
 });
