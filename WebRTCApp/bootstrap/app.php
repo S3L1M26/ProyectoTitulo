@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'adminMiddleware' => AdminMiddleware::class,
             'profileCompleteness' => \App\Http\Middleware\ProfileCompletenessMiddleware::class,
             'role' => \App\Http\Middleware\RoleMiddleware::class,
+            'performance' => \App\Http\Middleware\PerformanceMonitoringMiddleware::class,
         ]);
 
         //

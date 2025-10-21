@@ -20,13 +20,13 @@ Route::get('/', function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    // Rutas para estudiantes
-    Route::middleware('role:student')->group(function () {
+    // Rutas para estudiantes con monitoreo de performance
+    Route::middleware(['role:student', 'performance'])->group(function () {
         Route::get('/student/dashboard', [StudentController::class, 'index'])->name('student.dashboard');
     });
 
-    // Rutas para mentores
-    Route::middleware('role:mentor')->group(function () {
+    // Rutas para mentores con monitoreo de performance
+    Route::middleware(['role:mentor', 'performance'])->group(function () {
         Route::get('/mentor/dashboard', [MentorController::class, 'index'])->name('mentor.dashboard');
     });
 });

@@ -4,7 +4,9 @@ namespace App\Console\Commands;
 
 use App\Models\User;
 use App\Notifications\ProfileIncompleteReminder;
+use App\Jobs\SendProfileReminderJob;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Bus;
 use Carbon\Carbon;
 
 class SendProfileReminders extends Command
@@ -43,33 +45,43 @@ class SendProfileReminders extends Command
         $users = $query->with(['aprendiz.areasInteres', 'mentor'])->get();
         $this->info("👥 Encontrados {$users->count()} usuarios para verificar");
 
+        $reminderJobs = collect();
         $remindersSent = 0;
 
         foreach ($users as $user) {
-            // Usar el nuevo método centralizado del modelo
+            // Obtener datos de completitud usando el método del modelo
             $completenessData = $user->profile_completeness;
             $completenessPercentage = $completenessData['percentage'];
             
             $this->line("📊 {$user->email} ({$user->role}): {$completenessPercentage}% completo");
             
-            // Enviar recordatorio si el perfil está < 80% completo
+            // Preparar job si el perfil está < 80% completo
             if ($completenessPercentage < 80) {
-                // Usar los datos completos del método centralizado
-                $profileData = $completenessData;
-                
-                $user->notify(new ProfileIncompleteReminder($profileData));
+                // OPTIMIZACIÓN: Crear job para envío asíncrono
+                $reminderJobs->push(new SendProfileReminderJob($user, $completenessData));
                 $remindersSent++;
                 
-                $this->info("✉️  Recordatorio enviado a: {$user->email} ({$completenessPercentage}% completo)");
+                $this->info("🔄 Job preparado para: {$user->email} ({$completenessPercentage}% completo)");
             } else {
                 $this->comment("✅ {$user->email} - Perfil completo o suficiente (≥80%)");
             }
         }
 
-        $this->info("📤 Total de recordatorios enviados: {$remindersSent}");
+        // OPTIMIZACIÓN: Envío asíncrono en lote
+        if ($reminderJobs->isNotEmpty()) {
+            $this->info("📤 Enviando {$remindersSent} recordatorios de forma asíncrona...");
+            
+            Bus::batch($reminderJobs->toArray())
+                ->name('Profile Reminders Batch')
+                ->dispatch();
+                
+            $this->info("✅ Batch de recordatorios enviado a la cola exitosamente");
+        }        $this->info("📤 Total de recordatorios programados: {$remindersSent}");
         
         if ($remindersSent > 0) {
-            $this->info("📧 Revisa MailHog en: http://localhost:8025");
+            $this->info("📧 Los emails se enviarán de forma asíncrona");
+            $this->info("🔍 Revisa MailHog en: http://localhost:8025");
+            $this->info("📊 Monitorea la cola con: php artisan queue:work");
         }
         
         return $remindersSent;
