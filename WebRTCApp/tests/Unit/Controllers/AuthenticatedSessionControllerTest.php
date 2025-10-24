@@ -44,6 +44,59 @@ class AuthenticatedSessionControllerTest extends TestCase
         $this->assertTrue($reflection->hasMethod('create'));
     }
 
+    public function test_store_method_exists()
+    {
+        $controller = new AuthenticatedSessionController();
+        
+        $reflection = new \ReflectionClass($controller);
+        $this->assertTrue($reflection->hasMethod('store'));
+    }
+
+    public function test_destroy_method_exists()
+    {
+        $controller = new AuthenticatedSessionController();
+        
+        $reflection = new \ReflectionClass($controller);
+        $this->assertTrue($reflection->hasMethod('destroy'));
+    }
+
+    public function test_create_method_accepts_request_parameter()
+    {
+        $reflection = new \ReflectionMethod(AuthenticatedSessionController::class, 'create');
+        $parameters = $reflection->getParameters();
+        
+        $this->assertCount(1, $parameters);
+        $this->assertEquals('request', $parameters[0]->getName());
+    }
+
+    public function test_store_method_accepts_login_request()
+    {
+        $reflection = new \ReflectionMethod(AuthenticatedSessionController::class, 'store');
+        $parameters = $reflection->getParameters();
+        
+        $this->assertCount(1, $parameters);
+        $this->assertEquals('request', $parameters[0]->getName());
+    }
+
+    public function test_destroy_method_accepts_request_parameter()
+    {
+        $reflection = new \ReflectionMethod(AuthenticatedSessionController::class, 'destroy');
+        $parameters = $reflection->getParameters();
+        
+        $this->assertCount(1, $parameters);
+        $this->assertEquals('request', $parameters[0]->getName());
+    }
+
+    public function test_controller_has_three_public_methods()
+    {
+        $reflection = new \ReflectionClass(AuthenticatedSessionController::class);
+        $publicMethods = array_filter($reflection->getMethods(\ReflectionMethod::IS_PUBLIC), function($method) {
+            return $method->class === AuthenticatedSessionController::class;
+        });
+        
+        $this->assertCount(3, $publicMethods);
+    }
+
     protected function tearDown(): void
     {
         Mockery::close();
