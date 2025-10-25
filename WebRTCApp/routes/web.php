@@ -63,14 +63,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 require __DIR__.'/auth.php';
 
-//rutas usuario
-// Route::middleware(['auth', 'userMiddleware'])->group(function () {
-
-//     Route::get('/dashboard', [UserController::class, 'index'])->name('dashboard');
-
-// });
-
-//rutas admin
+// Rutas admin
 Route::middleware(['auth', 'adminMiddleware'])->group(function () {
     Route::get('/admin/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
     Route::get('/admin/users', [AdminController::class, 'index'])->name('admin.users');
