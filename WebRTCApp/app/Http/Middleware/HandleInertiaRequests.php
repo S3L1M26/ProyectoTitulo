@@ -29,11 +29,33 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+        $profileCompletenessData = null;
+        
+        // Cargar relaciones según el rol para el cálculo de progreso
+        if ($user) {
+            if ($user->role === 'student') {
+                $user->load(['aprendiz.areasInteres']);
+            } elseif ($user->role === 'mentor') {
+                $user->load(['mentor.areasInteres']);
+            }
+            
+            // Calcular completitud del perfil si es estudiante o mentor
+            if (in_array($user->role, ['student', 'mentor'])) {
+                try {
+                    $profileCompletenessData = $user->profile_completeness;
+                } catch (\Exception $e) {
+                    logger()->error('Error calculating profile completeness in Inertia: ' . $e->getMessage());
+                }
+            }
+        }
+
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user,
             ],
+            'profile_completeness' => $profileCompletenessData,
         ];
     }
 }

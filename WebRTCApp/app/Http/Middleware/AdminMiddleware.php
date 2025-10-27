@@ -19,8 +19,18 @@ class AdminMiddleware
         if (Auth::check() && Auth::user()->role === 'admin') {
             return $next($request);
         }
-    
+
+        // Redirige según el rol del usuario
+        if (Auth::check()) {
+            $role = Auth::user()->role;
+            if ($role === 'mentor') {
+                return redirect()->route('mentor.dashboard');
+            } elseif ($role === 'student') {
+                return redirect()->route('student.dashboard');
+            }
+        }
+        
         // Redirect non-admins to user dashboard instead of back
-        return redirect()->route('dashboard');
+        return redirect()->route('login');
     }
 }

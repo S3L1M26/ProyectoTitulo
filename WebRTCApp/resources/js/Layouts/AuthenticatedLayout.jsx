@@ -2,6 +2,7 @@ import ApplicationLogo from '@/Components/ApplicationLogo';
 import Dropdown from '@/Components/Dropdown';
 import NavLink from '@/Components/NavLink';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
+import ProfileIncompleteIcon from '@/Components/ProfileIncompleteIcon';
 import { Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 
@@ -10,6 +11,8 @@ export default function AuthenticatedLayout({ header, children }) {
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
+
+    const redirectTo = user.role === 'mentor' ? 'mentor.dashboard' : user.role === 'student' ? 'student.dashboard' : 'admin.dashboard';
 
     return (
         <div className="min-h-screen bg-gray-100">
@@ -21,7 +24,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                 <Link href="/">
                                     <img
                                         className='h-10 w-10 fill-current text-gray-500'
-                                        src="/images/favicons/apple-touch-icon.png" // Replace with the correct path to your logo
+                                        src="/images/favicons/faviconGrande.png" // Replace with the correct path to your logo
                                         alt="Application Logo"
                                     />
                                 </Link>
@@ -34,7 +37,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                         href={route('admin.dashboard')}
                                         active={route().current('admin.dashboard')}
                                     >
-                                        Crear Usuario SIP
+                                        Dashboard
                                     </NavLink>
                                     <NavLink
                                         href={route('admin.users')}
@@ -46,10 +49,10 @@ export default function AuthenticatedLayout({ header, children }) {
                             ) : (
                                 <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                                     <NavLink
-                                        href={route('dashboard')}
-                                        active={route().current('dashboard')}
+                                        href={route(redirectTo)}
+                                        active={route().current(redirectTo)}
                                     >
-                                        Dashboard
+                                        Panel de Usuario
                                     </NavLink>
                                 </div>
                             )}
@@ -65,7 +68,10 @@ export default function AuthenticatedLayout({ header, children }) {
                                                 type="button"
                                                 className="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-500 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none"
                                             >
-                                                {user.name}
+                                                <span className="flex items-center">
+                                                    {user.name}
+                                                    <ProfileIncompleteIcon className="ml-2" />
+                                                </span>
 
                                                 <svg
                                                     className="-me-0.5 ms-2 h-4 w-4"
@@ -87,14 +93,14 @@ export default function AuthenticatedLayout({ header, children }) {
                                         <Dropdown.Link
                                             href={route('profile.edit')}
                                         >
-                                            Profile
+                                            Perfil
                                         </Dropdown.Link>
                                         <Dropdown.Link
                                             href={route('logout')}
                                             method="post"
                                             as="button"
                                         >
-                                            Log Out
+                                            Cerrar Sesión
                                         </Dropdown.Link>
                                     </Dropdown.Content>
                                 </Dropdown>
@@ -153,7 +159,7 @@ export default function AuthenticatedLayout({ header, children }) {
                     {user.role === 'admin' ? (
                         <div className="space-y-1 pb-3 pt-2">
                             <ResponsiveNavLink href={route('admin.dashboard')} active={route().current('admin.dashboard')}>
-                                Crear Usuario SIP
+                                Dashboard
                             </ResponsiveNavLink>
                             <ResponsiveNavLink href={route('admin.users')} active={route().current('admin.users')}>
                                 Usuarios
@@ -162,17 +168,18 @@ export default function AuthenticatedLayout({ header, children }) {
                     ):(
                         <div className="space-y-1 pb-3 pt-2">
                             <ResponsiveNavLink
-                                href={route('dashboard')}
-                                active={route().current('dashboard')}
+                                href={route(redirectTo)}
+                                active={route().current(redirectTo)}
                             >
-                                Dashboard
+                                Panel de Usuario
                             </ResponsiveNavLink>
                         </div>
                     )}
                     <div className="border-t border-gray-200 pb-1 pt-4">
                         <div className="px-4">
-                            <div className="text-base font-medium text-gray-800">
+                            <div className="text-base font-medium text-gray-800 flex items-center">
                                 {user.name}
+                                <ProfileIncompleteIcon className="ml-2" />
                             </div>
                             <div className="text-sm font-medium text-gray-500">
                                 {user.email}
@@ -181,14 +188,14 @@ export default function AuthenticatedLayout({ header, children }) {
 
                         <div className="mt-3 space-y-1">
                             <ResponsiveNavLink href={route('profile.edit')}>
-                                Profile
+                                Perfil
                             </ResponsiveNavLink>
                             <ResponsiveNavLink
                                 method="post"
                                 href={route('logout')}
                                 as="button"
                             >
-                                Log Out
+                                Cerrar Sesión
                             </ResponsiveNavLink>
                         </div>
                     </div>

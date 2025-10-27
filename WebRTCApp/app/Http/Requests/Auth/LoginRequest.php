@@ -29,6 +29,7 @@ class LoginRequest extends FormRequest
         return [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
+            'role' => ['required', 'string', 'in:student,mentor'], // Añadimos validación del rol
         ];
     }
 
@@ -46,6 +47,15 @@ class LoginRequest extends FormRequest
 
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
+            ]);
+        }
+
+        // Verificar que el rol coincida con la ruta
+        $requestedRole = request()->route('role');
+        if ($requestedRole && Auth::user()->role !== $requestedRole) {
+            Auth::logout();
+            throw ValidationException::withMessages([
+                'email' => "Esta cuenta no tiene permisos de {$requestedRole}.",
             ]);
         }
 
