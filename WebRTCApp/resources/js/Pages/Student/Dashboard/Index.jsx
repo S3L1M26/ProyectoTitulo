@@ -20,6 +20,10 @@ const Dashboard = memo(function Dashboard({ mentorSuggestions = [] }) {
         setSelectedMentor(null);
     };
 
+    // Verificar si requiere verificación de certificado
+    const requiresVerification = mentorSuggestions?.requires_verification === true;
+    const mentorList = requiresVerification ? [] : (Array.isArray(mentorSuggestions) ? mentorSuggestions : []);
+
     console.log('Mentor suggestions:', mentorSuggestions);
 
     return (
@@ -45,14 +49,40 @@ const Dashboard = memo(function Dashboard({ mentorSuggestions = [] }) {
                         </div>
                     </div>
                     {/* Sección de sugerencias de mentores */}
-                    {mentorSuggestions.length > 0 ? (
+                    {requiresVerification ? (
+                        /* Mensaje de certificado requerido */
+                        <div className="overflow-hidden bg-yellow-50 border-2 border-yellow-200 shadow-sm sm:rounded-lg">
+                            <div className="p-8 text-center">
+                                <div className="mx-auto w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-6">
+                                    <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                                    Certificado de Alumno Regular Requerido
+                                </h3>
+                                <p className="text-gray-700 mb-6 max-w-md mx-auto">
+                                    {mentorSuggestions.message || 'Debes verificar tu certificado de alumno regular para ver mentores.'}
+                                </p>
+                                <a 
+                                    href={mentorSuggestions.upload_url || '/profile#certificate'}
+                                    className="inline-flex items-center px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors font-medium"
+                                >
+                                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                    </svg>
+                                    Subir Certificado
+                                </a>
+                            </div>
+                        </div>
+                    ) : mentorList.length > 0 ? (
                         <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                             <div className="p-6">
                                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
                                     Mentores Sugeridos para Ti
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {mentorSuggestions.map((mentorUser) => (
+                                    {mentorList.map((mentorUser) => (
                                         <div key={mentorUser.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                                             <div className="flex items-center justify-between mb-2">
                                                 <h4 className="font-medium text-gray-900">{mentorUser.name}</h4>

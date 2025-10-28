@@ -20,13 +20,26 @@ class StudentController extends Controller
     /**
      * Get mentor suggestions for the authenticated student
      * OPTIMIZED: Eliminado N+1 queries, implementado eager loading completo, joins eficientes y caché
+     * SECURITY: Requiere certificado verificado para acceder a sugerencias
      */
     private function getMentorSuggestions()
     {
         // Early return con menos queries - cargar con eager loading
         $student = Auth::user()->load('aprendiz.areasInteres');
         
-        if (!$student->aprendiz || $student->aprendiz->areasInteres->isEmpty()) {
+        // VALIDACIÓN: Verificar que el estudiante tenga certificado verificado
+        if (!$student->aprendiz || !$student->aprendiz->certificate_verified) {
+            // Retornar estructura vacía para Inertia (se manejará en el frontend)
+            return [
+                'requires_verification' => true,
+                'message' => 'Debes verificar tu certificado de alumno regular para ver mentores.',
+                'action' => 'upload_certificate',
+                'upload_url' => route('profile.edit') . '#certificate',
+                'mentors' => []
+            ];
+        }
+        
+        if ($student->aprendiz->areasInteres->isEmpty()) {
             return [];
         }
         

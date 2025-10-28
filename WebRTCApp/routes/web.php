@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\User\UserController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Student\StudentController;
+use App\Http\Controllers\Student\CertificateController;
 use App\Http\Controllers\Mentor\MentorController;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Foundation\Application;
@@ -23,6 +24,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Rutas para estudiantes con monitoreo de performance
     Route::middleware(['role:student', 'performance'])->group(function () {
         Route::get('/student/dashboard', [StudentController::class, 'index'])->name('student.dashboard');
+        Route::post('/student/certificate/upload', [CertificateController::class, 'upload'])->name('student.certificate.upload');
     });
 
     // Rutas para mentores con monitoreo de performance

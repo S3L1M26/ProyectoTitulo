@@ -26,14 +26,28 @@ class ProfileController extends Controller
 
         // Cargar datos del perfil según el rol
         if ($user->role === 'student') {
-            $user->load(['aprendiz.areasInteres']);
+            $user->load(['aprendiz.areasInteres', 'latestStudentDocument']);
         } elseif ($user->role === 'mentor') {
             $user->load(['mentor.areasInteres']);
+        }
+
+        // Preparar datos del certificado para estudiantes
+        $certificateData = null;
+        if ($user->role === 'student' && $user->latestStudentDocument) {
+            $certificateData = [
+                'id' => $user->latestStudentDocument->id,
+                'status' => $user->latestStudentDocument->status,
+                'uploaded_at' => $user->latestStudentDocument->created_at->diffForHumans(),
+                'processed_at' => $user->latestStudentDocument->processed_at?->diffForHumans(),
+                'rejection_reason' => $user->latestStudentDocument->rejection_reason,
+                'keyword_score' => $user->latestStudentDocument->keyword_score,
+            ];
         }
 
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
+            'certificate' => $certificateData,
         ]);
     }
 

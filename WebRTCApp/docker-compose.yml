@@ -54,12 +54,18 @@ services:
     container_name: webrtcapp-queue
     restart: unless-stopped
     working_dir: /var/www/html
-    command: sh -c "php artisan migrate --force && php artisan queue:work --tries=3 --timeout=90"
+    command: sh -c "php artisan migrate --force && php artisan queue:work redis --queue=default --sleep=1 --tries=3 --timeout=90 --max-time=3600 --verbose"
     volumes:
       - ./:/var/www/html:cached
+    environment:
+      QUEUE_CONNECTION: redis
+      REDIS_HOST: redis
+      REDIS_PASSWORD: redis_secret_password
+      REDIS_PORT: 6379
     depends_on:
       - app
       - db
+      - redis
 
   # Contenedor para el servidor de desarrollo de Vite
   # Compila y sirve los assets de frontend (JS, CSS) con hot reload

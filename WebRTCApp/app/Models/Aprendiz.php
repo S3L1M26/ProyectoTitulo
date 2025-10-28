@@ -26,6 +26,7 @@ class Aprendiz extends Model
         'semestre',
         'objetivos',
         'user_id',
+        'certificate_verified',
     ];
 
     /**
@@ -35,6 +36,7 @@ class Aprendiz extends Model
      */
     protected $casts = [
         'semestre' => 'integer',
+        'certificate_verified' => 'boolean',
     ];
 
     /**
