@@ -79,10 +79,17 @@ class StudentController extends Controller
                     $query->select([
                         'id', 'user_id', 'experiencia', 'biografia', 'años_experiencia',
                         'disponibilidad', 'disponibilidad_detalle', 'disponible_ahora', 
-                        'calificacionPromedio'
+                        'calificacionPromedio', 'cv_verified'
                     ]);
                 },
-                'mentor.areasInteres:id,nombre' // Solo campos necesarios de áreas
+                'mentor.areasInteres:id,nombre', // Solo campos necesarios de áreas
+                'mentorDocuments' => function($query) {
+                    // Cargar solo el último documento aprobado y público
+                    $query->where('status', 'approved')
+                          ->where('is_public', true)
+                          ->latest('processed_at')
+                          ->limit(1);
+                }
             ])
             ->orderByDesc('mentors.calificacionPromedio') // Ordenar por mejor calificación
             ->distinct() // Evitar duplicados por múltiples áreas en común
@@ -103,6 +110,8 @@ class StudentController extends Controller
                         'stars_rating' => $user->mentor->stars_rating,
                         'rating_percentage' => $user->mentor->rating_percentage,
                         'areas_interes' => $user->mentor->areasInteres,
+                        'cv_verified' => $user->mentor->cv_verified,
+                        'has_public_cv' => $user->mentorDocuments->isNotEmpty(),
                     ]
                 ];
             });

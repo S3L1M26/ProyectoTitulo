@@ -6,7 +6,7 @@ import { Transition } from '@headlessui/react';
 import { useForm, usePage, router } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 
-export default function UpdateMentorProfile({ className = '' }) {
+export default function UpdateMentorProfile({ cvVerified = false, className = '' }) {
     const { auth, errors: pageErrors } = usePage().props;
     const user = auth.user;
     const mentor = user.mentor || {};
@@ -57,7 +57,8 @@ export default function UpdateMentorProfile({ className = '' }) {
             data.años_experiencia > 0 &&
             data.areas_especialidad.length > 0 &&
             data.disponibilidad.trim().length > 0 &&
-            data.disponibilidad_detalle.trim().length > 0
+            data.disponibilidad_detalle.trim().length > 0 &&
+            cvVerified // Agregar validación de CV verificado
         );
     };
 
@@ -90,6 +91,15 @@ export default function UpdateMentorProfile({ className = '' }) {
                 },
                 onError: (errors) => {
                     console.error('Error al cambiar disponibilidad:', errors);
+                    
+                    // Mostrar mensaje específico sobre CV si es el error
+                    if (errors.cv_verification) {
+                        alert('⚠️ ' + errors.cv_verification + '\n\nPor favor, sube y verifica tu CV en la sección de arriba antes de activar tu disponibilidad.');
+                    } else if (errors.disponibilidad) {
+                        alert('⚠️ ' + errors.disponibilidad);
+                    } else {
+                        alert('⚠️ Hubo un error al cambiar la disponibilidad. Por favor, verifica que hayas completado todos los requisitos.');
+                    }
                 },
                 onFinish: () => {
                     console.log('Request finished');
@@ -228,11 +238,12 @@ export default function UpdateMentorProfile({ className = '' }) {
                 {/* Indicador de progreso en tiempo real */}
                 {(() => {
                     const progress = [
-                        { field: 'experiencia', completed: data.experiencia.trim().length >= 50, weight: 30 },
-                        { field: 'areas', completed: data.areas_especialidad.length > 0, weight: 25 },
+                        { field: 'experiencia', completed: data.experiencia.trim().length >= 50, weight: 25 },
+                        { field: 'areas', completed: data.areas_especialidad.length > 0, weight: 20 },
                         { field: 'biografia', completed: data.biografia.trim().length >= 100, weight: 20 },
                         { field: 'años', completed: data.años_experiencia > 0, weight: 15 },
-                        { field: 'disponibilidad', completed: data.disponibilidad_detalle.trim().length > 0, weight: 10 }
+                        { field: 'disponibilidad', completed: data.disponibilidad_detalle.trim().length > 0, weight: 10 },
+                        { field: 'cv', completed: cvVerified, weight: 10 }
                     ];
                     const totalProgress = progress.reduce((sum, item) => sum + (item.completed ? item.weight : 0), 0);
                     
@@ -250,7 +261,7 @@ export default function UpdateMentorProfile({ className = '' }) {
                             </div>
                             {totalProgress < 100 ? (
                                 <p className="text-xs text-gray-500 mt-1">
-                                    💡 Puedes guardar tu progreso parcial. Completa todo para activar tu disponibilidad como mentor.
+                                    💡 Puedes guardar tu progreso parcial. Completa todo (incluyendo CV verificado) para activar tu disponibilidad como mentor.
                                 </p>
                             ) : (
                                 <p className="text-xs text-green-600 mt-1">
@@ -485,14 +496,31 @@ export default function UpdateMentorProfile({ className = '' }) {
                     {!isProfileComplete() && (
                         <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
                             <div className="flex items-start">
-                                <svg className="w-5 h-5 text-blue-500 mt-0.5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <svg className="w-5 h-5 text-blue-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                                 </svg>
-                                <div>
-                                    <h4 className="text-sm font-medium text-blue-800">Completa tu perfil para activar disponibilidad</h4>
-                                    <p className="text-sm text-blue-700 mt-1">
-                                        El botón de disponibilidad aparecerá cuando hayas completado todos los campos requeridos del perfil.
-                                    </p>
+                                <div className="flex-1">
+                                    <h4 className="text-sm font-medium text-blue-800">Requisitos para activar disponibilidad</h4>
+                                    <ul className="text-sm text-blue-700 mt-2 space-y-1">
+                                        <li className={data.experiencia.trim().length >= 50 ? 'line-through opacity-60' : ''}>
+                                            • Experiencia profesional (mínimo 50 caracteres)
+                                        </li>
+                                        <li className={data.biografia.trim().length >= 100 ? 'line-through opacity-60' : ''}>
+                                            • Biografía completa (mínimo 100 caracteres)
+                                        </li>
+                                        <li className={data.años_experiencia > 0 ? 'line-through opacity-60' : ''}>
+                                            • Años de experiencia
+                                        </li>
+                                        <li className={data.areas_especialidad.length > 0 ? 'line-through opacity-60' : ''}>
+                                            • Al menos un área de especialidad
+                                        </li>
+                                        <li className={data.disponibilidad.trim().length > 0 && data.disponibilidad_detalle.trim().length > 0 ? 'line-through opacity-60' : ''}>
+                                            • Información de disponibilidad
+                                        </li>
+                                        <li className={cvVerified ? 'line-through opacity-60' : 'font-semibold'}>
+                                            {cvVerified ? '✅ CV verificado' : '⚠️ CV verificado (sube tu CV arriba)'}
+                                        </li>
+                                    </ul>
                                 </div>
                             </div>
                         </div>
@@ -511,10 +539,27 @@ export default function UpdateMentorProfile({ className = '' }) {
                     </Transition>
                 </div>
 
-                {/* Mostrar errores de disponibilidad */}
-                {pageErrors?.disponibilidad && (
+                {/* Mostrar errores de disponibilidad y CV */}
+                {(pageErrors?.disponibilidad || pageErrors?.cv_verification) && (
                     <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                        <p className="text-sm text-red-600">❌ {pageErrors.disponibilidad}</p>
+                        <div className="flex items-start">
+                            <svg className="w-5 h-5 text-red-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                            </svg>
+                            <div>
+                                {pageErrors?.cv_verification && (
+                                    <>
+                                        <p className="text-sm font-medium text-red-800">❌ {pageErrors.cv_verification}</p>
+                                        <p className="text-sm text-red-700 mt-1">
+                                            Por favor, sube tu CV en la sección de arriba y espera a que sea verificado.
+                                        </p>
+                                    </>
+                                )}
+                                {pageErrors?.disponibilidad && (
+                                    <p className="text-sm text-red-600">❌ {pageErrors.disponibilidad}</p>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 )}
             </form>

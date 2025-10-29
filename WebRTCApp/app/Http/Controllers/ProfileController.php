@@ -28,7 +28,7 @@ class ProfileController extends Controller
         if ($user->role === 'student') {
             $user->load(['aprendiz.areasInteres', 'latestStudentDocument']);
         } elseif ($user->role === 'mentor') {
-            $user->load(['mentor.areasInteres']);
+            $user->load(['mentor.areasInteres', 'latestMentorDocument']);
         }
 
         // Preparar datos del certificado para estudiantes
@@ -44,10 +44,32 @@ class ProfileController extends Controller
             ];
         }
 
+        // Preparar datos del CV para mentores
+        $mentorCvData = null;
+        $cvVerified = false;
+        if ($user->role === 'mentor') {
+            $cvVerified = $user->mentor?->cv_verified ?? false;
+            
+            if ($user->latestMentorDocument) {
+                $mentorCvData = [
+                    'id' => $user->latestMentorDocument->id,
+                    'user_id' => $user->id,
+                    'status' => $user->latestMentorDocument->status,
+                    'created_at' => $user->latestMentorDocument->created_at,
+                    'processed_at' => $user->latestMentorDocument->processed_at,
+                    'rejection_reason' => $user->latestMentorDocument->rejection_reason,
+                    'keyword_score' => $user->latestMentorDocument->keyword_score,
+                    'is_public' => $user->latestMentorDocument->is_public,
+                ];
+            }
+        }
+
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
             'certificate' => $certificateData,
+            'mentorCv' => $mentorCvData,
+            'cvVerified' => $cvVerified,
         ]);
     }
 
@@ -182,6 +204,20 @@ class ProfileController extends Controller
             return Redirect::route('profile.edit')->withErrors([
                 'mentor' => 'Perfil de mentor no encontrado.'
             ]);
+        }
+
+        // Validar CV verificado antes de permitir disponibilidad
+        if ($request->input('disponible', true)) {
+            if (!$mentor->cv_verified) {
+                return Redirect::route('profile.edit')
+                    ->withErrors([
+                        'cv_verification' => 'Debes verificar tu CV para ofrecer mentorías.'
+                    ])
+                    ->with('cv_upload_required', [
+                        'action' => 'upload_cv',
+                        'upload_url' => route('mentor.cv.upload')
+                    ]);
+            }
         }
 
         // Validar que tiene información mínima para estar disponible
