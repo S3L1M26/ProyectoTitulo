@@ -153,7 +153,8 @@ class ProfileControllerIntegrationTest extends TestCase
             'biografia' => 'Desarrollador apasionado por enseñar. He trabajado en múltiples proyectos y me gusta compartir mi conocimiento con estudiantes',
             'años_experiencia' => 10,
             'disponibilidad' => 'Lunes a Viernes',
-            'disponible_ahora' => false
+            'disponible_ahora' => false,
+            'cv_verified' => true, // CV verificado para poder activar disponibilidad
         ]);
 
         $php = AreaInteres::factory()->create();
@@ -176,7 +177,8 @@ class ProfileControllerIntegrationTest extends TestCase
     {
         $mentor = User::factory()->mentor()->create();
         $mentorProfile = Mentor::factory()->incomplete()->for($mentor)->create([
-            'disponible_ahora' => false
+            'disponible_ahora' => false,
+            'cv_verified' => true, // CV verificado pero perfil incompleto
         ]);
 
         $response = $this->actingAs($mentor)->post(route('profile.mentor.toggle-disponibilidad'), [

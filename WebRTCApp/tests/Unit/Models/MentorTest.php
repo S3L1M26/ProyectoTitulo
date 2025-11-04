@@ -29,6 +29,7 @@ class MentorTest extends TestCase
             'disponibilidad_detalle',
             'disponible_ahora',
             'calificacionPromedio',
+            'cv_verified',
             'user_id',
         ];
         
