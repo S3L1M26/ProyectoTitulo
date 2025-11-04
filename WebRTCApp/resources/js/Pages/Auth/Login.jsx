@@ -7,24 +7,33 @@ import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, useForm } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
 
-export default function Login({ status, canResetPassword }) {
+export default function Login({ status, canResetPassword, role }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
         password: '',
         remember: false,
+        role: role, 
     });
 
     const submit = (e) => {
         e.preventDefault();
 
-        post(route('login'), {
+        post(route('login.store', role), {
             onFinish: () => reset('password'),
         });
     };
 
+    // const switchRole = (newRole) => {
+    //     window.location.href = route('login.show', newRole);
+    // };
+
     const headerMsg = (
         <h3 className="text-gray-900 text-xl font-medium mb-6 text-center">
-            Inicia sesión en <strong className="text-[#9fc031]">Connect</strong>        
+            {role === 'student' ? (
+                <p>Área de <strong className="text-[#ec3636]">Estudiantes</strong></p>
+                ) : (
+                <p>Área de <strong className="text-[#ec3636]">Mentores</strong></p>
+                )}        
         </h3>
     );
     
@@ -37,31 +46,42 @@ export default function Login({ status, canResetPassword }) {
             >
                 INICIAR SESIÓN
             </PrimaryButton>
-            <div className="text-center">
+            <div className="text-center space-y-2">
                 <p className="text-sm text-gray-600">
-                    ¿Olvidaste tu contraseña?{' '}
-                    <Link className="text-[#9fc031] hover:underline" href={route('password.request')}>
-                        Recupérala aquí
+                    ¿No tienes cuenta?{' '}
+                    <Link 
+                        className="text-[#f00808] hover:underline" 
+                        href={route('register', {role: role})}
+                    >
+                        Regístrate aquí
                     </Link>
                 </p>
+                {canResetPassword && (
+                    <p className="text-sm text-gray-600">
+                        ¿Olvidaste tu contraseña?{' '}
+                        <Link className="text-[#f00808] hover:underline" href={route('password.request')}>
+                            Recupérala aquí
+                        </Link>
+                    </p>
+                )}
             </div>
         </div>
     );
     
     return (
         <GuestLayout onSubmit={submit} headerMsg={headerMsg} footerElements={footerElements}>
-            <Head title="Inicio Sesión" />
+            <Head title={`Inicio Sesión - ${role === 'student' ? 'Estudiante' : 'Mentor'}`} />
     
             {/* Status Message */}
             {status && (
-                <div className="bg-green-100 border border-green-200 text-green-700 text-sm font-medium p-4 rounded-md mb-4 text-center">
+                <div className="bg-green-100 border border-green-200 text-red-700 text-sm font-medium p-4 rounded-md mb-4 text-center">
                     {status}
                 </div>
             )}
     
             {/* Email Field */}
             <div className="mb-4">
-                <InputLabel htmlFor="email" value="Email" className="block text-sm font-medium text-gray-700 mb-1" />
+                <InputLabel htmlFor="email" value="Correo electrónico" className="block text-sm font-medium text-gray-700 mb-1" />
                 <div className="flex items-center border border-gray-300 rounded-md px-3 py-2 focus-within:ring-1 focus-within:ring-blue-500 focus-within:border-blue-500">
                     <span className="material-icons text-gray-500 mr-2">perm_identity</span>
                     <TextInput

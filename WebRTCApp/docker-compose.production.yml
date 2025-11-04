@@ -1,0 +1,158 @@
+# ===========================================
+# DOCKER COMPOSE - PRODUCCIÓN
+# ===========================================
+# Para usar: docker-compose -f docker-compose.production.yml up -d
+# 
+# NOTAS IMPORTANTES:
+# 1. Usar un load balancer externo (nginx, cloudflare, etc.)
+# 2. Base de datos externa (RDS, Azure DB, etc.)
+# 3. Cache externo (Redis/ElastiCache)
+# 4. Storage externo (S3, Azure Blob, etc.)
+
+services:
+  # ===========================================
+  # APLICACIÓN PRINCIPAL
+  # ===========================================
+  app:
+    build:
+      context: .
+      target: runtime  # Usa la imagen de producción del Dockerfile
+      args:
+        PUID: 1000
+        PGID: 1000
+    container_name: webrtcapp-prod
+    restart: always
+    environment:
+      - APP_ENV=production
+    volumes:
+      # Solo montamos storage para logs/cache temporal
+      - storage_data:/var/www/html/storage
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "php", "-v"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ===========================================
+  # SERVIDOR WEB (NGINX)
+  # ===========================================
+  web:
+    image: nginx:1.27-alpine
+    container_name: webrtcapp-web-prod
+    restart: always
+    ports:
+      - "${WEB_PORT:-80}:80"
+      - "${WEB_SSL_PORT:-443}:443"
+    volumes:
+      - ./docker/nginx/production.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./public:/var/www/html/public:ro
+      - storage_data:/var/www/html/storage:ro
+      # Para SSL certificates (si manejas SSL aquí)
+      # - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ===========================================
+  # QUEUE WORKER
+  # ===========================================
+  queue:
+    build:
+      context: .
+      target: runtime
+    container_name: webrtcapp-queue-prod
+    restart: always
+    command: ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--max-time=3600"]
+    environment:
+      - APP_ENV=production
+    volumes:
+      - storage_data:/var/www/html/storage
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "php", "artisan", "queue:work", "--stop-when-empty"]
+      interval: 60s
+      timeout: 30s
+      retries: 2
+
+  # ===========================================
+  # CRON SCHEDULER
+  # ===========================================
+  scheduler:
+    build:
+      context: .
+      target: runtime
+    container_name: webrtcapp-scheduler-prod
+    restart: always
+    command: ["sh", "-c", "while true; do php artisan schedule:run --verbose --no-interaction; sleep 60; done"]
+    environment:
+      - APP_ENV=production
+    volumes:
+      - storage_data:/var/www/html/storage
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - app-network
+
+# ===========================================
+# VOLUMES
+# ===========================================
+volumes:
+  storage_data:
+    driver: local
+
+# ===========================================
+# NETWORKS
+# ===========================================
+networks:
+  app-network:
+    driver: bridge
+
+# ===========================================
+# NOTAS PARA DEPLOY:
+# ===========================================
+# 
+# 1. VARIABLES DE ENTORNO:
+#    - Copia .env.production a .env
+#    - Ajusta valores según tu proveedor cloud
+# 
+# 2. SERVICIOS EXTERNOS (recomendado):
+#    - Base de datos: AWS RDS, Azure Database, Google Cloud SQL
+#    - Cache: AWS ElastiCache, Azure Cache for Redis
+#    - Storage: AWS S3, Azure Blob Storage, Google Cloud Storage
+#    - Email: AWS SES, SendGrid, Mailgun
+# 
+# 3. SEGURIDAD:
+#    - Usar secrets management (AWS Secrets Manager, Azure Key Vault)
+#    - Configurar SSL/TLS certificates
+#    - Firewall y VPC configuration
+# 
+# 4. MONITORING:
+#    - Logs: CloudWatch, Azure Monitor, Google Cloud Logging
+#    - Metrics: New Relic, Datadog, Prometheus
+#    - Errors: Sentry, Bugsnag
+# 
+# 5. BACKUP:
+#    - Database backups automáticos
+#    - Storage backups
+#    - Disaster recovery plan
+# 
+# 6. CI/CD:
+#    - GitHub Actions, GitLab CI, Jenkins
+#    - Blue-green deployment
+#    - Health checks y rollback automático
+#

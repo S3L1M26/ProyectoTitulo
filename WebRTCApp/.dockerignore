@@ -1,0 +1,16 @@
+/.git
+/vendor
+/node_modules
+/storage/framework/sessions
+/storage/framework/cache/*
+/storage/logs/*.log
+/.idea
+/.vscode
+/.env
+/logs
+docker-compose.override.yml
+*.sqlite
+*.mdmp
+.DS_Store
+Thumbs.db
+/public/storage

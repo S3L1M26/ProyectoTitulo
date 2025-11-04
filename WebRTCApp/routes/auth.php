@@ -12,16 +12,21 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
+    // Rutas de registro
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
+        
+    Route::post('register', [RegisteredUserController::class, 'store'])
+        ->name('register.store');
 
-    Route::post('register', [RegisteredUserController::class, 'store']);
-
+    // Rutas de login
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
+        
+    Route::post('login', [AuthenticatedSessionController::class, 'store'])
+        ->name('login.store');
 
-    Route::post('login', [AuthenticatedSessionController::class, 'store']);
-
+    // Rutas de restablecimiento de contraseña
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');
 
@@ -54,8 +59,15 @@ Route::middleware('auth')->group(function () {
 
     Route::put('password', [PasswordController::class, 'update'])->name('password.update');
 
-    Route::put('sip-password', [PasswordController::class, 'updateSipPassword'])->name('sip-password.update');
-
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
+
+    // Rutas protegidas específicas por rol
+    Route::middleware('role:mentor')->group(function () {
+        // Rutas específicas para mentores
+    });
+
+    Route::middleware('role:student')->group(function () {
+        // Rutas específicas para estudiantes
+    });
 });

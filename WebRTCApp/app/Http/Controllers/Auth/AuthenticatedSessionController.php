@@ -16,9 +16,13 @@ class AuthenticatedSessionController extends Controller
     /**
      * Display the login view.
      */
-    public function create(): Response
+    public function create(Request $request): Response
     {
+        // Obtener el rol desde la query string
+        $role = $request->query('role', 'student');
+
         return Inertia::render('Auth/Login', [
+            'role' => $role,
             'canResetPassword' => Route::has('password.request'),
             'status' => session('status'),
         ]);
@@ -33,11 +37,29 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        if(Auth::user()->role === 'admin') {
-            return redirect(route('admin.dashboard'));
+        // Verificar que el rol del usuario coincida con el rol solicitado
+        if ($request->role && Auth::user()->role !== $request->role && Auth::user()->role !== 'admin') {
+            Auth::logout();
+            return back()->withErrors([
+                'email' => 'Las credenciales no corresponden al tipo de usuario seleccionado.',
+            ]);
+        } 
+
+        // Verificar si hay una URL de destino específica
+        $intendedUrl = $request->query('intended');
+        if ($intendedUrl) {
+            session(['url.intended' => url($intendedUrl)]);
         }
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        // Redireccionar según el rol o a la URL intendida
+        $redirectRoute = match(Auth::user()->role) {
+            'mentor' => 'mentor.dashboard',
+            'student' => 'student.dashboard',
+            'admin' => 'admin.dashboard',
+            default => 'login'
+        };
+
+        return redirect()->intended(route($redirectRoute));
     }
 
     /**
