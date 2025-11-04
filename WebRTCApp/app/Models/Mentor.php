@@ -23,6 +23,7 @@ class Mentor extends Model
         'disponibilidad_detalle',
         'disponible_ahora',
         'calificacionPromedio',
+        'cv_verified',
         'user_id',
     ];
 
@@ -34,6 +35,7 @@ class Mentor extends Model
     protected $casts = [
         'calificacionPromedio' => 'float',
         'disponible_ahora' => 'boolean',
+        'cv_verified' => 'boolean',
         'años_experiencia' => 'integer',
     ];
 
@@ -51,6 +53,22 @@ class Mentor extends Model
     public function areasInteres()
     {
         return $this->belongsToMany(AreaInteres::class, 'mentor_area_interes');
+    }
+
+    /**
+     * Get the mentor's documents (CVs).
+     */
+    public function documents()
+    {
+        return $this->hasMany(MentorDocument::class, 'user_id', 'user_id');
+    }
+
+    /**
+     * Get the mentor's latest document.
+     */
+    public function latestDocument()
+    {
+        return $this->hasOne(MentorDocument::class, 'user_id', 'user_id')->latestOfMany();
     }
 
     /**

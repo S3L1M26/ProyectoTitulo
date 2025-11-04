@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\User\UserController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Student\StudentController;
+use App\Http\Controllers\Student\CertificateController;
 use App\Http\Controllers\Mentor\MentorController;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Foundation\Application;
@@ -19,15 +20,23 @@ Route::get('/', function () {
     ]);
 });
 
+// Ruta pública para ver CV de mentor (con rate limiting)
+Route::get('/mentor/{mentor}/cv', [\App\Http\Controllers\Mentor\CVController::class, 'show'])
+    ->middleware('throttle:10,1') // 10 peticiones por minuto
+    ->name('mentor.cv.show');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     // Rutas para estudiantes con monitoreo de performance
     Route::middleware(['role:student', 'performance'])->group(function () {
         Route::get('/student/dashboard', [StudentController::class, 'index'])->name('student.dashboard');
+        Route::post('/student/certificate/upload', [CertificateController::class, 'upload'])->name('student.certificate.upload');
     });
 
     // Rutas para mentores con monitoreo de performance
     Route::middleware(['role:mentor', 'performance'])->group(function () {
         Route::get('/mentor/dashboard', [MentorController::class, 'index'])->name('mentor.dashboard');
+        Route::post('/mentor/cv/upload', [\App\Http\Controllers\Mentor\CVController::class, 'upload'])->name('mentor.cv.upload');
+        Route::post('/mentor/cv/toggle-visibility', [\App\Http\Controllers\Mentor\CVController::class, 'toggleVisibility'])->name('mentor.cv.toggle-visibility');
     });
 });
 

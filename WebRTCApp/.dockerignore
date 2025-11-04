@@ -13,3 +13,4 @@ docker-compose.override.yml
 *.mdmp
 .DS_Store
 Thumbs.db
+/public/storage

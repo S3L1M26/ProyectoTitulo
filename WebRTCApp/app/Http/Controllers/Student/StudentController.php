@@ -20,13 +20,26 @@ class StudentController extends Controller
     /**
      * Get mentor suggestions for the authenticated student
      * OPTIMIZED: Eliminado N+1 queries, implementado eager loading completo, joins eficientes y caché
+     * SECURITY: Requiere certificado verificado para acceder a sugerencias
      */
     private function getMentorSuggestions()
     {
         // Early return con menos queries - cargar con eager loading
         $student = Auth::user()->load('aprendiz.areasInteres');
         
-        if (!$student->aprendiz || $student->aprendiz->areasInteres->isEmpty()) {
+        // VALIDACIÓN: Verificar que el estudiante tenga certificado verificado
+        if (!$student->aprendiz || !$student->aprendiz->certificate_verified) {
+            // Retornar estructura vacía para Inertia (se manejará en el frontend)
+            return [
+                'requires_verification' => true,
+                'message' => 'Debes verificar tu certificado de alumno regular para ver mentores.',
+                'action' => 'upload_certificate',
+                'upload_url' => route('profile.edit') . '#certificate',
+                'mentors' => []
+            ];
+        }
+        
+        if ($student->aprendiz->areasInteres->isEmpty()) {
             return [];
         }
         
@@ -66,10 +79,17 @@ class StudentController extends Controller
                     $query->select([
                         'id', 'user_id', 'experiencia', 'biografia', 'años_experiencia',
                         'disponibilidad', 'disponibilidad_detalle', 'disponible_ahora', 
-                        'calificacionPromedio'
+                        'calificacionPromedio', 'cv_verified'
                     ]);
                 },
-                'mentor.areasInteres:id,nombre' // Solo campos necesarios de áreas
+                'mentor.areasInteres:id,nombre', // Solo campos necesarios de áreas
+                'mentorDocuments' => function($query) {
+                    // Cargar solo el último documento aprobado y público
+                    $query->where('status', 'approved')
+                          ->where('is_public', true)
+                          ->latest('processed_at')
+                          ->limit(1);
+                }
             ])
             ->orderByDesc('mentors.calificacionPromedio') // Ordenar por mejor calificación
             ->distinct() // Evitar duplicados por múltiples áreas en común
@@ -90,6 +110,8 @@ class StudentController extends Controller
                         'stars_rating' => $user->mentor->stars_rating,
                         'rating_percentage' => $user->mentor->rating_percentage,
                         'areas_interes' => $user->mentor->areasInteres,
+                        'cv_verified' => $user->mentor->cv_verified,
+                        'has_public_cv' => $user->mentorDocuments->isNotEmpty(),
                     ]
                 ];
             });

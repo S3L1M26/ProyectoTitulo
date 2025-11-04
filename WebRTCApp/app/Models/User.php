@@ -61,6 +61,38 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Get the student's documents.
+     */
+    public function studentDocuments()
+    {
+        return $this->hasMany(StudentDocument::class);
+    }
+
+    /**
+     * Get the student's latest document.
+     */
+    public function latestStudentDocument()
+    {
+        return $this->hasOne(StudentDocument::class)->latestOfMany();
+    }
+
+    /**
+     * Get the mentor's documents.
+     */
+    public function mentorDocuments()
+    {
+        return $this->hasMany(MentorDocument::class);
+    }
+
+    /**
+     * Get the mentor's latest document.
+     */
+    public function latestMentorDocument()
+    {
+        return $this->hasOne(MentorDocument::class)->latestOfMany();
+    }
+
+    /**
      * Send a password reset notification to the user.
      */
     public function sendPasswordResetNotification($token)

@@ -5,9 +5,11 @@ import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
 import UpdateAprendizProfile from './Partials/UpdateAprendizProfile';
 import UpdateMentorProfile from './Partials/UpdateMentorProfile';
+import StudentCertificate from './Partials/StudentCertificate';
+import MentorCV from './Partials/MentorCV';
 import ProfileProgress from '@/Components/ProfileProgress';
 
-export default function Edit({ mustVerifyEmail, status }) {
+export default function Edit({ mustVerifyEmail, status, certificate, mentorCv, cvVerified }) {
     const { auth } = usePage().props;
     const user = auth.user;
     return (
@@ -37,16 +39,26 @@ export default function Edit({ mustVerifyEmail, status }) {
 
                     {/* Formulario específico para estudiantes */}
                     {user.role === 'student' && (
-                        <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
-                            <UpdateAprendizProfile className="max-w-xl" />
-                        </div>
+                        <>
+                            <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8" id="certificate">
+                                <StudentCertificate certificate={certificate} className="max-w-xl" />
+                            </div>
+                            <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
+                                <UpdateAprendizProfile className="max-w-xl" />
+                            </div>
+                        </>
                     )}
 
                     {/* Formulario específico para mentores */}
                     {user.role === 'mentor' && (
-                        <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
-                            <UpdateMentorProfile className="max-w-xl" />
-                        </div>
+                        <>
+                            <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8" id="cv">
+                                <MentorCV cv={mentorCv} cvVerified={cvVerified} className="max-w-xl" />
+                            </div>
+                            <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
+                                <UpdateMentorProfile cvVerified={cvVerified} className="max-w-xl" />
+                            </div>
+                        </>
                     )}
 
                     <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">

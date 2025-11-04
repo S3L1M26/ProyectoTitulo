@@ -9,8 +9,6 @@
 # 3. Cache externo (Redis/ElastiCache)
 # 4. Storage externo (S3, Azure Blob, etc.)
 
-version: '3.8'
-
 services:
   # ===========================================
   # APLICACIÓN PRINCIPAL

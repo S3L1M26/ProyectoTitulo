@@ -29,9 +29,11 @@ class StudentControllerIntegrationTest extends TestCase
         $laravel = AreaInteres::factory()->create(['nombre' => 'Laravel']);
         $react = AreaInteres::factory()->create(['nombre' => 'React']);
 
-        // Crear estudiante con áreas PHP y Laravel
+        // Crear estudiante con áreas PHP y Laravel y certificado verificado
         $student = User::factory()->student()->create();
-        $aprendiz = Aprendiz::factory()->for($student)->create();
+        $aprendiz = Aprendiz::factory()->for($student)->create([
+            'certificate_verified' => true // Requerido desde US2.5
+        ]);
         $aprendiz->areasInteres()->attach([$php->id, $laravel->id]);
 
         // Crear mentores
@@ -67,6 +69,7 @@ class StudentControllerIntegrationTest extends TestCase
         // Verificar que solo aparecen los mentores correctos
         $suggestions = $response->viewData('page')['props']['mentorSuggestions'];
         
+        // Ahora las sugerencias son un array directo de mentores
         $this->assertCount(2, $suggestions);
         $this->assertEquals('Mentor PHP Laravel', $suggestions[0]['name']);
         $this->assertEquals('Mentor PHP', $suggestions[1]['name']);
@@ -78,7 +81,9 @@ class StudentControllerIntegrationTest extends TestCase
         $php = AreaInteres::factory()->create(['nombre' => 'PHP']);
 
         $student = User::factory()->student()->create();
-        $aprendiz = Aprendiz::factory()->for($student)->create();
+        $aprendiz = Aprendiz::factory()->for($student)->create([
+            'certificate_verified' => true // Requerido desde US2.5
+        ]);
         $aprendiz->areasInteres()->attach([$php->id]);
 
         // Crear mentores con diferentes calificaciones
@@ -114,9 +119,11 @@ class StudentControllerIntegrationTest extends TestCase
     #[Test]
     public function student_without_areas_receives_empty_suggestions()
     {
-        // Estudiante sin áreas de interés
+        // Estudiante sin áreas de interés pero con certificado verificado
         $student = User::factory()->student()->create();
-        $aprendiz = Aprendiz::factory()->for($student)->create();
+        $aprendiz = Aprendiz::factory()->for($student)->create([
+            'certificate_verified' => true // Requerido desde US2.5
+        ]);
 
         // Crear un mentor disponible
         $mentor = User::factory()->mentor()->create();
@@ -149,7 +156,12 @@ class StudentControllerIntegrationTest extends TestCase
         $response->assertStatus(200);
         $suggestions = $response->viewData('page')['props']['mentorSuggestions'];
         
-        $this->assertEmpty($suggestions);
+        // Sin perfil aprendiz, debe retornar estructura de verificación requerida
+        $this->assertIsArray($suggestions);
+        $this->assertArrayHasKey('requires_verification', $suggestions);
+        $this->assertTrue($suggestions['requires_verification']);
+        $this->assertArrayHasKey('mentors', $suggestions);
+        $this->assertEmpty($suggestions['mentors']);
     }
 
     #[Test]
@@ -158,7 +170,9 @@ class StudentControllerIntegrationTest extends TestCase
         $php = AreaInteres::factory()->create(['nombre' => 'PHP']);
 
         $student = User::factory()->student()->create();
-        $aprendiz = Aprendiz::factory()->for($student)->create();
+        $aprendiz = Aprendiz::factory()->for($student)->create([
+            'certificate_verified' => true // Requerido desde US2.5
+        ]);
         $aprendiz->areasInteres()->attach([$php->id]);
 
         // Crear 10 mentores
@@ -189,7 +203,9 @@ class StudentControllerIntegrationTest extends TestCase
         $laravel = AreaInteres::factory()->create(['nombre' => 'Laravel']);
 
         $student = User::factory()->student()->create();
-        $aprendiz = Aprendiz::factory()->for($student)->create();
+        $aprendiz = Aprendiz::factory()->for($student)->create([
+            'certificate_verified' => true // Requerido desde US2.5
+        ]);
         $aprendiz->areasInteres()->attach([$php->id]);
 
         $mentor = User::factory()->mentor()->create(['name' => 'Test Mentor']);
@@ -242,7 +258,9 @@ class StudentControllerIntegrationTest extends TestCase
         $php = AreaInteres::factory()->create(['nombre' => 'PHP']);
 
         $student = User::factory()->student()->create();
-        $aprendiz = Aprendiz::factory()->for($student)->create();
+        $aprendiz = Aprendiz::factory()->for($student)->create([
+            'certificate_verified' => true // Requerido desde US2.5
+        ]);
         $aprendiz->areasInteres()->attach([$php->id]);
 
         $mentor = User::factory()->mentor()->create(['name' => 'Cached Mentor']);
@@ -276,5 +294,37 @@ class StudentControllerIntegrationTest extends TestCase
         $response = $this->get(route('student.dashboard'));
 
         $response->assertRedirect(route('login'));
+    }
+
+    #[Test]
+    public function student_without_verified_certificate_receives_verification_requirement()
+    {
+        $php = AreaInteres::factory()->create(['nombre' => 'PHP']);
+
+        // Estudiante SIN certificado verificado
+        $student = User::factory()->student()->create();
+        $aprendiz = Aprendiz::factory()->for($student)->create([
+            'certificate_verified' => false // No verificado
+        ]);
+        $aprendiz->areasInteres()->attach([$php->id]);
+
+        // Crear mentor disponible
+        $mentor = User::factory()->mentor()->create();
+        $mentorProfile = Mentor::factory()->available()->for($mentor)->create();
+        $mentorProfile->areasInteres()->attach([$php->id]);
+
+        $response = $this->actingAs($student)->get(route('student.dashboard'));
+
+        $response->assertStatus(200);
+        $suggestions = $response->viewData('page')['props']['mentorSuggestions'];
+
+        // Debe retornar estructura de verificación requerida
+        $this->assertIsArray($suggestions);
+        $this->assertArrayHasKey('requires_verification', $suggestions);
+        $this->assertTrue($suggestions['requires_verification']);
+        $this->assertArrayHasKey('message', $suggestions);
+        $this->assertStringContainsString('certificado', $suggestions['message']);
+        $this->assertArrayHasKey('mentors', $suggestions);
+        $this->assertEmpty($suggestions['mentors']); // No debe mostrar mentores
     }
 }

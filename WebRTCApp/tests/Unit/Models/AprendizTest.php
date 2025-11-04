@@ -32,6 +32,7 @@ class AprendizTest extends TestCase
             'semestre',
             'objetivos',
             'user_id',
+            'certificate_verified',
         ];
         
         $this->assertEquals($expected, $aprendiz->getFillable());

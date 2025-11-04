@@ -14,9 +14,15 @@ ENV TZ=UTC \
     COMPOSER_NO_INTERACTION=1
 RUN apk add --no-cache \
     bash git curl zip unzip icu-dev oniguruma-dev libzip-dev libpng-dev \
-    shadow tzdata openssl mysql-client build-base
+    shadow tzdata openssl mysql-client build-base \
+    tesseract-ocr tesseract-ocr-data-spa poppler-utils imagemagick
 RUN docker-php-ext-configure intl \
     && docker-php-ext-install pdo pdo_mysql intl mbstring zip bcmath gd
+# Instalar extensión Redis para PHP
+RUN apk add --no-cache $PHPIZE_DEPS \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && apk del $PHPIZE_DEPS
 ARG INSTALL_XDEBUG=0
 RUN if [ "$INSTALL_XDEBUG" = "1" ]; then \
       apk add --no-cache $PHPIZE_DEPS && pecl install xdebug && docker-php-ext-enable xdebug ; \
