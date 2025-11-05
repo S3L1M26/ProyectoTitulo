@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Student\StudentController;
 use App\Http\Controllers\Student\CertificateController;
 use App\Http\Controllers\Mentor\MentorController;
+use App\Http\Controllers\SolicitudMentoriaController;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -68,6 +69,41 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
     Route::get('/api/areas-interes', [ProfileController::class, 'getAreasInteres'])
         ->name('api.areas-interes');
+});
+
+// Rutas para solicitudes de mentoría
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Ruta para estudiantes: crear solicitud de mentoría
+    Route::post('/solicitud-mentoria', [SolicitudMentoriaController::class, 'store'])
+        ->middleware('role:student')
+        ->name('solicitud-mentoria.store');
+    
+    // Rutas para estudiantes: ver sus solicitudes y notificaciones
+    Route::middleware('role:student')->group(function () {
+        Route::get('/student/solicitudes', [SolicitudMentoriaController::class, 'misSolicitudes'])
+            ->name('student.solicitudes');
+        
+        Route::get('/student/notifications', [SolicitudMentoriaController::class, 'misNotificaciones'])
+            ->name('student.notifications');
+        
+        Route::post('/student/notifications/{id}/read', [SolicitudMentoriaController::class, 'marcarComoLeida'])
+            ->name('student.notifications.read');
+        
+        Route::post('/student/notifications/read-all', [SolicitudMentoriaController::class, 'marcarTodasComoLeidas'])
+            ->name('student.notifications.read-all');
+    });
+    
+    // Rutas para mentores: gestionar solicitudes
+    Route::middleware('role:mentor')->group(function () {
+        Route::get('/mentor/solicitudes', [SolicitudMentoriaController::class, 'index'])
+            ->name('mentor.solicitudes.index');
+        
+        Route::post('/mentor/solicitudes/{id}/accept', [SolicitudMentoriaController::class, 'accept'])
+            ->name('mentor.solicitudes.accept');
+        
+        Route::post('/mentor/solicitudes/{id}/reject', [SolicitudMentoriaController::class, 'reject'])
+            ->name('mentor.solicitudes.reject');
+    });
 });
 
 require __DIR__.'/auth.php';

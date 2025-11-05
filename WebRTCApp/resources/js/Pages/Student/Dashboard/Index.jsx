@@ -1,14 +1,29 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head } from '@inertiajs/react';
-import { useState, lazy, Suspense, memo } from 'react';
+import { Head, usePage } from '@inertiajs/react';
+import { useState, lazy, Suspense, memo, useEffect } from 'react';
 
 // OPTIMIZACIÓN: Lazy loading de componentes pesados
 const ProfileReminderNotification = lazy(() => import('@/Components/ProfileReminderNotification'));
 const MentorDetailModal = lazy(() => import('@/Components/MentorDetailModal'));
 
-const Dashboard = memo(function Dashboard({ mentorSuggestions = [] }) {
+const Dashboard = memo(function Dashboard({ 
+    mentorSuggestions = [], 
+    aprendiz, 
+    solicitudesPendientes = []
+}) {
+    const { flash } = usePage().props;
     const [selectedMentor, setSelectedMentor] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+
+    // Mostrar mensaje de éxito si existe
+    useEffect(() => {
+        if (flash?.success) {
+            const timer = setTimeout(() => {
+                alert(flash.success);
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [flash]);
 
     const openMentorModal = (mentor) => {
         setSelectedMentor(mentor);
@@ -177,8 +192,7 @@ const Dashboard = memo(function Dashboard({ mentorSuggestions = [] }) {
                             </div>
                         </div>
                     )}
-                    
-                    
+
                 </div>
             </div>
 
@@ -189,6 +203,8 @@ const Dashboard = memo(function Dashboard({ mentorSuggestions = [] }) {
                         isOpen={isModalOpen}
                         onClose={closeMentorModal}
                         mentor={selectedMentor}
+                        aprendiz={aprendiz}
+                        solicitudesPendientes={solicitudesPendientes}
                     />
                 </Suspense>
             )}

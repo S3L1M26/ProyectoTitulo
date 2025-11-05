@@ -67,7 +67,20 @@ The Laravel framework is open-sourced software licensed under the [MIT license](
 
 ---
 
-## 🚀 Optimizaciones de Rendimiento Implementadas
+## � Documentación del Proyecto
+
+Toda la documentación técnica está organizada en la carpeta `docs/`:
+
+- **[📁 Testing](docs/testing/)** - Tests unitarios, de integración y evidencias (316 tests, 820 assertions)
+- **[📁 Deployment](docs/deployment/)** - Guías de despliegue y configuración de producción
+- **[📁 Performance](docs/performance/)** - Optimizaciones y análisis de rendimiento
+- **[📁 Database](docs/database/)** - Gestión de BD, seeders y optimizaciones
+
+👉 **[Ver índice completo de documentación](docs/README.md)**
+
+---
+
+## �🚀 Optimizaciones de Rendimiento Implementadas
 
 ### 📊 **Mejoras de Performance Logradas**
 - **🗄️ Base de Datos**: Reducción del 87.9% en tiempo de consultas (800ms → 96ms)
