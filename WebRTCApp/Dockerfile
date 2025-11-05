@@ -18,6 +18,8 @@ RUN apk add --no-cache \
     tesseract-ocr tesseract-ocr-data-spa poppler-utils imagemagick
 RUN docker-php-ext-configure intl \
     && docker-php-ext-install pdo pdo_mysql intl mbstring zip bcmath gd
+# Copiar configuración PHP-FPM optimizada
+COPY docker/php/www.conf /usr/local/etc/php-fpm.d/www.conf
 # Instalar extensión Redis para PHP
 RUN apk add --no-cache $PHPIZE_DEPS \
     && pecl install redis \

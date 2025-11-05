@@ -27,6 +27,7 @@
     "dependencies": {
         "bcryptjs": "^3.0.2",
         "crypto-js": "^4.2.0",
+        "date-fns": "^4.1.0",
         "prop-types": "^15.8.1",
         "ziggy-js": "^2.5.1"
     }

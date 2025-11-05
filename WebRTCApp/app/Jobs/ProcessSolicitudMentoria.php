@@ -9,6 +9,7 @@ use App\Notifications\SolicitudMentoriaAceptada;
 use App\Notifications\SolicitudMentoriaRechazada;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Cache;
 
 class ProcessSolicitudMentoria implements ShouldQueue
 {
@@ -26,7 +27,7 @@ class ProcessSolicitudMentoria implements ShouldQueue
      *
      * @var int
      */
-    public $timeout = 60;
+    public $timeout = 120;
 
     /**
      * The number of seconds to wait before retrying the job.
@@ -72,6 +73,10 @@ class ProcessSolicitudMentoria implements ShouldQueue
             case 'accepted':
                 // Enviar notificación al estudiante
                 $this->solicitud->estudiante->notify(new SolicitudMentoriaAceptada($this->solicitud));
+                // INVALIDAR CACHÉ del estudiante para reflejar la nueva notificación/estado
+                Cache::forget('student_notifications_' . $this->solicitud->estudiante_id);
+                Cache::forget('student_unread_notifications_' . $this->solicitud->estudiante_id);
+                Cache::forget('student_solicitudes_' . $this->solicitud->estudiante_id);
                 
                 // Verificar si el mentor alcanzó su límite de solicitudes aceptadas
                 $this->updateMentorAvailability();
@@ -80,6 +85,10 @@ class ProcessSolicitudMentoria implements ShouldQueue
             case 'rejected':
                 // Enviar notificación al estudiante
                 $this->solicitud->estudiante->notify(new SolicitudMentoriaRechazada($this->solicitud));
+                // INVALIDAR CACHÉ del estudiante para reflejar la nueva notificación/estado
+                Cache::forget('student_notifications_' . $this->solicitud->estudiante_id);
+                Cache::forget('student_unread_notifications_' . $this->solicitud->estudiante_id);
+                Cache::forget('student_solicitudes_' . $this->solicitud->estudiante_id);
                 break;
         }
     }

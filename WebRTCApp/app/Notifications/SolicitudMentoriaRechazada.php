@@ -56,7 +56,7 @@ class SolicitudMentoriaRechazada extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $mentor = $this->solicitud->mentorUser;
+        $mentor = $this->solicitud->mentor;
         $mentorProfile = $this->solicitud->mentorProfile;
         
         // Obtener motivo si existe (podríamos agregarlo al modelo más adelante)
@@ -102,7 +102,7 @@ class SolicitudMentoriaRechazada extends Notification implements ShouldQueue
         return [
             'solicitud_id' => $this->solicitud->id,
             'mentor_id' => $this->solicitud->mentor_id,
-            'mentor_nombre' => $this->solicitud->mentorUser->name,
+            'mentor_nombre' => $this->solicitud->mentor->name,
             'mentor_experiencia' => $this->solicitud->mentorProfile->años_experiencia ?? null,
             'fecha_respuesta' => $this->solicitud->fecha_respuesta,
             'motivo_rechazo' => $this->solicitud->motivo_rechazo ?? null,

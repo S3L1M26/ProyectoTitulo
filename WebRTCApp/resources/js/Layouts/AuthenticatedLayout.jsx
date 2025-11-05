@@ -8,6 +8,7 @@ import { useState } from 'react';
 
 export default function AuthenticatedLayout({ header, children }) {
     const user = usePage().props.auth.user;
+    const { contadorNoLeidas } = usePage().props;
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
@@ -46,6 +47,34 @@ export default function AuthenticatedLayout({ header, children }) {
                                         Usuarios
                                     </NavLink>
                                 </div>
+                            ) : user.role === 'student' ? (
+                                <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                                    <NavLink
+                                        href={route('student.dashboard')}
+                                        active={route().current('student.dashboard')}
+                                    >
+                                        Panel de Usuario
+                                    </NavLink>
+                                    <NavLink
+                                        href={route('student.solicitudes')}
+                                        active={route().current('student.solicitudes')}
+                                    >
+                                        Mis Solicitudes
+                                    </NavLink>
+                                    <NavLink
+                                        href={route('student.notifications')}
+                                        active={route().current('student.notifications')}
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <span>Notificaciones</span>
+                                            {contadorNoLeidas > 0 && (
+                                                <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-600 rounded-full">
+                                                    {contadorNoLeidas > 9 ? '9+' : contadorNoLeidas}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </NavLink>
+                                </div>
                             ) : (
                                 <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                                     <NavLink
@@ -59,8 +88,8 @@ export default function AuthenticatedLayout({ header, children }) {
                             
                         </div>
 
-                        <div className="hidden sm:ms-6 sm:flex sm:items-center">
-                            <div className="relative ms-3">
+                        <div className="hidden sm:ms-6 sm:flex sm:items-center gap-4">
+                            <div className="relative">
                                 <Dropdown>
                                     <Dropdown.Trigger>
                                         <span className="inline-flex rounded-md">
@@ -165,7 +194,35 @@ export default function AuthenticatedLayout({ header, children }) {
                                 Usuarios
                             </ResponsiveNavLink>
                         </div>
-                    ):(
+                    ) : user.role === 'student' ? (
+                        <div className="space-y-1 pb-3 pt-2">
+                            <ResponsiveNavLink
+                                href={route('student.dashboard')}
+                                active={route().current('student.dashboard')}
+                            >
+                                Panel de Usuario
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink
+                                href={route('student.solicitudes')}
+                                active={route().current('student.solicitudes')}
+                            >
+                                Mis Solicitudes
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink
+                                href={route('student.notifications')}
+                                active={route().current('student.notifications')}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <span>Notificaciones</span>
+                                    {contadorNoLeidas > 0 && (
+                                        <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-600 rounded-full">
+                                            {contadorNoLeidas > 9 ? '9+' : contadorNoLeidas}
+                                        </span>
+                                    )}
+                                </div>
+                            </ResponsiveNavLink>
+                        </div>
+                    ) : (
                         <div className="space-y-1 pb-3 pt-2">
                             <ResponsiveNavLink
                                 href={route(redirectTo)}

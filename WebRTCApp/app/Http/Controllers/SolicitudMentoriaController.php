@@ -9,6 +9,7 @@ use App\Models\Aprendiz;
 use App\Jobs\ProcessSolicitudMentoria;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 
 class SolicitudMentoriaController extends Controller
@@ -88,6 +89,9 @@ class SolicitudMentoriaController extends Controller
 
         // Enviar notificación al mentor de forma asíncrona
         ProcessSolicitudMentoria::dispatch($solicitud, 'created');
+
+        // INVALIDAR CACHÉ: Listas dependientes del estudiante
+        Cache::forget('student_solicitudes_' . $estudiante->id);
 
         return redirect()->back()->with('success', 'Solicitud de mentoría enviada exitosamente.');
     }
@@ -173,6 +177,11 @@ class SolicitudMentoriaController extends Controller
         // Enviar notificación al estudiante de forma asíncrona
         ProcessSolicitudMentoria::dispatch($solicitud, 'accepted');
 
+        // INVALIDAR CACHÉ del estudiante afectado
+        Cache::forget('student_solicitudes_' . $solicitud->estudiante_id);
+        Cache::forget('student_notifications_' . $solicitud->estudiante_id);
+        Cache::forget('student_unread_notifications_' . $solicitud->estudiante_id);
+
         return redirect()->back()->with('success', 'Solicitud aceptada exitosamente.');
     }
 
@@ -225,95 +234,114 @@ class SolicitudMentoriaController extends Controller
         // Enviar notificación al estudiante de forma asíncrona
         ProcessSolicitudMentoria::dispatch($solicitud, 'rejected');
 
+        // INVALIDAR CACHÉ del estudiante afectado
+        Cache::forget('student_solicitudes_' . $solicitud->estudiante_id);
+        Cache::forget('student_notifications_' . $solicitud->estudiante_id);
+        Cache::forget('student_unread_notifications_' . $solicitud->estudiante_id);
+
         return redirect()->back()->with('success', 'Solicitud rechazada.');
     }
 
     /**
      * Get all solicitudes for the authenticated student.
      * Returns solicitudes with mentor information, ordered by newest first.
+     * OPTIMIZED: Caché y eager loading selectivo
      */
     public function misSolicitudes()
     {
         $estudiante = Auth::user();
         
-        // Obtener todas las solicitudes del estudiante con eager loading
-        $solicitudes = SolicitudMentoria::where('estudiante_id', $estudiante->id)
-            ->with([
-                'mentorUser.mentor.areasInteres',
-                'aprendiz.areasInteres'
-            ])
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($solicitud) {
-                return [
-                    'id' => $solicitud->id,
-                    'estado' => $solicitud->estado,
-                    'mensaje' => $solicitud->mensaje,
-                    'fecha_solicitud' => $solicitud->fecha_solicitud,
-                    'fecha_respuesta' => $solicitud->fecha_respuesta,
-                    'created_at' => $solicitud->created_at,
-                    'updated_at' => $solicitud->updated_at,
-                    'mentor' => [
-                        'id' => $solicitud->mentorUser->id,
-                        'name' => $solicitud->mentorUser->name,
-                        'email' => $solicitud->mentorUser->email,
-                        'años_experiencia' => $solicitud->mentorUser->mentor->años_experiencia,
-                        'biografia' => $solicitud->mentorUser->mentor->biografia,
-                        'experiencia' => $solicitud->mentorUser->mentor->experiencia,
-                        'areas_interes' => $solicitud->mentorUser->mentor->areasInteres->map(function ($area) {
-                            return [
-                                'id' => $area->id,
-                                'nombre' => $area->nombre,
-                            ];
-                        }),
-                    ],
-                    'areas_interes' => $solicitud->aprendiz->areasInteres->map(function ($area) {
+        // CACHÉ: 2 minutos para solicitudes (se invalida al crear/actualizar)
+        $solicitudes = Cache::remember(
+            'student_solicitudes_' . $estudiante->id,
+            120,
+            function() use ($estudiante) {
+                return SolicitudMentoria::where('estudiante_id', $estudiante->id)
+                    ->with([
+                        'mentor:id,name,email',
+                        'mentor.mentor:id,user_id,años_experiencia,biografia,experiencia',
+                        'mentor.mentor.areasInteres:id,nombre',
+                        'aprendiz.areasInteres:id,nombre'
+                    ])
+                    ->orderBy('created_at', 'desc')
+                    ->get()
+                    ->map(function ($solicitud) {
                         return [
-                            'id' => $area->id,
-                            'nombre' => $area->nombre,
+                            'id' => $solicitud->id,
+                            'estado' => $solicitud->estado,
+                            'mensaje' => $solicitud->mensaje,
+                            'fecha_solicitud' => $solicitud->fecha_solicitud,
+                            'fecha_respuesta' => $solicitud->fecha_respuesta,
+                            'created_at' => $solicitud->created_at,
+                            'updated_at' => $solicitud->updated_at,
+                            'mentor' => [
+                                'id' => $solicitud->mentor->id,
+                                'name' => $solicitud->mentor->name,
+                                'años_experiencia' => $solicitud->mentor->mentor->años_experiencia ?? 0,
+                                'biografia' => $solicitud->mentor->mentor->biografia ?? '',
+                                'areas_interes' => $solicitud->mentor->mentor->areasInteres->map(function ($area) {
+                                    return [
+                                        'id' => $area->id,
+                                        'nombre' => $area->nombre,
+                                    ];
+                                }),
+                            ],
                         ];
-                    }),
-                ];
-            });
+                    });
+            }
+        );
 
-        return inertia('Student/Dashboard/Index', [
+        return inertia('Student/Solicitudes/Index', [
             'misSolicitudes' => $solicitudes,
         ]);
     }
 
     /**
      * Get unread notifications for the authenticated student.
+     * OPTIMIZED: Caché de 1 minuto
      */
     public function misNotificaciones()
     {
         $estudiante = Auth::user();
         
-        // Obtener notificaciones no leídas
-        $notificaciones = $estudiante->unreadNotifications()
-            ->whereIn('type', [
-                'App\Notifications\SolicitudMentoriaAceptada',
-                'App\Notifications\SolicitudMentoriaRechazada',
-            ])
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($notification) {
-                return [
-                    'id' => $notification->id,
-                    'type' => class_basename($notification->type),
-                    'data' => $notification->data,
-                    'created_at' => $notification->created_at,
-                    'read_at' => $notification->read_at,
-                ];
-            });
+        // CACHÉ: 1 minuto para notificaciones
+        $notificaciones = Cache::remember(
+            'student_notifications_' . $estudiante->id,
+            60, // 1 minuto
+            function() use ($estudiante) {
+                return $estudiante->unreadNotifications()
+                    ->whereIn('type', [
+                        'App\Notifications\SolicitudMentoriaAceptada',
+                        'App\Notifications\SolicitudMentoriaRechazada',
+                    ])
+                    ->orderBy('created_at', 'desc')
+                    ->get()
+                    ->map(function ($notification) {
+                        return [
+                            'id' => $notification->id,
+                            'type' => class_basename($notification->type),
+                            'data' => $notification->data,
+                            'created_at' => $notification->created_at,
+                            'read_at' => $notification->read_at,
+                        ];
+                    });
+            }
+        );
 
-        $contadorNoLeidas = $estudiante->unreadNotifications()
-            ->whereIn('type', [
-                'App\Notifications\SolicitudMentoriaAceptada',
-                'App\Notifications\SolicitudMentoriaRechazada',
-            ])
-            ->count();
+        $contadorNoLeidas = Cache::remember(
+            'student_unread_notifications_' . $estudiante->id,
+            30, // 30 segundos
+            function() use ($estudiante) {
+                return $estudiante->unreadNotifications()
+                    ->whereIn('type', [
+                        'App\Notifications\SolicitudMentoriaAceptada',
+                        'App\Notifications\SolicitudMentoriaRechazada',
+                    ])
+                    ->count();
+            }
+        );
 
-        return inertia('Student/Dashboard/Index', [
+        return inertia('Student/Notifications/Index', [
             'notificaciones' => $notificaciones,
             'contadorNoLeidas' => $contadorNoLeidas,
         ]);
@@ -330,6 +358,9 @@ class SolicitudMentoriaController extends Controller
         
         if ($notification) {
             $notification->markAsRead();
+            // INVALIDAR CACHÉ de notificaciones para el estudiante
+            Cache::forget('student_notifications_' . $estudiante->id);
+            Cache::forget('student_unread_notifications_' . $estudiante->id);
             return redirect()->back()->with('success', 'Notificación marcada como leída.');
         }
 
@@ -351,6 +382,10 @@ class SolicitudMentoriaController extends Controller
                 'App\Notifications\SolicitudMentoriaRechazada',
             ])
             ->update(['read_at' => now()]);
+
+        // INVALIDAR CACHÉ de notificaciones para el estudiante
+        Cache::forget('student_notifications_' . $estudiante->id);
+        Cache::forget('student_unread_notifications_' . $estudiante->id);
 
         return redirect()->back()->with('success', 'Todas las notificaciones han sido marcadas como leídas.');
     }

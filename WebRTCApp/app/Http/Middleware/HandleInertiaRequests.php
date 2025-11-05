@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -31,19 +32,55 @@ class HandleInertiaRequests extends Middleware
     {
         $user = $request->user();
         $profileCompletenessData = null;
+        $contadorNoLeidas = 0;
         
-        // Cargar relaciones según el rol para el cálculo de progreso
+        // OPTIMIZACIÓN: Solo cargar datos necesarios y usar caché
         if ($user) {
+            // Asegurar datos mínimos para icono/banner de perfil en navbar sin cargar excesivo
             if ($user->role === 'student') {
-                $user->load(['aprendiz.areasInteres']);
+                $user->loadMissing([
+                    'aprendiz:id,user_id,semestre,objetivos',
+                    'aprendiz.areasInteres:id',
+                ]);
             } elseif ($user->role === 'mentor') {
-                $user->load(['mentor.areasInteres']);
+                $user->loadMissing([
+                    'mentor:id,user_id,experiencia,biografia,años_experiencia,disponibilidad',
+                    'mentor.areasInteres:id',
+                ]);
+            }
+
+            // CACHÉ: Contador de notificaciones (30 segundos)
+            if ($user->role === 'student') {
+                $contadorNoLeidas = Cache::remember(
+                    'student_unread_notifications_' . $user->id,
+                    30, // 30 segundos de cache
+                    function() use ($user) {
+                        return $user->unreadNotifications()
+                            ->whereIn('type', [
+                                'App\Notifications\SolicitudMentoriaAceptada',
+                                'App\Notifications\SolicitudMentoriaRechazada',
+                            ])
+                            ->count();
+                    }
+                );
             }
             
-            // Calcular completitud del perfil si es estudiante o mentor
+            // CACHÉ: Completitud del perfil (5 minutos)
             if (in_array($user->role, ['student', 'mentor'])) {
                 try {
-                    $profileCompletenessData = $user->profile_completeness;
+                    $profileCompletenessData = Cache::remember(
+                        'profile_completeness_' . $user->id,
+                        300, // 5 minutos
+                        function() use ($user) {
+                            // Cargar relaciones solo cuando se calcula por primera vez
+                            if ($user->role === 'student') {
+                                $user->load(['aprendiz.areasInteres']);
+                            } elseif ($user->role === 'mentor') {
+                                $user->load(['mentor.areasInteres']);
+                            }
+                            return $user->profile_completeness;
+                        }
+                    );
                 } catch (\Exception $e) {
                     logger()->error('Error calculating profile completeness in Inertia: ' . $e->getMessage());
                 }
@@ -56,6 +93,7 @@ class HandleInertiaRequests extends Middleware
                 'user' => $user,
             ],
             'profile_completeness' => $profileCompletenessData,
+            'contadorNoLeidas' => $contadorNoLeidas,
         ];
     }
 }

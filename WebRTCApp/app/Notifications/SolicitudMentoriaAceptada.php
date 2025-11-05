@@ -56,7 +56,7 @@ class SolicitudMentoriaAceptada extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $mentor = $this->solicitud->mentorUser;
+        $mentor = $this->solicitud->mentor;
         $mentorProfile = $this->solicitud->mentorProfile;
         
         return (new MailMessage)
@@ -67,7 +67,7 @@ class SolicitudMentoriaAceptada extends Notification implements ShouldQueue
             ->line('### 📋 Datos del mentor')
             ->line('**Nombre:** ' . $mentor->name)
             ->line('**Experiencia:** ' . ($mentorProfile ? $mentorProfile->años_experiencia . ' años' : 'No especificado'))
-            ->line('**Biografía:** ' . ($mentorProfile->biografia ? substr($mentorProfile->biografia, 0, 150) . '...' : 'Ver perfil completo'))
+            ->line('**Biografía:** ' . ($mentorProfile && $mentorProfile->biografia ? substr($mentorProfile->biografia, 0, 150) . '...' : 'Ver perfil completo'))
             ->line('---')
             ->line('### ✅ Próximos pasos')
             ->line('1. **Revisa el perfil completo** de tu mentor en el dashboard')
@@ -91,7 +91,7 @@ class SolicitudMentoriaAceptada extends Notification implements ShouldQueue
         return [
             'solicitud_id' => $this->solicitud->id,
             'mentor_id' => $this->solicitud->mentor_id,
-            'mentor_nombre' => $this->solicitud->mentorUser->name,
+            'mentor_nombre' => $this->solicitud->mentor->name,
             'mentor_experiencia' => $this->solicitud->mentorProfile->años_experiencia ?? null,
             'fecha_respuesta' => $this->solicitud->fecha_respuesta,
             'estado' => 'aceptada',

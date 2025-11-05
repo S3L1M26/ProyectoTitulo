@@ -6,7 +6,11 @@ import { useState, lazy, Suspense, memo, useEffect } from 'react';
 const ProfileReminderNotification = lazy(() => import('@/Components/ProfileReminderNotification'));
 const MentorDetailModal = lazy(() => import('@/Components/MentorDetailModal'));
 
-const Dashboard = memo(function Dashboard({ mentorSuggestions = [], aprendiz, solicitudesPendientes = [] }) {
+const Dashboard = memo(function Dashboard({ 
+    mentorSuggestions = [], 
+    aprendiz, 
+    solicitudesPendientes = []
+}) {
     const { flash } = usePage().props;
     const [selectedMentor, setSelectedMentor] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -188,8 +192,7 @@ const Dashboard = memo(function Dashboard({ mentorSuggestions = [], aprendiz, so
                             </div>
                         </div>
                     )}
-                    
-                    
+
                 </div>
             </div>
 
