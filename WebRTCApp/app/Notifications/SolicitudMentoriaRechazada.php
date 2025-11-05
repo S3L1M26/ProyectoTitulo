@@ -13,6 +13,20 @@ class SolicitudMentoriaRechazada extends Notification implements ShouldQueue
     use Queueable;
 
     /**
+     * The number of times the notification may be attempted.
+     *
+     * @var int
+     */
+    public $tries = 3;
+
+    /**
+     * The number of seconds to wait before retrying.
+     *
+     * @var int
+     */
+    public $backoff = 10;
+
+    /**
      * The mentorship request instance.
      *
      * @var SolicitudMentoria

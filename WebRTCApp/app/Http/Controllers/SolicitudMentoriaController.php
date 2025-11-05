@@ -89,10 +89,7 @@ class SolicitudMentoriaController extends Controller
         // Enviar notificación al mentor de forma asíncrona
         ProcessSolicitudMentoria::dispatch($solicitud, 'created');
 
-        return response()->json([
-            'message' => 'Solicitud de mentoría enviada exitosamente.',
-            'solicitud' => $solicitud,
-        ], 201);
+        return redirect()->back()->with('success', 'Solicitud de mentoría enviada exitosamente.');
     }
 
     /**
@@ -124,9 +121,7 @@ class SolicitudMentoriaController extends Controller
             ->orderBy('fecha_solicitud', 'desc')
             ->get();
 
-        return response()->json([
-            'solicitudes' => $solicitudes,
-        ]);
+        return redirect()->route('mentor.dashboard');
     }
 
     /**
@@ -178,10 +173,7 @@ class SolicitudMentoriaController extends Controller
         // Enviar notificación al estudiante de forma asíncrona
         ProcessSolicitudMentoria::dispatch($solicitud, 'accepted');
 
-        return response()->json([
-            'message' => 'Solicitud aceptada exitosamente.',
-            'solicitud' => $solicitud,
-        ]);
+        return redirect()->back()->with('success', 'Solicitud aceptada exitosamente.');
     }
 
     /**
@@ -233,9 +225,6 @@ class SolicitudMentoriaController extends Controller
         // Enviar notificación al estudiante de forma asíncrona
         ProcessSolicitudMentoria::dispatch($solicitud, 'rejected');
 
-        return response()->json([
-            'message' => 'Solicitud rechazada.',
-            'solicitud' => $solicitud,
-        ]);
+        return redirect()->back()->with('success', 'Solicitud rechazada.');
     }
 }

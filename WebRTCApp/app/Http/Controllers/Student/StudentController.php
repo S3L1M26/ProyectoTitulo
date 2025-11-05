@@ -12,8 +12,16 @@ class StudentController extends Controller
 {
     public function index()
     {
+        $student = Auth::user()->load('aprendiz');
+        
+        // Obtener solicitudes del estudiante
+        $solicitudes = \App\Models\Models\SolicitudMentoria::where('estudiante_id', $student->id)
+            ->get();
+        
         return Inertia::render('Student/Dashboard/Index', [
             'mentorSuggestions' => $this->getMentorSuggestions(),
+            'aprendiz' => $student->aprendiz,
+            'solicitudesPendientes' => $solicitudes,
         ]);
     }
 

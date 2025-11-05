@@ -15,6 +15,27 @@ class ProcessSolicitudMentoria implements ShouldQueue
     use Queueable;
 
     /**
+     * The number of times the job may be attempted.
+     *
+     * @var int
+     */
+    public $tries = 3;
+
+    /**
+     * The number of seconds the job can run before timing out.
+     *
+     * @var int
+     */
+    public $timeout = 60;
+
+    /**
+     * The number of seconds to wait before retrying the job.
+     *
+     * @var int
+     */
+    public $backoff = 10;
+
+    /**
      * The mentorship request instance.
      *
      * @var SolicitudMentoria

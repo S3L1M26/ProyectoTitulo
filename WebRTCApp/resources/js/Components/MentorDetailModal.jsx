@@ -1,8 +1,11 @@
-import React, { memo } from 'react';
+import React, { memo, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
+import SolicitudMentoriaForm from '@/Components/SolicitudMentoriaForm';
 
-const MentorDetailModal = memo(function MentorDetailModal({ isOpen, onClose, mentor }) {
+const MentorDetailModal = memo(function MentorDetailModal({ isOpen, onClose, mentor, aprendiz, solicitudesPendientes = [] }) {
+    const [isSolicitudFormOpen, setIsSolicitudFormOpen] = useState(false);
+    
     if (!mentor) return null;
     
     // Debug: verificar los datos del mentor
@@ -169,10 +172,7 @@ const MentorDetailModal = memo(function MentorDetailModal({ isOpen, onClose, men
                                 {/* Actions */}
                                 <div className="mt-8 flex flex-col sm:flex-row gap-3">
                                     <button
-                                        onClick={() => {
-                                            // TODO: Implementar lógica de solicitar mentoría
-                                            alert('Funcionalidad de solicitar mentoría próximamente');
-                                        }}
+                                        onClick={() => setIsSolicitudFormOpen(true)}
                                         disabled={mentor.mentor.disponible_ahora != 1}
                                         className={`flex-1 inline-flex justify-center items-center px-6 py-3 rounded-lg font-medium transition-colors ${
                                             mentor.mentor.disponible_ahora == 1
@@ -197,6 +197,15 @@ const MentorDetailModal = memo(function MentorDetailModal({ isOpen, onClose, men
                     </div>
                 </div>
             </Dialog>
+            
+            {/* Modal de solicitud de mentoría */}
+            <SolicitudMentoriaForm
+                isOpen={isSolicitudFormOpen}
+                onClose={() => setIsSolicitudFormOpen(false)}
+                mentor={mentor}
+                aprendiz={aprendiz}
+                solicitudesPendientes={solicitudesPendientes}
+            />
         </Transition>
     );
 });
