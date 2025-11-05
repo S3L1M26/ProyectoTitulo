@@ -56,21 +56,40 @@ class SolicitudMentoriaRechazada extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $mentor = $this->solicitud->mentor;
+        $mentor = $this->solicitud->mentorUser;
+        $mentorProfile = $this->solicitud->mentorProfile;
         
-        return (new MailMessage)
+        // Obtener motivo si existe (podríamos agregarlo al modelo más adelante)
+        $motivo = $this->solicitud->motivo_rechazo ?? null;
+        
+        $message = (new MailMessage)
             ->subject('Actualización sobre tu solicitud de mentoría')
-            ->greeting('¡Hola ' . $notifiable->name . '!')
-            ->line('Lamentamos informarte que tu solicitud de mentoría no ha sido aceptada en este momento.')
-            ->line('**Mentor:** ' . $mentor->name)
-            ->line('Esto puede deberse a limitaciones de tiempo o disponibilidad del mentor.')
+            ->greeting('Hola ' . $notifiable->name . ',')
+            ->line('Queremos informarte sobre el estado de tu solicitud de mentoría con **' . $mentor->name . '**.')
+            ->line('Lamentablemente, en este momento tu solicitud no ha podido ser aceptada.')
+            ->line('---');
+        
+        // Si hay motivo, incluirlo
+        if ($motivo) {
+            $message->line('### 📝 Motivo')
+                ->line($motivo)
+                ->line('---');
+        }
+        
+        $message->line('### 💡 ¿Qué puedes hacer ahora?')
+            ->line('**No te desanimes.** Esto puede deberse a limitaciones de tiempo, disponibilidad actual del mentor o a que buscan perfiles más específicos en este momento.')
             ->line('**Te sugerimos:**')
-            ->line('• Explorar otros mentores disponibles en la plataforma')
-            ->line('• Revisar perfiles de mentores con áreas de interés similares')
-            ->line('• Intentar nuevamente en otra ocasión')
-            ->action('Buscar otros mentores', url('/mentores'))
-            ->line('No te desanimes, hay muchos mentores excelentes esperando por ti.')
-            ->salutation('Saludos,<br>' . config('app.name'));
+            ->line('• 🔍 **Explorar otros mentores** disponibles en la plataforma')
+            ->line('• 👥 **Revisar perfiles** de mentores con áreas de interés similares a las tuyas')
+            ->line('• 📧 **Contactar a otros profesionales** que puedan ayudarte')
+            ->line('• ⏰ **Intentar nuevamente** en otra ocasión cuando el mentor tenga más disponibilidad')
+            ->line('---')
+            ->action('🔎 Buscar otros mentores', url('/student/dashboard'))
+            ->line('---')
+            ->line('Recuerda que hay muchos mentores excelentes en nuestra plataforma esperando para ayudarte en tu desarrollo profesional. ¡No te rindas!')
+            ->salutation('Con el mejor de los ánimos,<br>Equipo de ' . config('app.name'));
+        
+        return $message;
     }
 
     /**
@@ -83,9 +102,12 @@ class SolicitudMentoriaRechazada extends Notification implements ShouldQueue
         return [
             'solicitud_id' => $this->solicitud->id,
             'mentor_id' => $this->solicitud->mentor_id,
-            'mentor_nombre' => $this->solicitud->mentor->name,
+            'mentor_nombre' => $this->solicitud->mentorUser->name,
+            'mentor_experiencia' => $this->solicitud->mentorProfile->años_experiencia ?? null,
             'fecha_respuesta' => $this->solicitud->fecha_respuesta,
+            'motivo_rechazo' => $this->solicitud->motivo_rechazo ?? null,
             'estado' => 'rechazada',
+            'tipo' => 'SolicitudMentoriaRechazada',
         ];
     }
 }

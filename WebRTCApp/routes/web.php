@@ -78,6 +78,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('role:student')
         ->name('solicitud-mentoria.store');
     
+    // Rutas para estudiantes: ver sus solicitudes y notificaciones
+    Route::middleware('role:student')->group(function () {
+        Route::get('/student/solicitudes', [SolicitudMentoriaController::class, 'misSolicitudes'])
+            ->name('student.solicitudes');
+        
+        Route::get('/student/notifications', [SolicitudMentoriaController::class, 'misNotificaciones'])
+            ->name('student.notifications');
+        
+        Route::post('/student/notifications/{id}/read', [SolicitudMentoriaController::class, 'marcarComoLeida'])
+            ->name('student.notifications.read');
+        
+        Route::post('/student/notifications/read-all', [SolicitudMentoriaController::class, 'marcarTodasComoLeidas'])
+            ->name('student.notifications.read-all');
+    });
+    
     // Rutas para mentores: gestionar solicitudes
     Route::middleware('role:mentor')->group(function () {
         Route::get('/mentor/solicitudes', [SolicitudMentoriaController::class, 'index'])

@@ -56,24 +56,29 @@ class SolicitudMentoriaAceptada extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $mentor = $this->solicitud->mentor;
+        $mentor = $this->solicitud->mentorUser;
         $mentorProfile = $this->solicitud->mentorProfile;
         
         return (new MailMessage)
-            ->subject('¡Tu solicitud de mentoría ha sido aceptada!')
+            ->subject('¡Tu solicitud de mentoría ha sido aceptada! 🎉')
             ->greeting('¡Hola ' . $notifiable->name . '!')
-            ->line('¡Buenas noticias! Tu solicitud de mentoría ha sido aceptada.')
-            ->line('**Datos del mentor:**')
-            ->line('Nombre: ' . $mentor->name)
-            ->line('Email: ' . $mentor->email)
-            ->line('Experiencia: ' . ($mentorProfile ? $mentorProfile->años_experiencia . ' años' : 'No especificado'))
-            ->line('**Próximos pasos:**')
-            ->line('1. Revisa el perfil completo de tu mentor en el dashboard')
-            ->line('2. Coordina una primera reunión con tu mentor')
-            ->line('3. Prepara tus objetivos y expectativas para la mentoría')
-            ->action('Ver detalles en tu dashboard', url('/dashboard'))
-            ->line('Te recomendamos establecer contacto lo antes posible para comenzar tu proceso de mentoría.')
-            ->salutation('Saludos,<br>' . config('app.name'));
+            ->line('Tenemos excelentes noticias: **' . $mentor->name . '** ha aceptado ser tu mentor.')
+            ->line('---')
+            ->line('### 📋 Datos del mentor')
+            ->line('**Nombre:** ' . $mentor->name)
+            ->line('**Experiencia:** ' . ($mentorProfile ? $mentorProfile->años_experiencia . ' años' : 'No especificado'))
+            ->line('**Biografía:** ' . ($mentorProfile->biografia ? substr($mentorProfile->biografia, 0, 150) . '...' : 'Ver perfil completo'))
+            ->line('---')
+            ->line('### ✅ Próximos pasos')
+            ->line('1. **Revisa el perfil completo** de tu mentor en el dashboard')
+            ->line('2. **Coordina una primera reunión** con ' . $mentor->name)
+            ->line('3. **Prepara tus objetivos** y expectativas para la mentoría')
+            ->line('4. **Establece un plan de trabajo** junto a tu mentor')
+            ->action('🚀 Ver mi Dashboard', url('/student/dashboard'))
+            ->line('---')
+            ->line('💡 **Consejo:** Te recomendamos establecer contacto lo antes posible para comenzar tu proceso de mentoría. Una buena comunicación es clave para el éxito.')
+            ->line('---')
+            ->salutation('¡Mucho éxito en tu mentoría!<br>Equipo de ' . config('app.name'));
     }
 
     /**
@@ -86,9 +91,11 @@ class SolicitudMentoriaAceptada extends Notification implements ShouldQueue
         return [
             'solicitud_id' => $this->solicitud->id,
             'mentor_id' => $this->solicitud->mentor_id,
-            'mentor_nombre' => $this->solicitud->mentor->name,
+            'mentor_nombre' => $this->solicitud->mentorUser->name,
+            'mentor_experiencia' => $this->solicitud->mentorProfile->años_experiencia ?? null,
             'fecha_respuesta' => $this->solicitud->fecha_respuesta,
             'estado' => 'aceptada',
+            'tipo' => 'SolicitudMentoriaAceptada',
         ];
     }
 }

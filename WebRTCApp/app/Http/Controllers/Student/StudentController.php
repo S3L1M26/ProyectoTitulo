@@ -14,14 +14,70 @@ class StudentController extends Controller
     {
         $student = Auth::user()->load('aprendiz');
         
-        // Obtener solicitudes del estudiante
+        // Obtener todas las solicitudes del estudiante con eager loading
         $solicitudes = \App\Models\Models\SolicitudMentoria::where('estudiante_id', $student->id)
-            ->get();
+            ->with([
+                'mentorUser.mentor.areasInteres',
+                'aprendiz.areasInteres'
+            ])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($solicitud) {
+                return [
+                    'id' => $solicitud->id,
+                    'estado' => $solicitud->estado,
+                    'mensaje' => $solicitud->mensaje,
+                    'fecha_solicitud' => $solicitud->fecha_solicitud,
+                    'fecha_respuesta' => $solicitud->fecha_respuesta,
+                    'created_at' => $solicitud->created_at,
+                    'updated_at' => $solicitud->updated_at,
+                    'mentor' => [
+                        'id' => $solicitud->mentorUser->id,
+                        'name' => $solicitud->mentorUser->name,
+                        'años_experiencia' => $solicitud->mentorUser->mentor->años_experiencia ?? 0,
+                        'biografia' => $solicitud->mentorUser->mentor->biografia ?? '',
+                        'areas_interes' => $solicitud->mentorUser->mentor->areasInteres->map(function ($area) {
+                            return [
+                                'id' => $area->id,
+                                'nombre' => $area->nombre,
+                            ];
+                        }),
+                    ],
+                ];
+            });
+        
+        // Obtener notificaciones no leídas de solicitudes de mentoría
+        $notificaciones = $student->unreadNotifications()
+            ->whereIn('type', [
+                'App\Notifications\SolicitudMentoriaAceptada',
+                'App\Notifications\SolicitudMentoriaRechazada',
+            ])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($notification) {
+                return [
+                    'id' => $notification->id,
+                    'type' => class_basename($notification->type),
+                    'data' => $notification->data,
+                    'created_at' => $notification->created_at,
+                    'read_at' => $notification->read_at,
+                ];
+            });
+        
+        $contadorNoLeidas = $student->unreadNotifications()
+            ->whereIn('type', [
+                'App\Notifications\SolicitudMentoriaAceptada',
+                'App\Notifications\SolicitudMentoriaRechazada',
+            ])
+            ->count();
         
         return Inertia::render('Student/Dashboard/Index', [
             'mentorSuggestions' => $this->getMentorSuggestions(),
             'aprendiz' => $student->aprendiz,
-            'solicitudesPendientes' => $solicitudes,
+            'solicitudesPendientes' => $solicitudes->where('estado', 'pendiente')->values(),
+            'misSolicitudes' => $solicitudes,
+            'notificaciones' => $notificaciones,
+            'contadorNoLeidas' => $contadorNoLeidas,
         ]);
     }
 

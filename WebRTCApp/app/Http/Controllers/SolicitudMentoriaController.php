@@ -227,4 +227,131 @@ class SolicitudMentoriaController extends Controller
 
         return redirect()->back()->with('success', 'Solicitud rechazada.');
     }
+
+    /**
+     * Get all solicitudes for the authenticated student.
+     * Returns solicitudes with mentor information, ordered by newest first.
+     */
+    public function misSolicitudes()
+    {
+        $estudiante = Auth::user();
+        
+        // Obtener todas las solicitudes del estudiante con eager loading
+        $solicitudes = SolicitudMentoria::where('estudiante_id', $estudiante->id)
+            ->with([
+                'mentorUser.mentor.areasInteres',
+                'aprendiz.areasInteres'
+            ])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($solicitud) {
+                return [
+                    'id' => $solicitud->id,
+                    'estado' => $solicitud->estado,
+                    'mensaje' => $solicitud->mensaje,
+                    'fecha_solicitud' => $solicitud->fecha_solicitud,
+                    'fecha_respuesta' => $solicitud->fecha_respuesta,
+                    'created_at' => $solicitud->created_at,
+                    'updated_at' => $solicitud->updated_at,
+                    'mentor' => [
+                        'id' => $solicitud->mentorUser->id,
+                        'name' => $solicitud->mentorUser->name,
+                        'email' => $solicitud->mentorUser->email,
+                        'años_experiencia' => $solicitud->mentorUser->mentor->años_experiencia,
+                        'biografia' => $solicitud->mentorUser->mentor->biografia,
+                        'experiencia' => $solicitud->mentorUser->mentor->experiencia,
+                        'areas_interes' => $solicitud->mentorUser->mentor->areasInteres->map(function ($area) {
+                            return [
+                                'id' => $area->id,
+                                'nombre' => $area->nombre,
+                            ];
+                        }),
+                    ],
+                    'areas_interes' => $solicitud->aprendiz->areasInteres->map(function ($area) {
+                        return [
+                            'id' => $area->id,
+                            'nombre' => $area->nombre,
+                        ];
+                    }),
+                ];
+            });
+
+        return inertia('Student/Dashboard/Index', [
+            'misSolicitudes' => $solicitudes,
+        ]);
+    }
+
+    /**
+     * Get unread notifications for the authenticated student.
+     */
+    public function misNotificaciones()
+    {
+        $estudiante = Auth::user();
+        
+        // Obtener notificaciones no leídas
+        $notificaciones = $estudiante->unreadNotifications()
+            ->whereIn('type', [
+                'App\Notifications\SolicitudMentoriaAceptada',
+                'App\Notifications\SolicitudMentoriaRechazada',
+            ])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($notification) {
+                return [
+                    'id' => $notification->id,
+                    'type' => class_basename($notification->type),
+                    'data' => $notification->data,
+                    'created_at' => $notification->created_at,
+                    'read_at' => $notification->read_at,
+                ];
+            });
+
+        $contadorNoLeidas = $estudiante->unreadNotifications()
+            ->whereIn('type', [
+                'App\Notifications\SolicitudMentoriaAceptada',
+                'App\Notifications\SolicitudMentoriaRechazada',
+            ])
+            ->count();
+
+        return inertia('Student/Dashboard/Index', [
+            'notificaciones' => $notificaciones,
+            'contadorNoLeidas' => $contadorNoLeidas,
+        ]);
+    }
+
+    /**
+     * Mark a specific notification as read.
+     */
+    public function marcarComoLeida($id)
+    {
+        $estudiante = Auth::user();
+        
+        $notification = $estudiante->unreadNotifications()->find($id);
+        
+        if ($notification) {
+            $notification->markAsRead();
+            return redirect()->back()->with('success', 'Notificación marcada como leída.');
+        }
+
+        throw ValidationException::withMessages([
+            'notificacion' => 'Notificación no encontrada.',
+        ]);
+    }
+
+    /**
+     * Mark all notifications as read for the authenticated student.
+     */
+    public function marcarTodasComoLeidas()
+    {
+        $estudiante = Auth::user();
+        
+        $estudiante->unreadNotifications()
+            ->whereIn('type', [
+                'App\Notifications\SolicitudMentoriaAceptada',
+                'App\Notifications\SolicitudMentoriaRechazada',
+            ])
+            ->update(['read_at' => now()]);
+
+        return redirect()->back()->with('success', 'Todas las notificaciones han sido marcadas como leídas.');
+    }
 }
