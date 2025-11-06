@@ -7,6 +7,7 @@ use App\Http\Controllers\Student\StudentController;
 use App\Http\Controllers\Student\CertificateController;
 use App\Http\Controllers\Mentor\MentorController;
 use App\Http\Controllers\SolicitudMentoriaController;
+use App\Http\Controllers\MentoriaController;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -103,6 +104,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         
         Route::post('/mentor/solicitudes/{id}/reject', [SolicitudMentoriaController::class, 'reject'])
             ->name('mentor.solicitudes.reject');
+
+        // Confirmar mentoría (crea reunión Zoom y guarda)
+        Route::post('/mentorias/solicitudes/{solicitud}/confirmar', [MentoriaController::class, 'confirmar'])
+            ->name('mentorias.confirmar');
     });
 });
 
@@ -116,4 +121,16 @@ Route::middleware(['auth', 'adminMiddleware'])->group(function () {
     Route::get('/admin/users/{user}/edit', [AdminController::class, 'edit'])->name('admin.users.edit');
     Route::put('/admin/users/{user}', [AdminController::class, 'update'])->name('admin.users.update');
     Route::delete('/admin/users/{user}', [AdminController::class, 'destroy'])->name('admin.users.destroy');
+});
+
+// Endpoint público autenticado para generar enlace (preview) con rate limiting
+Route::middleware(['auth:sanctum', 'throttle:10,1'])->group(function () {
+    Route::post('/api/mentorias/generar-enlace', [MentoriaController::class, 'generarEnlacePreview'])
+        ->name('api.mentorias.generar-enlace');
+});
+
+// Unirse a una mentoría (mentor o aprendiz)
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/mentorias/{mentoria}/unirse', [MentoriaController::class, 'unirse'])
+        ->name('mentorias.unirse');
 });
