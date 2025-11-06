@@ -7,6 +7,7 @@ use App\Models\Mentor;
 use App\Models\Models\SolicitudMentoria;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 
 class MentorController extends Controller
@@ -14,17 +15,20 @@ class MentorController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $mentorProfile = Mentor::where('user_id', $user->id)->first();
         
-        // Obtener solicitudes del mentor con relaciones
-        $solicitudes = SolicitudMentoria::where('mentor_id', $user->id)
-            ->with(['estudiante', 'aprendiz.areasInteres'])
-            ->orderBy('fecha_solicitud', 'desc')
-            ->get();
-
         return Inertia::render('Mentor/Dashboard/Index', [
-            'solicitudes' => $solicitudes,
-            'mentorProfile' => $mentorProfile,
+            // Datos críticos (siempre cargados)
+            'mentorProfile' => fn () => Mentor::where('user_id', $user->id)->first(),
+            
+            // Lazy prop: Solo se carga si el componente lo solicita
+            'solicitudes' => fn () => Cache::remember(
+                'mentor_solicitudes_' . $user->id,
+                300, // 5 minutos
+                fn () => SolicitudMentoria::where('mentor_id', $user->id)
+                    ->with(['estudiante:id,name,email', 'aprendiz.areasInteres:id,nombre'])
+                    ->orderBy('fecha_solicitud', 'desc')
+                    ->get()
+            ),
         ]);
     }
 }

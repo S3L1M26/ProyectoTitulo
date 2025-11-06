@@ -21,8 +21,10 @@ class SolicitudMentoriaController extends Controller
     {
         $estudiante = Auth::user();
         
-        // Validar que el estudiante tenga perfil de aprendiz
-        $aprendiz = Aprendiz::where('user_id', $estudiante->id)->first();
+        // Eager loading optimizado: cargar aprendiz en una sola query
+        $aprendiz = Aprendiz::select('id', 'user_id', 'certificate_verified')
+            ->where('user_id', $estudiante->id)
+            ->first();
         
         if (!$aprendiz) {
             throw ValidationException::withMessages([
@@ -43,8 +45,10 @@ class SolicitudMentoriaController extends Controller
             'mensaje' => 'nullable|string|max:1000',
         ]);
 
-        // Validar que el mentor exista y tenga perfil completo
-        $mentor = Mentor::where('user_id', $validated['mentor_id'])->first();
+        // Eager loading optimizado: Solo campos necesarios del mentor
+        $mentor = Mentor::select('id', 'user_id', 'cv_verified', 'disponible_ahora')
+            ->where('user_id', $validated['mentor_id'])
+            ->first();
         
         if (!$mentor) {
             throw ValidationException::withMessages([
@@ -90,8 +94,9 @@ class SolicitudMentoriaController extends Controller
         // Enviar notificación al mentor de forma asíncrona
         ProcessSolicitudMentoria::dispatch($solicitud, 'created');
 
-        // INVALIDAR CACHÉ: Listas dependientes del estudiante
+        // INVALIDAR CACHÉ: Listas dependientes del estudiante y mentor
         Cache::forget('student_solicitudes_' . $estudiante->id);
+        Cache::forget('mentor_solicitudes_' . $validated['mentor_id']);
 
         return redirect()->back()->with('success', 'Solicitud de mentoría enviada exitosamente.');
     }
@@ -103,8 +108,10 @@ class SolicitudMentoriaController extends Controller
     {
         $mentor = Auth::user();
         
-        // Validar que el usuario tenga perfil de mentor
-        $mentorProfile = Mentor::where('user_id', $mentor->id)->first();
+        // Eager loading optimizado: Solo campos necesarios
+        $mentorProfile = Mentor::select('id', 'user_id', 'cv_verified')
+            ->where('user_id', $mentor->id)
+            ->first();
         
         if (!$mentorProfile) {
             throw ValidationException::withMessages([
@@ -119,9 +126,12 @@ class SolicitudMentoriaController extends Controller
             ]);
         }
 
-        // Obtener solicitudes del mentor con información del estudiante
+        // Obtener solicitudes del mentor con eager loading optimizado
         $solicitudes = SolicitudMentoria::where('mentor_id', $mentor->id)
-            ->with(['estudiante', 'aprendiz'])
+            ->with([
+                'estudiante:id,name,email',
+                'aprendiz:id,user_id,certificate_verified'
+            ])
             ->orderBy('fecha_solicitud', 'desc')
             ->get();
 
