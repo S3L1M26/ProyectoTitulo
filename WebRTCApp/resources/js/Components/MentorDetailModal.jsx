@@ -8,8 +8,7 @@ const MentorDetailModal = memo(function MentorDetailModal({ isOpen, onClose, men
     
     if (!mentor) return null;
     
-    // Debug: verificar los datos del mentor
-    console.log('Mentor data in modal:', mentor);
+    // (debug removido)
 
     return (
         <Transition appear show={isOpen} as={Fragment}>

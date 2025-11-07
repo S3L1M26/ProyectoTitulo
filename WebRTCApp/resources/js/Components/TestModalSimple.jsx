@@ -12,7 +12,6 @@ export default function TestModalSimple({ isOpen, onClose }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        console.log('Fecha:', fecha, 'Hora:', hora);
         alert(`Fecha: ${fecha}, Hora: ${hora}`);
     };
 

@@ -17,6 +17,8 @@ class EnviarCorreoMentoria implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public Mentoria $mentoria;
+    public string $cid;
+    public string $jobDispatchId;
 
     /**
      * Número de intentos
@@ -34,14 +36,23 @@ class EnviarCorreoMentoria implements ShouldQueue
         return [3, 10, 30];
     }
 
-    public function __construct(Mentoria $mentoria)
+    public function __construct(Mentoria $mentoria, string $cid, string $jobDispatchId)
     {
         $this->mentoria = $mentoria;
+        $this->cid = $cid;
+        $this->jobDispatchId = $jobDispatchId;
     }
 
     public function handle(): void
     {
         try {
+            Log::info('🚀 JOB START', [
+                'mentoria_id' => $this->mentoria->id,
+                'cid' => $this->cid,
+                'job_dispatch_id' => $this->jobDispatchId,
+                'attempt' => method_exists($this, 'attempts') ? $this->attempts() : null,
+                'timestamp' => microtime(true),
+            ]);
             $aprendiz = $this->mentoria->aprendiz;
             if (!$aprendiz) {
                 throw new \RuntimeException('Aprendiz no encontrado para la mentoría');
@@ -50,13 +61,18 @@ class EnviarCorreoMentoria implements ShouldQueue
             Mail::to($aprendiz->email)
                 ->send(new MentoriaConfirmadaMail($this->mentoria));
 
-            Log::info('Correo de mentoría enviado', [
+            Log::info('✅ JOB SENT EMAIL', [
                 'mentoria_id' => $this->mentoria->id,
                 'email' => $aprendiz->email,
+                'cid' => $this->cid,
+                'job_dispatch_id' => $this->jobDispatchId,
+                'timestamp' => microtime(true),
             ]);
         } catch (\Throwable $e) {
             Log::error('Error al enviar correo de mentoría', [
                 'mentoria_id' => $this->mentoria->id ?? null,
+                'cid' => $this->cid ?? null,
+                'job_dispatch_id' => $this->jobDispatchId ?? null,
                 'error' => $e->getMessage(),
             ]);
             throw $e; // Permite reintentos

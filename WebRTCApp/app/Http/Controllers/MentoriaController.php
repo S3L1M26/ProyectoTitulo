@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class MentoriaController extends Controller
 {
@@ -27,10 +28,33 @@ class MentoriaController extends Controller
      */
     public function confirmar(ConfirmarMentoriaRequest $request, SolicitudMentoria $solicitud)
     {
+        // Correlation ID (frontend puede enviar X-CID, si no lo genera backend)
+        $cid = $request->header('X-CID') ?? uniqid('cid_');
+        $reqId = uniqid('req_');
+
+            // 🔒 CANDADO DE IDEMPOTENCIA: Evitar doble dispatch por mismo CID
+            $cacheKey = "mentoria_confirmada_{$cid}";
+            if (Cache::has($cacheKey)) {
+                Log::warning('⏩ EVITADO DOBLE DISPATCH', [
+                    'cid' => $cid,
+                    'solicitud_id' => $solicitud->id,
+                    'reason' => 'CID ya procesado previamente',
+                ]);
+                return back()->with('status', 'Mentoría ya confirmada');
+            }
+
+            // Marcar CID como procesado (TTL 120 segundos)
+            Cache::put($cacheKey, true, 120);
+
         Log::info('🎯 CONFIRMAR MENTORIA CALLED', [
             'solicitud_id' => $solicitud->id,
             'timestamp' => microtime(true),
-            'request_id' => uniqid('req_'),
+            'request_id' => $reqId,
+            'cid' => $cid,
+            'user_id' => Auth::id(),
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'payload' => $request->only(['fecha','hora','duracion_minutos','topic']),
         ]);
         
         // Verificar autorización (Gate definido en AppServiceProvider)
@@ -79,8 +103,15 @@ class MentoriaController extends Controller
             Log::info('📢 DESPACHANDO EVENTO MentoriaConfirmada', [
                 'mentoria_id' => $mentoria->id,
                 'timestamp' => microtime(true),
+                'cid' => $cid,
             ]);
-            MentoriaConfirmada::dispatch($mentoria);
+            MentoriaConfirmada::dispatch($mentoria, $cid);
+
+            Log::info('📬 EVENTO DESPACHADO', [
+                'mentoria_id' => $mentoria->id,
+                'cid' => $cid,
+                'timestamp' => microtime(true),
+            ]);
 
             if ($request->wantsJson()) {
                 return response()->json([

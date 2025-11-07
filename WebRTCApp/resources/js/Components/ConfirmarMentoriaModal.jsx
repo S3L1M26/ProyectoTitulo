@@ -9,6 +9,11 @@ import { useForm as useInertiaForm } from '@inertiajs/react';
 import { toast } from 'react-toastify';
 
 export default function ConfirmarMentoriaModal({ isOpen, onClose, solicitud }) {
+    // Correlation ID para rastreo entre frontend y backend
+    const [cid] = useState(() => 'cid_' + Math.random().toString(36).slice(2));
+    if (!window.__confirmMentoriaSubmissions) {
+        window.__confirmMentoriaSubmissions = [];
+    }
     const [preview, setPreview] = useState(null);
     const [apiError, setApiError] = useState('');
     const [loadingPreview, setLoadingPreview] = useState(false);
@@ -39,13 +44,7 @@ export default function ConfirmarMentoriaModal({ isOpen, onClose, solicitud }) {
     }, [isOpen]); // Removido 'solicitud' de las dependencias para evitar resets continuos
 
     const handleFieldChange = (field, value) => {
-        console.log(`Field changed: ${field} = "${value}"`);
-        
-        // Actualizar usando setData de useInertiaForm
         setData(field, value);
-        console.log('Updated formData:', { ...formData, [field]: value });
-        
-        // Limpiar error del campo cuando el usuario empieza a escribir
         if (validationErrors[field]) {
             setValidationErrors(prev => {
                 const newErrors = { ...prev };
@@ -92,67 +91,39 @@ export default function ConfirmarMentoriaModal({ isOpen, onClose, solicitud }) {
     };
 
     const validateForm = () => {
-        console.log('=== VALIDATING FORM ===');
-        console.log('Current formData:', formData);
-        
         const errors = {};
-        
-        if (!formData.fecha) {
-            console.log('❌ Fecha is empty:', formData.fecha);
-            errors.fecha = 'La fecha es requerida';
-        } else {
-            console.log('✓ Fecha is valid:', formData.fecha);
-        }
-        
-        if (!formData.hora) {
-            console.log('❌ Hora is empty:', formData.hora);
-            errors.hora = 'La hora es requerida';
-        } else {
-            console.log('✓ Hora is valid:', formData.hora);
-        }
-        
+        if (!formData.fecha) errors.fecha = 'La fecha es requerida';
+        if (!formData.hora) errors.hora = 'La hora es requerida';
         if (!formData.duracion_minutos || formData.duracion_minutos < 30) {
-            console.log('❌ Duracion is invalid:', formData.duracion_minutos);
             errors.duracion_minutos = 'La duración mínima es 30 minutos';
         } else if (formData.duracion_minutos > 180) {
-            console.log('❌ Duracion exceeds max:', formData.duracion_minutos);
             errors.duracion_minutos = 'La duración máxima es 180 minutos';
-        } else {
-            console.log('✓ Duracion is valid:', formData.duracion_minutos);
         }
-        
-        console.log('Validation errors:', errors);
-        console.log('======================');
-        
         setValidationErrors(errors);
         return Object.keys(errors).length === 0;
     };
 
     const onConfirm = (e) => {
         e.preventDefault();
-        
-        console.log('>>> CONFIRM CLICKED <<<');
-        console.log('Form data before validation:', formData);
-        
-        // Prevenir doble submit
-        if (processing) {
-            console.log('⚠️ Already processing, ignoring...');
-            return;
-        }
+        if (processing) return; // Prevenir doble submit
         
         if (!validateForm()) {
             setApiError('Por favor completa todos los campos requeridos.');
             return;
         }
         
-        console.log('✓ Validation passed, submitting...');
         setApiError('');
         
+        // Registrar intento de submit
+        window.__confirmMentoriaSubmissions.push({ cid, at: Date.now() });
+
         // ✅ Con useInertiaForm, solo pasamos la ruta - los datos ya están en el form
         post(route('mentorias.confirmar', { solicitud: solicitud.id }), {
             preserveScroll: true,
+            headers: {
+                'X-CID': cid,
+            },
             onSuccess: () => {
-                console.log('✓ SUCCESS - Mentoría confirmada');
                 toast.success('¡Mentoría confirmada! Se ha enviado un correo al estudiante con los detalles de la reunión.');
                 reset();
                 setPreview(null);
@@ -161,7 +132,6 @@ export default function ConfirmarMentoriaModal({ isOpen, onClose, solicitud }) {
                 onClose?.();
             },
             onError: (errs) => {
-                console.log('❌ ERROR - Respuesta del servidor:', errs);
                 toast.error('No se pudo confirmar la mentoría. Por favor verifica los datos.');
                 const newErrors = {};
                 if (errs?.fecha) newErrors.fecha = errs.fecha;

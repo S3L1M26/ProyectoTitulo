@@ -5,7 +5,7 @@ namespace Tests\Unit;
 use Tests\TestCase;
 use App\Models\Mentoria;
 use App\Models\User;
-use App\Models\Models\SolicitudMentoria;
+use App\Models\SolicitudMentoria;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class MentoriaModelTest extends TestCase

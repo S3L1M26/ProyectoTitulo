@@ -12,9 +12,11 @@ class MentoriaConfirmada
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public Mentoria $mentoria;
+    public string $cid; // Correlation ID para rastrear toda la cadena
 
-    public function __construct(Mentoria $mentoria)
+    public function __construct(Mentoria $mentoria, string $cid)
     {
         $this->mentoria = $mentoria;
+        $this->cid = $cid;
     }
 }
