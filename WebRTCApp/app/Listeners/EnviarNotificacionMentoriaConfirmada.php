@@ -14,6 +14,12 @@ class EnviarNotificacionMentoriaConfirmada
 {
     public function handle(MentoriaConfirmada $event): void
     {
+        Log::info('🔔 LISTENER EJECUTADO', [
+            'mentoria_id' => $event->mentoria->id,
+            'timestamp' => microtime(true),
+            'listener_id' => uniqid('listener_'),
+        ]);
+        
         try {
             EnviarCorreoMentoria::dispatch($event->mentoria)->onQueue('emails');
         } catch (\Throwable $e) {

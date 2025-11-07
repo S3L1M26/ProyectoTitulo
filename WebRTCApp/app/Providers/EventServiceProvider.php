@@ -13,4 +13,12 @@ class EventServiceProvider extends ServiceProvider
             EnviarNotificacionMentoriaConfirmada::class,
         ],
     ];
+
+    /**
+     * Disable event auto-discovery to prevent duplicate listener registration
+     */
+    public function shouldDiscoverEvents(): bool
+    {
+        return false;
+    }
 }

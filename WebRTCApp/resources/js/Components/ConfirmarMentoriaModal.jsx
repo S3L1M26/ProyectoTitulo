@@ -134,6 +134,12 @@ export default function ConfirmarMentoriaModal({ isOpen, onClose, solicitud }) {
         console.log('>>> CONFIRM CLICKED <<<');
         console.log('Form data before validation:', formData);
         
+        // Prevenir doble submit
+        if (processing) {
+            console.log('⚠️ Already processing, ignoring...');
+            return;
+        }
+        
         if (!validateForm()) {
             setApiError('Por favor completa todos los campos requeridos.');
             return;

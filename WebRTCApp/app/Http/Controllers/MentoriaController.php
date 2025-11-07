@@ -27,6 +27,12 @@ class MentoriaController extends Controller
      */
     public function confirmar(ConfirmarMentoriaRequest $request, SolicitudMentoria $solicitud)
     {
+        Log::info('🎯 CONFIRMAR MENTORIA CALLED', [
+            'solicitud_id' => $solicitud->id,
+            'timestamp' => microtime(true),
+            'request_id' => uniqid('req_'),
+        ]);
+        
         // Verificar autorización (Gate definido en AppServiceProvider)
         $this->authorize('mentoria.confirmar', $solicitud);
 
@@ -70,6 +76,10 @@ class MentoriaController extends Controller
             }
 
             // Disparar evento
+            Log::info('📢 DESPACHANDO EVENTO MentoriaConfirmada', [
+                'mentoria_id' => $mentoria->id,
+                'timestamp' => microtime(true),
+            ]);
             MentoriaConfirmada::dispatch($mentoria);
 
             if ($request->wantsJson()) {
