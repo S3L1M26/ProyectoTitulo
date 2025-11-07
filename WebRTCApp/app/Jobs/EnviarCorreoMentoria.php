@@ -26,12 +26,12 @@ class EnviarCorreoMentoria implements ShouldQueue
     /**
      * Timeout en segundos
      */
-    public $timeout = 30;
+    public $timeout = 15;
 
     public function backoff(): array
     {
         // Exponential backoff
-        return [5, 15, 30];
+        return [3, 10, 30];
     }
 
     public function __construct(Mentoria $mentoria)
@@ -42,7 +42,7 @@ class EnviarCorreoMentoria implements ShouldQueue
     public function handle(): void
     {
         try {
-            $aprendiz = $this->mentoria->aprendiz; // Relación a User
+            $aprendiz = $this->mentoria->aprendiz;
             if (!$aprendiz) {
                 throw new \RuntimeException('Aprendiz no encontrado para la mentoría');
             }
@@ -50,12 +50,12 @@ class EnviarCorreoMentoria implements ShouldQueue
             Mail::to($aprendiz->email)
                 ->send(new MentoriaConfirmadaMail($this->mentoria));
 
-            Log::info('Correo de mentoría confirmada enviado', [
+            Log::info('Correo de mentoría enviado', [
                 'mentoria_id' => $this->mentoria->id,
                 'email' => $aprendiz->email,
             ]);
         } catch (\Throwable $e) {
-            Log::error('Fallo al enviar correo de mentoría confirmada', [
+            Log::error('Error al enviar correo de mentoría', [
                 'mentoria_id' => $this->mentoria->id ?? null,
                 'error' => $e->getMessage(),
             ]);

@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Vite;
 use App\Policies\MentoriaPolicy;
 use App\Models\Mentoria;
-use App\Models\Models\SolicitudMentoria;
+use App\Models\SolicitudMentoria;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider

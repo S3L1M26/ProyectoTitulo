@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Tab } from '@headlessui/react';
 import SolicitudMentoriaCard from '@/Components/SolicitudMentoriaCard';
+import ConfirmarMentoriaModal from '@/Components/ConfirmarMentoriaModal';
 
 function classNames(...classes) {
     return classes.filter(Boolean).join(' ');
@@ -8,6 +9,17 @@ function classNames(...classes) {
 
 export default function SolicitudesMentoriaPanel({ solicitudes = [], mentorProfile }) {
     const [selectedTab, setSelectedTab] = useState(0);
+    const [showModal, setShowModal] = useState(false);
+    const [selectedSolicitud, setSelectedSolicitud] = useState(null);
+
+    const openModal = (solicitud) => {
+        setSelectedSolicitud(solicitud);
+        setShowModal(true);
+    };
+    const closeModal = () => {
+        setShowModal(false);
+        setSelectedSolicitud(null);
+    };
     
     // Verificar si el perfil está bloqueado
     const isBlocked = !mentorProfile?.cv_verified;
@@ -94,6 +106,7 @@ export default function SolicitudesMentoriaPanel({ solicitudes = [], mentorProfi
                                                     key={solicitud.id}
                                                     solicitud={solicitud}
                                                     showActions={category.name === 'Pendientes'}
+                                                    onAcceptClick={() => openModal(solicitud)}
                                                 />
                                             ))}
                                         </ul>
@@ -102,6 +115,14 @@ export default function SolicitudesMentoriaPanel({ solicitudes = [], mentorProfi
                             ))}
                         </Tab.Panels>
                     </Tab.Group>
+                )}
+
+                {showModal && selectedSolicitud && (
+                    <ConfirmarMentoriaModal
+                        isOpen={showModal}
+                        onClose={closeModal}
+                        solicitud={selectedSolicitud}
+                    />
                 )}
             </div>
         </div>

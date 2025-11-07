@@ -2,7 +2,7 @@
 
 namespace App\Jobs;
 
-use App\Models\Models\SolicitudMentoria;
+use App\Models\SolicitudMentoria;
 use App\Models\Mentor;
 use App\Notifications\SolicitudMentoriaRecibida;
 use App\Notifications\SolicitudMentoriaAceptada;
@@ -20,21 +20,21 @@ class ProcessSolicitudMentoria implements ShouldQueue
      *
      * @var int
      */
-    public $tries = 3;
+    public $tries = 2;
 
     /**
      * The number of seconds the job can run before timing out.
      *
      * @var int
      */
-    public $timeout = 120;
+    public $timeout = 30;
 
     /**
      * The number of seconds to wait before retrying the job.
      *
      * @var int
      */
-    public $backoff = 10;
+    public $backoff = 5;
 
     /**
      * The mentorship request instance.

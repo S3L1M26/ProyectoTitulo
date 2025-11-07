@@ -8,20 +8,19 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Log;
 
-class EnviarNotificacionMentoriaConfirmada implements ShouldQueue
+// Listener ejecuta síncronamente para evitar double-queuing
+// El Job EnviarCorreoMentoria ya se encola, así que no necesitamos encolar el listener también
+class EnviarNotificacionMentoriaConfirmada
 {
-    use InteractsWithQueue;
-
-    public $queue = 'emails';
-
     public function handle(MentoriaConfirmada $event): void
     {
         try {
-            EnviarCorreoMentoria::dispatch($event->mentoria)->onQueue($this->queue);
+            EnviarCorreoMentoria::dispatch($event->mentoria)->onQueue('emails');
         } catch (\Throwable $e) {
-            Log::error('Fallo al encolar EnviarCorreoMentoria', [
+            Log::error('Error al encolar correo de mentoría', [
                 'mentoria_id' => $event->mentoria->id ?? null,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
         }
     }

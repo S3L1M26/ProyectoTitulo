@@ -3,7 +3,7 @@
 namespace App\Policies;
 
 use App\Models\Mentoria;
-use App\Models\Models\SolicitudMentoria;
+use App\Models\SolicitudMentoria;
 use App\Models\User;
 
 class MentoriaPolicy

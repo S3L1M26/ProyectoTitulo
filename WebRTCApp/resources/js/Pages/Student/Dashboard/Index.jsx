@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, usePage } from '@inertiajs/react';
 import { useState, lazy, Suspense, memo, useEffect } from 'react';
+import MentoriaCard from '@/Components/MentoriaCard';
 
 // OPTIMIZACIÓN: Lazy loading de componentes pesados
 const ProfileReminderNotification = lazy(() => import('@/Components/ProfileReminderNotification'));
@@ -9,11 +10,13 @@ const MentorDetailModal = lazy(() => import('@/Components/MentorDetailModal'));
 const Dashboard = memo(function Dashboard({ 
     mentorSuggestions = [], 
     aprendiz, 
-    solicitudesPendientes = []
+    solicitudesPendientes = [],
+    mentoriasConfirmadas = []
 }) {
     const { flash } = usePage().props;
     const [selectedMentor, setSelectedMentor] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [showMentorias, setShowMentorias] = useState(false); // Lazy mount
 
     // Mostrar mensaje de éxito si existe
     useEffect(() => {
@@ -39,8 +42,6 @@ const Dashboard = memo(function Dashboard({
     const requiresVerification = mentorSuggestions?.requires_verification === true;
     const mentorList = requiresVerification ? [] : (Array.isArray(mentorSuggestions) ? mentorSuggestions : []);
 
-    console.log('Mentor suggestions:', mentorSuggestions);
-
     return (
         <AuthenticatedLayout
             header={
@@ -60,7 +61,7 @@ const Dashboard = memo(function Dashboard({
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <div className="p-6 text-gray-900">
                             <h4 className="text-lg font-semibold text-gray-800 mb-4">¡Bienvenido a tu panel de estudiante!</h4>
-                            <p className="text-gray-600">Aquí podrás encontrar mentores que te ayuden en tu orientación profesional.</p>
+                            <p className="textgray-600">Aquí podrás encontrar mentores que te ayuden en tu orientación profesional.</p>
                         </div>
                     </div>
                     {/* Sección de sugerencias de mentores */}
@@ -192,6 +193,29 @@ const Dashboard = memo(function Dashboard({
                             </div>
                         </div>
                     )}
+
+                    {/* Mis Mentorías Confirmadas (Lazy mounted) */}
+                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                        <div className="p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-semibold text-gray-900">Mis Mentorías Confirmadas</h3>
+                                <button onClick={() => setShowMentorias((v) => !v)} className="text-blue-600 hover:underline">
+                                    {showMentorias ? 'Ocultar' : 'Mostrar'}
+                                </button>
+                            </div>
+                            {showMentorias ? (
+                                mentoriasConfirmadas.length === 0 ? (
+                                    <div className="text-center text-gray-500 py-8">Aún no tienes mentorías confirmadas.</div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {mentoriasConfirmadas.map((m) => (
+                                            <MentoriaCard key={m.id} mentoria={m} userRole="aprendiz" />
+                                        ))}
+                                    </div>
+                                )
+                            ) : null}
+                        </div>
+                    </div>
 
                 </div>
             </div>

@@ -3,10 +3,14 @@ import { useForm } from '@inertiajs/react';
 import PrimaryButton from '@/Components/PrimaryButton';
 import DangerButton from '@/Components/DangerButton';
 
-export default function SolicitudMentoriaCard({ solicitud, showActions = true }) {
+export default function SolicitudMentoriaCard({ solicitud, showActions = true, onAcceptClick }) {
     const { post, processing } = useForm();
 
     const handleAccept = () => {
+        if (onAcceptClick) {
+            onAcceptClick();
+            return;
+        }
         if (confirm('¿Estás seguro de que quieres aceptar esta solicitud?')) {
             post(route('mentor.solicitudes.accept', solicitud.id), {
                 preserveScroll: true,

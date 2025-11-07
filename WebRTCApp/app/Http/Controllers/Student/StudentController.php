@@ -15,7 +15,7 @@ class StudentController extends Controller
         $student = Auth::user()->load('aprendiz');
         
         // Obtener solo las solicitudes pendientes para el modal de solicitud
-        $solicitudes = \App\Models\Models\SolicitudMentoria::where('estudiante_id', $student->id)
+        $solicitudes = \App\Models\SolicitudMentoria::where('estudiante_id', $student->id)
             ->where('estado', 'pendiente')
             ->get();
         

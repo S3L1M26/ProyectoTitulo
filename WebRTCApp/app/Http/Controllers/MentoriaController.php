@@ -7,7 +7,7 @@ use App\Exceptions\ZoomApiException;
 use App\Exceptions\ZoomAuthException;
 use App\Http\Requests\ConfirmarMentoriaRequest;
 use App\Models\Mentoria;
-use App\Models\Models\SolicitudMentoria;
+use App\Models\SolicitudMentoria;
 use App\Services\ZoomService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -27,6 +27,7 @@ class MentoriaController extends Controller
      */
     public function confirmar(ConfirmarMentoriaRequest $request, SolicitudMentoria $solicitud)
     {
+        // Verificar autorización (Gate definido en AppServiceProvider)
         $this->authorize('mentoria.confirmar', $solicitud);
 
         // Combinar fecha y hora en una instancia Carbon usando timezone provista o la de app
@@ -44,7 +45,7 @@ class MentoriaController extends Controller
             $topic = $request->input('topic', 'Mentoría');
             $zoomMeeting = $this->zoom->crearReunion([
                 'topic' => $topic,
-                'start_time' => $start->toIso8601String(), // ZoomService normaliza a UTC
+                'start_time' => $start->toIso8601String(),
                 'duration' => (int) $request->input('duracion_minutos'),
                 'timezone' => $tz,
             ]);
@@ -58,7 +59,7 @@ class MentoriaController extends Controller
                 'hora' => $start->copy()->setTimezone(config('app.timezone', 'UTC'))->toDateTimeString(),
                 'duracion_minutos' => (int) $request->input('duracion_minutos'),
                 'enlace_reunion' => $zoomMeeting['join_url'] ?? null,
-                'zoom_meeting_id' => (string) ($zoomMeeting['id'] ?? ''),
+                'zoom_meeting_id' => isset($zoomMeeting['id']) ? (string) $zoomMeeting['id'] : null,
                 'zoom_password' => $zoomMeeting['password'] ?? null,
                 'estado' => 'confirmada',
             ]);

@@ -5,6 +5,8 @@ import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import ProfileIncompleteIcon from '@/Components/ProfileIncompleteIcon';
 import { Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function AuthenticatedLayout({ header, children }) {
     const user = usePage().props.auth.user;
@@ -268,6 +270,20 @@ export default function AuthenticatedLayout({ header, children }) {
             )}
 
             <main>{children}</main>
+            
+            {/* Toast notifications container */}
+            <ToastContainer 
+                position="top-right"
+                autoClose={4000}
+                hideProgressBar={false}
+                newestOnTop
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="light"
+            />
         </div>
     );
 }

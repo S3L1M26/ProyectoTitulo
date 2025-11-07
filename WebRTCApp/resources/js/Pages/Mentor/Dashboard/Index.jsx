@@ -1,19 +1,45 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import ProfileReminderNotification from '@/Components/ProfileReminderNotification';
 import SolicitudesMentoriaPanel from '@/Components/SolicitudesMentoriaPanel';
+import MentoriaCard from '@/Components/MentoriaCard';
 import { Head, usePage } from '@inertiajs/react';
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-export default function Dashboard({ solicitudes = [], mentorProfile }) {
+export default function Dashboard({ solicitudes = [], mentorProfile, mentoriasProgramadas = [] }) {
     const { flash } = usePage().props;
+    const [filtro, setFiltro] = useState('todas');
     
     // Contar solicitudes pendientes
     const pendientesCount = solicitudes.filter(s => s.estado === 'pendiente').length;
 
+    const mentoriasFiltradas = useMemo(() => {
+        const hoy = new Date();
+        const startOfDay = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+        const endOfDay = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + 1);
+        const startOfWeek = new Date(hoy);
+        startOfWeek.setDate(hoy.getDate() - hoy.getDay());
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+        const list = Array.isArray(mentoriasProgramadas) ? mentoriasProgramadas : [];
+        if (filtro === 'hoy') {
+            return list.filter(m => {
+                const f = new Date(m.fecha);
+                return f >= startOfDay && f < endOfDay;
+            });
+        }
+        if (filtro === 'semana') {
+            return list.filter(m => {
+                const f = new Date(m.fecha);
+                return f >= startOfWeek && f < endOfWeek;
+            });
+        }
+        return list;
+    }, [mentoriasProgramadas, filtro]);
+
     // Mostrar mensaje de éxito si existe
     useEffect(() => {
         if (flash?.success) {
-            // Podrías usar un toast library aquí, por ahora usamos alert
             const timer = setTimeout(() => {
                 alert(flash.success);
             }, 100);
@@ -58,6 +84,29 @@ export default function Dashboard({ solicitudes = [], mentorProfile }) {
                         solicitudes={solicitudes}
                         mentorProfile={mentorProfile}
                     />
+
+                    {/* Mentorías Programadas */}
+                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                        <div className="p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-semibold text-gray-900">Mentorías Programadas</h3>
+                                <div className="flex gap-2">
+                                    <button className={`px-3 py-1 rounded ${filtro === 'todas' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`} onClick={() => setFiltro('todas')}>Todas</button>
+                                    <button className={`px-3 py-1 rounded ${filtro === 'hoy' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`} onClick={() => setFiltro('hoy')}>Hoy</button>
+                                    <button className={`px-3 py-1 rounded ${filtro === 'semana' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`} onClick={() => setFiltro('semana')}>Esta semana</button>
+                                </div>
+                            </div>
+                            {mentoriasFiltradas.length === 0 ? (
+                                <div className="text-center text-gray-500 py-8">No hay mentorías programadas.</div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {mentoriasFiltradas.map(m => (
+                                        <MentoriaCard key={m.id} mentoria={m} userRole="mentor" />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </div>
         </AuthenticatedLayout>

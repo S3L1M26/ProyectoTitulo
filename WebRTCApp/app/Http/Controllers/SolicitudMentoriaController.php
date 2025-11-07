@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Models\SolicitudMentoria;
+use App\Models\SolicitudMentoria;
 use App\Models\User;
 use App\Models\Mentor;
 use App\Models\Aprendiz;
