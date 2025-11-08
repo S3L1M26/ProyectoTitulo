@@ -28,7 +28,7 @@ class EnviarNotificacionMentoriaConfirmada
             ]);
             return; // Salir sin re-despachar job
         }
-        Cache::put($lockKey, true, 300); // 5 minutos de TTL para evitar repeticiones cercanas
+        Cache::put($lockKey, true, 120); // 120s TTL para evitar repeticiones cercanas y liberar memoria antes
         Log::info('🔔 LISTENER EJECUTADO', [
             'mentoria_id' => $event->mentoria->id,
             'timestamp' => microtime(true),

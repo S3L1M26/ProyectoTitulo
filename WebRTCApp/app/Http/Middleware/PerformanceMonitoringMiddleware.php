@@ -20,6 +20,22 @@ class PerformanceMonitoringMiddleware
         // Habilitar query log solo en desarrollo
         if (config('app.debug')) {
             DB::enableQueryLog();
+            
+            // SLOW QUERY LISTENER: Log individual queries >300ms
+            DB::listen(function ($query) use ($request) {
+                $time = $query->time; // milliseconds
+                
+                if ($time > 300) {
+                    Log::warning('🐌 SLOW QUERY DETECTED', [
+                        'route' => $request->route()?->getName(),
+                        'url' => $request->fullUrl(),
+                        'time_ms' => round($time, 2),
+                        'sql' => $query->sql,
+                        'bindings' => $query->bindings,
+                        'connection' => $query->connectionName,
+                    ]);
+                }
+            });
         }
         
         $startTime = microtime(true);
@@ -68,14 +84,29 @@ class PerformanceMonitoringMiddleware
         }
         
         if (!empty($issues) && config('app.debug')) {
-            Log::warning('Performance degradation detected', [
+            $queries = DB::getQueryLog();
+            
+            // Get top 3 slowest queries for additional context
+            $slowestQueries = collect($queries)
+                ->sortByDesc('time')
+                ->take(3)
+                ->map(fn($q) => [
+                    'time_ms' => round($q['time'], 2),
+                    'sql' => $q['query'],
+                    'bindings' => $q['bindings']
+                ])
+                ->values()
+                ->all();
+            
+            Log::warning('⚠️ PERFORMANCE DEGRADATION DETECTED', [
                 'route' => $routeName,
                 'url' => $request->fullUrl(),
                 'execution_time_ms' => round($executionTime, 2),
                 'query_count' => $queryCount,
                 'memory_usage_mb' => round($memoryUsage / 1024 / 1024, 2),
                 'issues' => $issues,
-                'is_critical_route' => $isCriticalRoute
+                'is_critical_route' => $isCriticalRoute,
+                'slowest_queries' => $slowestQueries
             ]);
         }
         

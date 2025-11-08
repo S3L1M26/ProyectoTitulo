@@ -38,8 +38,11 @@ const Dashboard = memo(function Dashboard({
         setSelectedMentor(null);
     };
 
-    // Verificar si requiere verificación de certificado
-    const requiresVerification = mentorSuggestions?.requires_verification === true;
+    // Estado de carga para props lazy de Inertia
+    const isLoadingSuggestions = mentorSuggestions === undefined || mentorSuggestions === null;
+
+    // Verificar si requiere verificación de certificado (cuando no está cargando)
+    const requiresVerification = !isLoadingSuggestions && mentorSuggestions?.requires_verification === true;
     const mentorList = requiresVerification ? [] : (Array.isArray(mentorSuggestions) ? mentorSuggestions : []);
 
     return (
@@ -65,7 +68,24 @@ const Dashboard = memo(function Dashboard({
                         </div>
                     </div>
                     {/* Sección de sugerencias de mentores */}
-                    {requiresVerification ? (
+                    {isLoadingSuggestions ? (
+                        <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                            <div className="p-6">
+                                <div className="animate-pulse space-y-3">
+                                    <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {Array.from({ length: 3 }).map((_, i) => (
+                                            <div key={i} className="border rounded-lg p-4">
+                                                <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                                                <div className="h-3 bg-gray-200 rounded w-1/3 mb-2"></div>
+                                                <div className="h-16 bg-gray-200 rounded"></div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : requiresVerification ? (
                         /* Mensaje de certificado requerido */
                         <div className="overflow-hidden bg-yellow-50 border-2 border-yellow-200 shadow-sm sm:rounded-lg">
                             <div className="p-8 text-center">

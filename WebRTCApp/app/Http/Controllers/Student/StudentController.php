@@ -20,9 +20,13 @@ class StudentController extends Controller
             ->get();
         
         return Inertia::render('Student/Dashboard/Index', [
-            'mentorSuggestions' => $this->getMentorSuggestions(),
+            // Datos críticos (siempre cargados) - optimizados con cache
             'aprendiz' => $student->aprendiz,
             'solicitudesPendientes' => $solicitudes,
+            
+            // OPTIMIZACIÓN: Lazy prop - solo se carga si el componente lo solicita
+            // Esto reduce el payload inicial de Inertia dramáticamente
+            'mentorSuggestions' => Inertia::lazy(fn () => $this->getMentorSuggestions()),
         ]);
     }
 
@@ -74,7 +78,6 @@ class StudentController extends Controller
      */
     private function buildMentorSuggestionsQuery($studentAreaIds)
     {
-        
         // OPTIMIZACIÓN CRÍTICA: Usar joins en lugar de whereHas + eager loading completo
         $mentors = User::select('users.id', 'users.name', 'mentors.calificacionPromedio')
             ->join('mentors', 'users.id', '=', 'mentors.user_id')
@@ -100,31 +103,40 @@ class StudentController extends Controller
                           ->limit(1);
                 }
             ])
-            ->orderByDesc('mentors.calificacionPromedio') // Ordenar por mejor calificación
-            ->distinct() // Evitar duplicados por múltiples áreas en común
+            ->orderByDesc('mentors.calificacionPromedio')
+            ->distinct()
             ->limit(6)
             ->get()
             ->map(function($user) {
+                // OPTIMIZACIÓN: Acceder a relaciones ya cargadas, evitar accessors pesados
+                $mentorProfile = $user->mentor;
+                $calificacion = $mentorProfile->calificacionPromedio ?? 0;
+                
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
                     'mentor' => [
-                        'experiencia' => $user->mentor->experiencia,
-                        'biografia' => $user->mentor->biografia,
-                        'años_experiencia' => $user->mentor->años_experiencia,
-                        'disponibilidad' => $user->mentor->disponibilidad,
-                        'disponibilidad_detalle' => $user->mentor->disponibilidad_detalle,
-                        'disponible_ahora' => $user->mentor->disponible_ahora,
-                        'calificacionPromedio' => $user->mentor->calificacionPromedio,
-                        'stars_rating' => $user->mentor->stars_rating,
-                        'rating_percentage' => $user->mentor->rating_percentage,
-                        'areas_interes' => $user->mentor->areasInteres,
-                        'cv_verified' => $user->mentor->cv_verified,
+                        'experiencia' => $mentorProfile->experiencia,
+                        'biografia' => $mentorProfile->biografia,
+                        'años_experiencia' => $mentorProfile->años_experiencia,
+                        'disponibilidad' => $mentorProfile->disponibilidad,
+                        'disponibilidad_detalle' => $mentorProfile->disponibilidad_detalle,
+                        'disponible_ahora' => $mentorProfile->disponible_ahora,
+                        'calificacionPromedio' => $calificacion,
+                        // OPTIMIZACIÓN: Calcular aquí en lugar de usar accessors
+                        'stars_rating' => round($calificacion, 1),
+                        'rating_percentage' => ($calificacion / 5) * 100,
+                        'areas_interes' => $mentorProfile->areasInteres->map(fn($a) => [
+                            'id' => $a->id,
+                            'nombre' => $a->nombre
+                        ]),
+                        'cv_verified' => $mentorProfile->cv_verified,
                         'has_public_cv' => $user->mentorDocuments->isNotEmpty(),
                     ]
                 ];
-            });
+            })
+            ->toArray();
         
-        return $mentors->toArray();
+        return $mentors;
     }
 }

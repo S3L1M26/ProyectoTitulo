@@ -20,9 +20,11 @@ export default function SolicitudesMentoriaPanel({ solicitudes = [], mentorProfi
         setShowModal(false);
         setSelectedSolicitud(null);
     };
+    // Estado de carga para props lazy de Inertia
+    const isLoading = mentorProfile === undefined || mentorProfile === null;
     
-    // Verificar si el perfil está bloqueado
-    const isBlocked = !mentorProfile?.cv_verified;
+    // Verificar si el perfil está bloqueado (solo cuando no está cargando)
+    const isBlocked = !isLoading && mentorProfile?.cv_verified === false;
 
     // Filtrar solicitudes por estado
     const pendientes = solicitudes.filter(s => s.estado === 'pendiente');
@@ -42,8 +44,16 @@ export default function SolicitudesMentoriaPanel({ solicitudes = [], mentorProfi
                     Solicitudes de Mentoría
                 </h3>
 
-                {/* Estado bloqueado */}
-                {isBlocked ? (
+                {/* Estado de carga */}
+                {isLoading ? (
+                    <div className="p-8">
+                        <div className="animate-pulse space-y-4">
+                            <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+                            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                            <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                        </div>
+                    </div>
+                ) : isBlocked ? (
                     <div className="p-8 text-center bg-gray-50 rounded-lg border-2 border-gray-200">
                         <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                             <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -31,11 +31,18 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $user = $request->user();
-        $profileCompletenessData = null;
-        $contadorNoLeidas = 0;
         
-        // OPTIMIZACIÓN: Solo cargar datos necesarios y usar caché
-        if ($user) {
+            $profileCompletenessData = null;
+            $contadorNoLeidas = 0;
+        
+            // OPTIMIZACIÓN: Solo cargar datos necesarios y usar caché
+        if (!$user) {
+            return [
+                ...parent::share($request),
+                'auth' => ['user' => null],
+            ];
+        }
+        
             // Asegurar datos mínimos para icono/banner de perfil en navbar sin cargar excesivo
             if ($user->role === 'student') {
                 $user->loadMissing([
@@ -63,36 +70,36 @@ class HandleInertiaRequests extends Middleware
                             ->count();
                     }
                 );
-            }
-            
+        }
+        
             // CACHÉ: Completitud del perfil (5 minutos)
-            if (in_array($user->role, ['student', 'mentor'])) {
+        if (in_array($user->role, ['student', 'mentor'])) {
                 try {
                     $profileCompletenessData = Cache::remember(
                         'profile_completeness_' . $user->id,
                         300, // 5 minutos
                         function() use ($user) {
-                            // Cargar relaciones solo cuando se calcula por primera vez
+                        // Cargar relaciones necesarias para calcular completitud
                             if ($user->role === 'student') {
                                 $user->load(['aprendiz.areasInteres']);
                             } elseif ($user->role === 'mentor') {
                                 $user->load(['mentor.areasInteres']);
                             }
-                            return $user->profile_completeness;
+                        // Retornar el objeto completo (necesario para ProfileReminderNotification)
+                        return $user->profile_completeness;
                         }
                     );
                 } catch (\Exception $e) {
                     logger()->error('Error calculating profile completeness in Inertia: ' . $e->getMessage());
                 }
-            }
         }
 
         return [
             ...parent::share($request),
-            'auth' => [
-                'user' => $user,
-            ],
-            'profile_completeness' => $profileCompletenessData,
+                'auth' => [
+                    'user' => $user,
+                ],
+                'profile_completeness' => $profileCompletenessData,
             'contadorNoLeidas' => $contadorNoLeidas,
         ];
     }

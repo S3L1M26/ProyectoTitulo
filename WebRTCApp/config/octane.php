@@ -105,8 +105,8 @@ return [
         OperationTerminated::class => [
             FlushOnce::class,
             FlushTemporaryContainerInstances::class,
-            // DisconnectFromDatabases::class,
-            // CollectGarbage::class,
+            DisconnectFromDatabases::class,
+            CollectGarbage::class,
         ],
 
         WorkerErrorOccurred::class => [
@@ -132,10 +132,15 @@ return [
 
     'warm' => [
         ...Octane::defaultServicesToWarm(),
+        'cache',
+        'cache.store',
+        'redis',
+        'redis.connection',
     ],
 
     'flush' => [
-        //
+        // Flush Inertia shared data cache on every request to prevent stale user data
+        // 'auth',
     ],
 
     /*

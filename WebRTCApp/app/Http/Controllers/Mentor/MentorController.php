@@ -17,17 +17,21 @@ class MentorController extends Controller
         $user = Auth::user();
         
         return Inertia::render('Mentor/Dashboard/Index', [
-            // Datos críticos (siempre cargados)
-            'mentorProfile' => fn () => Mentor::where('user_id', $user->id)->first(),
+            // OPTIMIZACIÓN: Lazy props - solo cargan cuando el componente los solicita
+            // Reduce payload inicial y mejora el tiempo de primera carga
+            'mentorProfile' => Inertia::lazy(fn () => 
+                Mentor::where('user_id', $user->id)->first()
+            ),
             
-            // Lazy prop: Solo se carga si el componente lo solicita
-            'solicitudes' => fn () => Cache::remember(
-                'mentor_solicitudes_' . $user->id,
-                300, // 5 minutos
-                fn () => SolicitudMentoria::where('mentor_id', $user->id)
-                    ->with(['estudiante:id,name,email', 'aprendiz.areasInteres:id,nombre'])
-                    ->orderBy('fecha_solicitud', 'desc')
-                    ->get()
+            'solicitudes' => Inertia::lazy(fn () => 
+                Cache::remember(
+                    'mentor_solicitudes_' . $user->id,
+                    300, // 5 minutos
+                    fn () => SolicitudMentoria::where('mentor_id', $user->id)
+                        ->with(['estudiante:id,name,email', 'aprendiz.areasInteres:id,nombre'])
+                        ->orderBy('fecha_solicitud', 'desc')
+                        ->get()
+                )
             ),
         ]);
     }
