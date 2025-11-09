@@ -261,49 +261,84 @@ class SolicitudMentoriaController extends Controller
     {
         $estudiante = Auth::user();
         
-        // CACHÉ: 2 minutos para solicitudes (se invalida al crear/actualizar)
-        $solicitudes = Cache::remember(
-            'student_solicitudes_' . $estudiante->id,
-            120,
-            function() use ($estudiante) {
-                return SolicitudMentoria::where('estudiante_id', $estudiante->id)
-                    ->with([
-                        'mentor:id,name,email',
-                        'mentor.mentor:id,user_id,años_experiencia,biografia,experiencia',
-                        'mentor.mentor.areasInteres:id,nombre',
-                        'aprendiz.areasInteres:id,nombre'
-                    ])
-                    ->orderBy('created_at', 'desc')
-                    ->get()
-                    ->map(function ($solicitud) {
-                        return [
-                            'id' => $solicitud->id,
-                            'estado' => $solicitud->estado,
-                            'mensaje' => $solicitud->mensaje,
-                            'fecha_solicitud' => $solicitud->fecha_solicitud,
-                            'fecha_respuesta' => $solicitud->fecha_respuesta,
-                            'created_at' => $solicitud->created_at,
-                            'updated_at' => $solicitud->updated_at,
-                            'mentor' => [
-                                'id' => $solicitud->mentor->id,
-                                'name' => $solicitud->mentor->name,
-                                'años_experiencia' => $solicitud->mentor->mentor->años_experiencia ?? 0,
-                                'biografia' => $solicitud->mentor->mentor->biografia ?? '',
-                                'areas_interes' => $solicitud->mentor->mentor->areasInteres->map(function ($area) {
-                                    return [
-                                        'id' => $area->id,
-                                        'nombre' => $area->nombre,
-                                    ];
-                                }),
-                            ],
-                        ];
-                    });
-            }
-        );
+        $solicitudes = $this->buildSolicitudesCollection($estudiante->id);
 
         return inertia('Student/Solicitudes/Index', [
             'misSolicitudes' => $solicitudes,
+            'polling' => [
+                'interval_ms' => 10000,
+            ],
         ]);
+    }
+
+    /**
+     * Endpoint de polling (API) para solicitudes del estudiante con soporte de etag.
+     * Devuelve 200 con cambios o 304 sin cambios.
+     */
+    public function pollSolicitudes(Request $request)
+    {
+        $estudiante = Auth::user();
+        $current = $this->buildSolicitudesCollection($estudiante->id);
+
+        $etag = sha1($current->pluck('id')->join('-').':'.$current->max('updated_at'));
+        $clientEtag = $request->query('etag');
+
+        if ($clientEtag && hash_equals($clientEtag, $etag)) {
+            return response()->json([
+                'etag' => $etag,
+                'changed' => false,
+            ], 200); // usamos 200 JSON consistente (en vez de 304 para simplificar caches intermedios)
+        }
+
+        return response()->json([
+            'etag' => $etag,
+            'changed' => true,
+            'items' => $current,
+        ]);
+    }
+
+    private function buildSolicitudesCollection(int $estudianteId)
+    {
+        return SolicitudMentoria::where('estudiante_id', $estudianteId)
+            ->with([
+                'mentor:id,name,email',
+                'mentor.mentor:id,user_id,años_experiencia,biografia,experiencia',
+                'mentor.mentor.areasInteres:id,nombre',
+                'aprendiz.areasInteres:id,nombre',
+                'mentoria'
+            ])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($solicitud) {
+                return [
+                    'id' => $solicitud->id,
+                    'estado' => $solicitud->estado,
+                    'mensaje' => $solicitud->mensaje,
+                    'fecha_solicitud' => $solicitud->fecha_solicitud,
+                    'fecha_respuesta' => $solicitud->fecha_respuesta,
+                    'created_at' => $solicitud->created_at,
+                    'updated_at' => $solicitud->updated_at,
+                    'mentor' => [
+                        'id' => $solicitud->mentor->id,
+                        'name' => $solicitud->mentor->name,
+                        'años_experiencia' => $solicitud->mentor->mentor->años_experiencia ?? 0,
+                        'biografia' => $solicitud->mentor->mentor->biografia ?? '',
+                        'areas_interes' => $solicitud->mentor->mentor->areasInteres->map(function ($area) {
+                            return [
+                                'id' => $area->id,
+                                'nombre' => $area->nombre,
+                            ];
+                        }),
+                    ],
+                    'mentoria' => $solicitud->mentoria ? [
+                        'id' => $solicitud->mentoria->id,
+                        'fecha_formateada' => $solicitud->mentoria->fecha_formateada,
+                        'hora_formateada' => $solicitud->mentoria->hora_formateada,
+                        'enlace_reunion' => $solicitud->mentoria->enlace_reunion,
+                        'estado' => $solicitud->mentoria->estado,
+                    ] : null,
+                ];
+            });
     }
 
     /**

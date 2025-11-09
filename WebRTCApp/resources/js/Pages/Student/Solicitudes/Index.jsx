@@ -1,8 +1,10 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
 import MisSolicitudesPanel from '@/Components/MisSolicitudesPanel';
+import { usePage } from '@inertiajs/react';
 
-export default function MisSolicitudesPage({ misSolicitudes = [] }) {
+export default function MisSolicitudesPage({ misSolicitudes = [], polling = { interval_ms: 10000 } }) {
+    const { props } = usePage();
     // Contar solicitudes por estado
     const pendientes = misSolicitudes.filter(s => s.estado === 'pendiente').length;
     const aceptadas = misSolicitudes.filter(s => s.estado === 'aceptada').length;
@@ -35,6 +37,7 @@ export default function MisSolicitudesPage({ misSolicitudes = [] }) {
                 <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
                     <MisSolicitudesPanel 
                         solicitudes={misSolicitudes}
+                        pollingConfig={polling}
                     />
                 </div>
             </div>

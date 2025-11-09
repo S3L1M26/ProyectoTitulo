@@ -83,6 +83,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('role:student')->group(function () {
         Route::get('/student/solicitudes', [SolicitudMentoriaController::class, 'misSolicitudes'])
             ->name('student.solicitudes');
+        // Polling API para solicitudes del estudiante
+        Route::get('/api/student/solicitudes', [SolicitudMentoriaController::class, 'pollSolicitudes'])
+            ->middleware('throttle:60,1')
+            ->name('api.student.solicitudes');
         
         Route::get('/student/notifications', [SolicitudMentoriaController::class, 'misNotificaciones'])
             ->name('student.notifications');
@@ -108,6 +112,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Confirmar mentoría (crea reunión Zoom y guarda)
         Route::post('/mentorias/solicitudes/{solicitud}/confirmar', [MentoriaController::class, 'confirmar'])
             ->name('mentorias.confirmar');
+
+        // Cancelar mentoría (mentor)
+        Route::delete('/mentor/mentorias/{mentoria}', [MentoriaController::class, 'cancelar'])
+            ->name('mentor.mentorias.cancelar');
     });
 });
 

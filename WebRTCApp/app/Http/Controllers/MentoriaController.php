@@ -191,4 +191,55 @@ class MentoriaController extends Controller
 
         return redirect()->away($mentoria->enlace_reunion);
     }
+
+    /**
+     * Cancelar una mentoría confirmada: elimina la reunión en Zoom (best-effort) y limpia datos locales.
+     */
+    public function cancelar(Request $request, Mentoria $mentoria)
+    {
+        $user = Auth::user();
+        if ($user->id !== $mentoria->mentor_id) {
+            return response()->json(['message' => 'No autorizado para cancelar esta mentoría.'], 403);
+        }
+        if ($mentoria->estado !== 'confirmada') {
+            return response()->json(['message' => 'Solo mentorías confirmadas pueden cancelarse.'], 422);
+        }
+
+        $zoomId = $mentoria->zoom_meeting_id;
+        $erroresZoom = null;
+        if ($zoomId) {
+            try {
+                $this->zoom->cancelarReunion($zoomId);
+            } catch (ZoomApiException|ZoomAuthException $e) {
+                Log::channel('zoom')->warning('Fallo al cancelar reunión Zoom (continuando cancel local)', [
+                    'mentoria_id' => $mentoria->id,
+                    'zoom_meeting_id' => $zoomId,
+                    'error' => $e->getMessage(),
+                ]);
+                $erroresZoom = $e->getMessage();
+            }
+        }
+
+        $mentoria->estado = 'cancelada';
+        $mentoria->enlace_reunion = null;
+        $mentoria->zoom_meeting_id = null;
+        $mentoria->zoom_password = null;
+        $mentoria->save();
+
+        Log::info('Mentoría cancelada', [
+            'mentoria_id' => $mentoria->id,
+            'mentor_id' => $user->id,
+            'errores_zoom' => $erroresZoom,
+        ]);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => 'Mentoría cancelada',
+                'mentoria' => $mentoria->refresh(),
+                'zoom_error' => $erroresZoom,
+            ]);
+        }
+
+        return back()->with('status', 'Mentoría cancelada');
+    }
 }
