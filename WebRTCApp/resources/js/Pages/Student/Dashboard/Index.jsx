@@ -26,6 +26,8 @@ const Dashboard = memo(function Dashboard({
             }, 100);
             return () => clearTimeout(timer);
         }
+
+        console.log(mentorSuggestions);
     }, [flash]);
 
     const openMentorModal = (mentor) => {
@@ -136,7 +138,7 @@ const Dashboard = memo(function Dashboard({
                                                 {mentorUser.mentor.biografia || mentorUser.mentor.experiencia}
                                             </p>
                                             <div className="flex flex-wrap gap-1 mb-3">
-                                                {mentorUser.mentor.areas_interes.slice(0, 3).map((area) => (
+                                                {(mentorUser.mentor.areas_interes ?? mentorUser.mentor.areasInteres ?? []).slice(0, 3).map((area) => (
                                                     <span 
                                                         key={area.id} 
                                                         className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
@@ -144,9 +146,9 @@ const Dashboard = memo(function Dashboard({
                                                         {area.nombre}
                                                     </span>
                                                 ))}
-                                                {mentorUser.mentor.areas_interes.length > 3 && (
+                                                {(mentorUser.mentor.areas_interes ?? mentorUser.mentor.areasInteres ?? []).length > 3 && (
                                                     <span className="text-xs text-gray-500">
-                                                        +{mentorUser.mentor.areas_interes.length - 3} más
+                                                        +{(mentorUser.mentor.areas_interes ?? mentorUser.mentor.areasInteres ?? []).length - 3} más
                                                     </span>
                                                 )}
                                             </div>
@@ -177,38 +179,46 @@ const Dashboard = memo(function Dashboard({
                             </div>
                         </div>
                     ) : (
-                        <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                        <div className="overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 shadow-sm sm:rounded-lg">
                             <div className="p-8 text-center">
-                                <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-6">
-                                    <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                <div className="mx-auto w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mb-6">
+                                    <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                     </svg>
                                 </div>
-                                <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                                    No hay mentores sugeridos aún
+                                <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                                    🔍 No encontramos mentores en tus áreas
                                 </h3>
-                                <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                                    Para recibir sugerencias personalizadas de mentores, asegúrate de completar tu perfil con tus áreas de interés. También verifica que haya mentores disponibles en tus áreas de especialización.
+                                <p className="text-gray-700 mb-6 max-w-2xl mx-auto leading-relaxed">
+                                    Actualmente no hay mentores disponibles que coincidan con tus áreas de interés seleccionadas. 
+                                    <br />
+                                    <span className="font-medium text-indigo-700">¿Qué tal si exploras otras áreas?</span> Podrías encontrar mentores increíbles en campos relacionados.
                                 </p>
                                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                                     <a 
                                         href="/profile" 
-                                        className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                        className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg font-medium"
                                     >
-                                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                         </svg>
-                                        Completar mi perfil
+                                        Ajustar áreas de interés
                                     </a>
                                     <button 
                                         onClick={() => window.location.reload()} 
-                                        className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                                        className="inline-flex items-center px-6 py-3 bg-white border-2 border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-all font-medium"
                                     >
-                                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                         </svg>
-                                        Actualizar sugerencias
+                                        Recargar sugerencias
                                     </button>
+                                </div>
+                                <div className="mt-6 p-4 bg-white/60 rounded-lg border border-blue-100">
+                                    <p className="text-sm text-gray-600">
+                                        💡 <span className="font-semibold">Tip:</span> Los mentores se actualizan cuando cambian su disponibilidad. 
+                                        Vuelve más tarde o amplía tus áreas para más opciones.
+                                    </p>
                                 </div>
                             </div>
                         </div>

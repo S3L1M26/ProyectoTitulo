@@ -14,19 +14,25 @@ class StudentController extends Controller
     {
         $student = Auth::user()->load('aprendiz');
         
+        logger()->debug('📊 Student Dashboard accessed', [
+            'user_id' => $student->id,
+            'has_aprendiz' => $student->aprendiz !== null,
+        ]);
+        
         // Obtener solo las solicitudes pendientes para el modal de solicitud
         $solicitudes = \App\Models\SolicitudMentoria::where('estudiante_id', $student->id)
             ->where('estado', 'pendiente')
             ->get();
         
+        // Cargar sugerencias de mentores directamente (eager loading)
+        // Lazy props no funcionan en primera carga - necesitan solicitud explícita del frontend
+        $mentorSuggestions = $this->getMentorSuggestions();
+        
         return Inertia::render('Student/Dashboard/Index', [
             // Datos críticos (siempre cargados) - optimizados con cache
             'aprendiz' => $student->aprendiz,
             'solicitudesPendientes' => $solicitudes,
-            
-            // OPTIMIZACIÓN: Lazy prop - solo se carga si el componente lo solicita
-            // Esto reduce el payload inicial de Inertia dramáticamente
-            'mentorSuggestions' => Inertia::lazy(fn () => $this->getMentorSuggestions()),
+            'mentorSuggestions' => $mentorSuggestions,
         ]);
     }
 
@@ -40,9 +46,14 @@ class StudentController extends Controller
         // Early return con menos queries - cargar con eager loading
         $student = Auth::user()->load('aprendiz.areasInteres');
         
-        // VALIDACIÓN: Verificar que el estudiante tenga certificado verificado
+        // Verificar certificado de alumno regular
         if (!$student->aprendiz || !$student->aprendiz->certificate_verified) {
-            // Retornar estructura vacía para Inertia (se manejará en el frontend)
+            logger()->debug('� Mentor suggestions blocked: certificate not verified', [
+                'user_id' => $student->id,
+                'has_aprendiz' => $student->aprendiz !== null,
+                'certificate_verified' => $student->aprendiz?->certificate_verified ?? false,
+            ]);
+            
             return [
                 'requires_verification' => true,
                 'message' => 'Debes verificar tu certificado de alumno regular para ver mentores.',
@@ -53,6 +64,7 @@ class StudentController extends Controller
         }
         
         if ($student->aprendiz->areasInteres->isEmpty()) {
+            logger()->debug('❌ No mentor suggestions: no areas of interest selected');
             return [];
         }
         

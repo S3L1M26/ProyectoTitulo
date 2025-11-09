@@ -26,18 +26,26 @@ class EventServiceProvider extends ServiceProvider
     public function boot(): void
     {
         parent::boot();
-        try {
-            // Instrumentación: contar listeners registrados para MentoriaConfirmada
-            $dispatcher = $this->app['events'];
-            $listeners = $dispatcher->getListeners(MentoriaConfirmada::class);
-            Log::info('🔍 EVENT LISTENER COUNT', [
-                'event' => MentoriaConfirmada::class,
-                'listener_count' => count($listeners),
-            ]);
-        } catch (\Throwable $e) {
-            Log::warning('No se pudo inspeccionar listeners del evento MentoriaConfirmada', [
-                'error' => $e->getMessage(),
-            ]);
+        
+        // OPTIMIZACIÓN: Solo loguear en debug mode y una vez
+        if (config('app.debug') && !app()->runningInConsole()) {
+            static $logged = false;
+            if (!$logged) {
+                try {
+                    // Instrumentación: contar listeners registrados para MentoriaConfirmada
+                    $dispatcher = $this->app['events'];
+                    $listeners = $dispatcher->getListeners(MentoriaConfirmada::class);
+                    Log::debug('🔍 EVENT LISTENER COUNT', [
+                        'event' => MentoriaConfirmada::class,
+                        'listener_count' => count($listeners),
+                    ]);
+                    $logged = true;
+                } catch (\Throwable $e) {
+                    Log::warning('No se pudo inspeccionar listeners del evento MentoriaConfirmada', [
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
         }
     }
 }
