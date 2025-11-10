@@ -17,6 +17,8 @@ class DatabaseSeeder extends Seeder
             UsersSeeder::class,
             AreasInteresSeeder::class,
             AprendizTestSeeder::class,
+            SolicitudMentoriaSeeder::class,
+            MentoriaSeeder::class,
         ]);
     }
 }
