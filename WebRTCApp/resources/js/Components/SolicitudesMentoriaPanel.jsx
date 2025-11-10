@@ -30,10 +30,12 @@ export default function SolicitudesMentoriaPanel({ solicitudes = [], mentorProfi
     const pendientes = solicitudes.filter(s => s.estado === 'pendiente');
     const aceptadas = solicitudes.filter(s => s.estado === 'aceptada');
     const rechazadas = solicitudes.filter(s => s.estado === 'rechazada');
+    const canceladas = solicitudes.filter(s => s.estado === 'cancelada');
 
     const categories = [
         { name: 'Pendientes', count: pendientes.length, data: pendientes },
         { name: 'Aceptadas', count: aceptadas.length, data: aceptadas },
+        { name: 'Canceladas', count: canceladas.length, data: canceladas },
         { name: 'Rechazadas', count: rechazadas.length, data: rechazadas },
     ];
 

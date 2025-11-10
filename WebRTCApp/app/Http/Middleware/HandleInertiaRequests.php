@@ -44,6 +44,7 @@ class HandleInertiaRequests extends Middleware
         
         // Inicializar variables compartidas
         $contadorNoLeidas = 0;
+        $solicitudesPendientes = 0;
         $profileCompletenessData = null;
 
         // Asegurar datos mínimos para icono/banner de perfil en navbar sin cargar excesivo
@@ -74,6 +75,19 @@ class HandleInertiaRequests extends Middleware
                 }
             );
         }
+        
+            // CACHÉ: Contador de solicitudes pendientes para mentores (30 segundos)
+            if ($user->role === 'mentor') {
+                $solicitudesPendientes = Cache::remember(
+                    'mentor_pending_solicitudes_' . $user->id,
+                    30, // 30 segundos de cache
+                    function() use ($user) {
+                        return \App\Models\SolicitudMentoria::where('mentor_id', $user->id)
+                            ->where('estado', 'pendiente')
+                            ->count();
+                    }
+                );
+            }
         
         // CACHÉ: Completitud del perfil (5 minutos) con fallback robusto
         if (in_array($user->role, ['student', 'mentor'])) {
@@ -111,6 +125,7 @@ class HandleInertiaRequests extends Middleware
             ],
             'profile_completeness' => $profileCompletenessData,
             'contadorNoLeidas' => $contadorNoLeidas,
+                'solicitudesPendientes' => $solicitudesPendientes,
         ];
     }
 

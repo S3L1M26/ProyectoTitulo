@@ -100,8 +100,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
     // Rutas para mentores: gestionar solicitudes
     Route::middleware('role:mentor')->group(function () {
-        Route::get('/mentor/solicitudes', [SolicitudMentoriaController::class, 'index'])
-            ->name('mentor.solicitudes.index');
+        Route::get('/mentor/solicitudes', [MentorController::class, 'solicitudes'])
+            ->name('mentor.solicitudes');
         
         Route::post('/mentor/solicitudes/{id}/accept', [SolicitudMentoriaController::class, 'accept'])
             ->name('mentor.solicitudes.accept');

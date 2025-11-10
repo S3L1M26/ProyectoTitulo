@@ -61,10 +61,13 @@ export default function SolicitudMentoriaCard({ solicitud, showActions = true, o
                             ? 'bg-green-100 text-green-800' 
                             : solicitud.estado === 'rechazada'
                             ? 'bg-red-100 text-red-800'
+                            : solicitud.estado === 'cancelada'
+                            ? 'bg-orange-100 text-orange-800'
                             : 'bg-yellow-100 text-yellow-800'
                     }`}>
                         {solicitud.estado === 'aceptada' ? 'Aceptada' : 
-                         solicitud.estado === 'rechazada' ? 'Rechazada' : 'Pendiente'}
+                         solicitud.estado === 'rechazada' ? 'Rechazada' : 
+                         solicitud.estado === 'cancelada' ? 'Cancelada' : 'Pendiente'}
                     </span>
                 )}
             </div>
@@ -151,6 +154,22 @@ export default function SolicitudMentoriaCard({ solicitud, showActions = true, o
                     >
                         {processing ? 'Procesando...' : 'Rechazar'}
                     </DangerButton>
+                </div>
+            )}
+            
+            {/* Botón Reagendar para solicitudes canceladas */}
+            {solicitud.estado === 'cancelada' && (
+                <div className="pt-3 border-t border-gray-200">
+                    <PrimaryButton
+                        onClick={onAcceptClick}
+                        disabled={processing}
+                        className="w-full justify-center bg-orange-600 hover:bg-orange-700"
+                    >
+                        🔄 Reagendar Mentoría
+                    </PrimaryButton>
+                    <p className="mt-2 text-xs text-center text-gray-500">
+                        Esta mentoría fue cancelada. Puedes programar una nueva fecha.
+                    </p>
                 </div>
             )}
         </div>

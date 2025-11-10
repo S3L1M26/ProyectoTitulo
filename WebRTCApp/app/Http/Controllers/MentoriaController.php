@@ -6,6 +6,7 @@ use App\Events\MentoriaConfirmada;
 use App\Exceptions\ZoomApiException;
 use App\Exceptions\ZoomAuthException;
 use App\Http\Requests\ConfirmarMentoriaRequest;
+use App\Mail\MentoriaCanceladaMail;
 use App\Models\Mentoria;
 use App\Models\SolicitudMentoria;
 use App\Services\ZoomService;
@@ -16,6 +17,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Mail;
 
 class MentoriaController extends Controller
 {
@@ -220,15 +222,40 @@ class MentoriaController extends Controller
             }
         }
 
+        // Actualizar estado de mentoría
         $mentoria->estado = 'cancelada';
         $mentoria->enlace_reunion = null;
         $mentoria->zoom_meeting_id = null;
         $mentoria->zoom_password = null;
         $mentoria->save();
 
+        // Actualizar estado de la solicitud a 'cancelada' para permitir reagendar
+        if ($mentoria->solicitud_id) {
+            $solicitud = SolicitudMentoria::find($mentoria->solicitud_id);
+            if ($solicitud) {
+                $solicitud->estado = 'cancelada';
+                $solicitud->save();
+                
+                // Enviar notificación por correo al aprendiz
+                try {
+                    Mail::to($solicitud->estudiante->email)->send(new MentoriaCanceladaMail($mentoria, $solicitud));
+                } catch (\Exception $e) {
+                    Log::error('Error al enviar correo de mentoría cancelada', [
+                        'mentoria_id' => $mentoria->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        }
+
+        // Limpiar caché relacionado
+        Cache::forget('mentor_solicitudes_' . $user->id);
+        Cache::forget('student_solicitudes_' . $mentoria->aprendiz_id);
+
         Log::info('Mentoría cancelada', [
             'mentoria_id' => $mentoria->id,
             'mentor_id' => $user->id,
+            'solicitud_estado_actualizado' => 'cancelada',
             'errores_zoom' => $erroresZoom,
         ]);
 

@@ -20,16 +20,6 @@ class MentorController extends Controller
         // Cargar perfil del mentor
         $mentorProfile = Mentor::where('user_id', $user->id)->first();
         
-        // Cargar solicitudes con cache
-        $solicitudes = Cache::remember(
-            'mentor_solicitudes_' . $user->id,
-            300, // 5 minutos
-            fn () => SolicitudMentoria::where('mentor_id', $user->id)
-                ->with(['estudiante:id,name,email', 'aprendiz.areasInteres:id,nombre'])
-                ->orderBy('fecha_solicitud', 'desc')
-                ->get()
-        );
-        
         // Cargar mentorías programadas del mentor
         $mentoriasProgramadas = Mentoria::where('mentor_id', $user->id)
             ->where('estado', 'confirmada')
@@ -57,8 +47,30 @@ class MentorController extends Controller
         
         return Inertia::render('Mentor/Dashboard/Index', [
             'mentorProfile' => $mentorProfile,
-            'solicitudes' => $solicitudes,
             'mentoriasProgramadas' => $mentoriasProgramadas,
         ]);
     }
+
+        public function solicitudes()
+        {
+            $user = Auth::user();
+        
+            // Cargar perfil del mentor
+            $mentorProfile = Mentor::where('user_id', $user->id)->first();
+        
+            // Cargar solicitudes con cache
+            $solicitudes = Cache::remember(
+                'mentor_solicitudes_' . $user->id,
+                300, // 5 minutos
+                fn () => SolicitudMentoria::where('mentor_id', $user->id)
+                    ->with(['estudiante:id,name,email', 'aprendiz.areasInteres:id,nombre'])
+                    ->orderBy('fecha_solicitud', 'desc')
+                    ->get()
+            );
+        
+            return Inertia::render('Mentor/Solicitudes/Index', [
+                'mentorProfile' => $mentorProfile,
+                'solicitudes' => $solicitudes,
+            ]);
+        }
 }
