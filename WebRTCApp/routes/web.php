@@ -117,6 +117,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/mentor/mentorias/{mentoria}', [MentoriaController::class, 'cancelar'])
             ->name('mentor.mentorias.cancelar');
     });
+
+    // Mensajes a mentor (solo estudiantes con relación previa)
+    Route::middleware('role:student')->group(function () {
+        Route::post('/student/mentores/{mentor}/contactar', [\App\Http\Controllers\MensajeMentorController::class, 'store'])
+            ->name('student.mentores.contactar')
+            ->middleware('throttle:5,1');
+        Route::get('/api/student/mentores-contactables', [\App\Http\Controllers\MensajeMentorController::class, 'contactables'])
+            ->name('student.mentores.contactables');
+        Route::get('/api/student/mentores/{mentor}/can-contact', [\App\Http\Controllers\MensajeMentorController::class, 'canContact'])
+            ->name('student.mentores.canContact');
+    });
 });
 
 require __DIR__.'/auth.php';
