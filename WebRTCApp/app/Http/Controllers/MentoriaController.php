@@ -101,6 +101,9 @@ class MentoriaController extends Controller
                 $solicitud->aceptar();
             }
 
+            // Invalidar caché de solicitudes del mentor
+            Cache::forget('mentor_solicitudes_' . $solicitud->mentor_id);
+
             // Disparar evento
             Log::info('📢 DESPACHANDO EVENTO MentoriaConfirmada', [
                 'mentoria_id' => $mentoria->id,

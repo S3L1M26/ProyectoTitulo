@@ -2,6 +2,8 @@ import React, { memo, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import SolicitudMentoriaForm from '@/Components/SolicitudMentoriaForm';
+import { router } from '@inertiajs/react';
+import { toast } from 'react-toastify';
 
 const MentorDetailModal = memo(function MentorDetailModal({ isOpen, onClose, mentor, aprendiz, solicitudesPendientes = [] }) {
     const [isSolicitudFormOpen, setIsSolicitudFormOpen] = useState(false);

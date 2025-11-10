@@ -24,6 +24,32 @@ class StudentController extends Controller
             ->where('estado', 'pendiente')
             ->get();
         
+        // Cargar mentorías confirmadas del estudiante
+        $mentoriasConfirmadas = \App\Models\Mentoria::where('aprendiz_id', $student->id)
+            ->where('estado', 'confirmada')
+            ->where('fecha', '>=', now()->toDateString())
+            ->with(['mentor:id,name,email'])
+            ->orderBy('fecha')
+            ->orderBy('hora')
+            ->get()
+            ->map(function ($mentoria) {
+                return [
+                    'id' => $mentoria->id,
+                    'fecha' => $mentoria->fecha,
+                    'hora' => $mentoria->hora,
+                    'fecha_formateada' => $mentoria->fecha_formateada,
+                    'hora_formateada' => $mentoria->hora_formateada,
+                    'duracion_minutos' => $mentoria->duracion_minutos,
+                    'enlace_reunion' => $mentoria->enlace_reunion,
+                    'estado' => $mentoria->estado,
+                    'mentor_id' => $mentoria->mentor_id,
+                    'mentor' => [
+                        'id' => $mentoria->mentor->id,
+                        'name' => $mentoria->mentor->name,
+                    ],
+                ];
+            });
+        
         // Cargar sugerencias de mentores directamente (eager loading)
         // Lazy props no funcionan en primera carga - necesitan solicitud explícita del frontend
         $mentorSuggestions = $this->getMentorSuggestions();
@@ -33,6 +59,7 @@ class StudentController extends Controller
             'aprendiz' => $student->aprendiz,
             'solicitudesPendientes' => $solicitudes,
             'mentorSuggestions' => $mentorSuggestions,
+            'mentoriasConfirmadas' => $mentoriasConfirmadas,
         ]);
     }
 

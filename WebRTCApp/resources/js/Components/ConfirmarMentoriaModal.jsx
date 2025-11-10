@@ -5,7 +5,7 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
-import { useForm as useInertiaForm } from '@inertiajs/react';
+import { useForm as useInertiaForm, router } from '@inertiajs/react';
 import { toast } from 'react-toastify';
 
 export default function ConfirmarMentoriaModal({ isOpen, onClose, solicitud }) {
@@ -119,7 +119,8 @@ export default function ConfirmarMentoriaModal({ isOpen, onClose, solicitud }) {
 
         // ✅ Con useInertiaForm, solo pasamos la ruta - los datos ya están en el form
         post(route('mentorias.confirmar', { solicitud: solicitud.id }), {
-            preserveScroll: true,
+            preserveScroll: false,
+            preserveState: false,
             headers: {
                 'X-CID': cid,
             },

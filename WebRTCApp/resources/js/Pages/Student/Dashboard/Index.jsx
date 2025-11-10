@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, usePage, router } from '@inertiajs/react';
 import { useState, lazy, Suspense, memo, useEffect } from 'react';
 import MentoriaCard from '@/Components/MentoriaCard';
 
@@ -17,6 +17,22 @@ const Dashboard = memo(function Dashboard({
     const [selectedMentor, setSelectedMentor] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [showMentorias, setShowMentorias] = useState(false); // Lazy mount
+
+    // Expandir automáticamente si hay mentorías confirmadas
+    useEffect(() => {
+        if (mentoriasConfirmadas.length > 0) {
+            setShowMentorias(true);
+        }
+    }, [mentoriasConfirmadas.length]);
+
+    // Polling para actualizar mentorías confirmadas cada 30 segundos
+    useEffect(() => {
+        const interval = setInterval(() => {
+            router.reload({ only: ['mentoriasConfirmadas', 'solicitudesPendientes'] });
+        }, 30000); // 30 segundos
+
+        return () => clearInterval(interval);
+    }, []);
 
     // Mostrar mensaje de éxito si existe
     useEffect(() => {
@@ -228,14 +244,46 @@ const Dashboard = memo(function Dashboard({
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <div className="p-6">
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-semibold text-gray-900">Mis Mentorías Confirmadas</h3>
-                                <button onClick={() => setShowMentorias((v) => !v)} className="text-blue-600 hover:underline">
-                                    {showMentorias ? 'Ocultar' : 'Mostrar'}
+                                <div className="flex items-center gap-3">
+                                    <h3 className="text-lg font-semibold text-gray-900">Mis Mentorías Confirmadas</h3>
+                                    {mentoriasConfirmadas.length > 0 && (
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            {mentoriasConfirmadas.length}
+                                        </span>
+                                    )}
+                                </div>
+                                <button 
+                                    onClick={() => setShowMentorias((v) => !v)} 
+                                    className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium text-sm transition-colors"
+                                >
+                                    {showMentorias ? (
+                                        <>
+                                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                            </svg>
+                                            Ocultar
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                            Mostrar
+                                        </>
+                                    )}
                                 </button>
                             </div>
                             {showMentorias ? (
                                 mentoriasConfirmadas.length === 0 ? (
-                                    <div className="text-center text-gray-500 py-8">Aún no tienes mentorías confirmadas.</div>
+                                    <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                                        <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                        </div>
+                                        <p className="text-gray-500 font-medium mb-2">Aún no tienes mentorías confirmadas</p>
+                                        <p className="text-sm text-gray-400">Cuando un mentor confirme una de tus solicitudes, aparecerá aquí.</p>
+                                    </div>
                                 ) : (
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                         {mentoriasConfirmadas.map((m) => (

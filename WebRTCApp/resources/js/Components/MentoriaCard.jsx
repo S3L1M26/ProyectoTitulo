@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { router } from '@inertiajs/react';
 import { toast } from 'react-toastify';
 
+// Lazy load del modal de contactar mentor
+const ContactarMentorModal = lazy(() => import('@/Components/ContactarMentorModal'));
+
 export default function MentoriaCard({ mentoria, userRole = 'mentor' }) {
     const [showCancelModal, setShowCancelModal] = useState(false);
+    const [showContactModal, setShowContactModal] = useState(false);
     const [cancelling, setCancelling] = useState(false);
 
     if (!mentoria) return null;
@@ -80,6 +84,18 @@ export default function MentoriaCard({ mentoria, userRole = 'mentor' }) {
                             ❌ Cancelar Mentoría
                         </button>
                     )}
+                    {userRole === 'aprendiz' && (
+                        <button
+                            type="button"
+                            onClick={() => setShowContactModal(true)}
+                            className="inline-flex items-center justify-center w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                        >
+                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            Contactar Mentor
+                        </button>
+                    )}
                 </div>
             )}
         </div>
@@ -115,6 +131,21 @@ export default function MentoriaCard({ mentoria, userRole = 'mentor' }) {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Modal de contactar mentor */}
+            {showContactModal && userRole === 'aprendiz' && (
+                <Suspense fallback={
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+                    </div>
+                }>
+                    <ContactarMentorModal
+                        isOpen={showContactModal}
+                        onClose={() => setShowContactModal(false)}
+                        mentor={{ id: mentoria.mentor_id || mentoria.mentor?.id, name: nombreOtro }}
+                    />
+                </Suspense>
             )}
         </>
     );

@@ -94,14 +94,14 @@ class MensajeMentorController extends Controller
     private function canContactUser(int $studentId, int $mentorId): bool
     {
         $tieneAceptada = DB::table('solicitud_mentorias')
-            ->where('aprendiz_id', $studentId)
+            ->where('estudiante_id', $studentId)
             ->where('mentor_id', $mentorId)
             ->whereIn('estado', ['aceptada'])
             ->exists();
 
         $tieneConfirmada = DB::table('mentorias')
             ->join('solicitud_mentorias', 'mentorias.solicitud_id', '=', 'solicitud_mentorias.id')
-            ->where('solicitud_mentorias.aprendiz_id', $studentId)
+            ->where('solicitud_mentorias.estudiante_id', $studentId)
             ->where('solicitud_mentorias.mentor_id', $mentorId)
             ->where('mentorias.estado', 'confirmada')
             ->exists();
