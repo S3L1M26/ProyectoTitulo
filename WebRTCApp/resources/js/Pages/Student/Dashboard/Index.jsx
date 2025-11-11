@@ -11,12 +11,14 @@ const Dashboard = memo(function Dashboard({
     mentorSuggestions = [], 
     aprendiz, 
     solicitudesPendientes = [],
-    mentoriasConfirmadas = []
+    mentoriasConfirmadas = [],
+    mentoriasHistorial = []
 }) {
     const { flash } = usePage().props;
     const [selectedMentor, setSelectedMentor] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [showMentorias, setShowMentorias] = useState(false); // Lazy mount
+    const [vistaMentorias, setVistaMentorias] = useState('confirmadas'); // 'confirmadas' o 'historial'
 
     // Expandir automáticamente si hay mentorías confirmadas
     useEffect(() => {
@@ -240,13 +242,13 @@ const Dashboard = memo(function Dashboard({
                         </div>
                     )}
 
-                    {/* Mis Mentorías Confirmadas (Lazy mounted) */}
+                    {/* Mis Mentorías - Tabs y contenido */}
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <div className="p-6">
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-3">
-                                    <h3 className="text-lg font-semibold text-gray-900">Mis Mentorías Confirmadas</h3>
-                                    {mentoriasConfirmadas.length > 0 && (
+                                    <h3 className="text-lg font-semibold text-gray-900">Mis Mentorías</h3>
+                                    {vistaMentorias === 'confirmadas' && mentoriasConfirmadas.length > 0 && (
                                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                             {mentoriasConfirmadas.length}
                                         </span>
@@ -273,25 +275,67 @@ const Dashboard = memo(function Dashboard({
                                     )}
                                 </button>
                             </div>
-                            {showMentorias ? (
-                                mentoriasConfirmadas.length === 0 ? (
-                                    <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
-                                        <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                                            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                            </svg>
-                                        </div>
-                                        <p className="text-gray-500 font-medium mb-2">Aún no tienes mentorías confirmadas</p>
-                                        <p className="text-sm text-gray-400">Cuando un mentor confirme una de tus solicitudes, aparecerá aquí.</p>
+                            {showMentorias && (
+                                <>
+                                    {/* Tabs */}
+                                    <div className="flex gap-4 mb-6 border-b border-gray-200">
+                                        <button 
+                                            className={`pb-2 px-1 font-semibold transition-colors ${vistaMentorias === 'confirmadas' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                            onClick={() => setVistaMentorias('confirmadas')}
+                                        >
+                                            Confirmadas
+                                        </button>
+                                        <button 
+                                            className={`pb-2 px-1 font-semibold transition-colors ${vistaMentorias === 'historial' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                            onClick={() => setVistaMentorias('historial')}
+                                        >
+                                            Historial
+                                        </button>
                                     </div>
-                                ) : (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {mentoriasConfirmadas.map((m) => (
-                                            <MentoriaCard key={m.id} mentoria={m} userRole="aprendiz" />
-                                        ))}
-                                    </div>
-                                )
-                            ) : null}
+
+                                    {/* Contenido de Confirmadas */}
+                                    {vistaMentorias === 'confirmadas' && (
+                                        mentoriasConfirmadas.length === 0 ? (
+                                            <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                                                <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                    </svg>
+                                                </div>
+                                                <p className="text-gray-500 font-medium mb-2">Aún no tienes mentorías confirmadas</p>
+                                                <p className="text-sm text-gray-400">Cuando un mentor confirme una de tus solicitudes, aparecerá aquí.</p>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                {mentoriasConfirmadas.map((m) => (
+                                                    <MentoriaCard key={m.id} mentoria={m} userRole="aprendiz" />
+                                                ))}
+                                            </div>
+                                        )
+                                    )}
+
+                                    {/* Contenido de Historial */}
+                                    {vistaMentorias === 'historial' && (
+                                        mentoriasHistorial.length === 0 ? (
+                                            <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                                                <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                </div>
+                                                <p className="text-gray-500 font-medium mb-2">No hay mentorías en el historial</p>
+                                                <p className="text-sm text-gray-400">Las mentorías completadas y canceladas aparecerán aquí.</p>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                {mentoriasHistorial.map((m) => (
+                                                    <MentoriaCard key={m.id} mentoria={m} userRole="aprendiz" isHistorial={true} />
+                                                ))}
+                                            </div>
+                                        )
+                                    )}
+                                </>
+                            )}
                         </div>
                     </div>
 

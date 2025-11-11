@@ -49,6 +49,31 @@ class StudentController extends Controller
                     ],
                 ];
             });
+
+        // Cargar historial de mentorías (completadas y canceladas)
+        $mentoriasHistorial = \App\Models\Mentoria::where('aprendiz_id', $student->id)
+            ->whereIn('estado', ['completada', 'cancelada'])
+            ->with(['mentor:id,name,email'])
+            ->orderBy('fecha', 'desc')
+            ->orderBy('hora', 'desc')
+            ->limit(20) // Últimas 20 mentorías
+            ->get()
+            ->map(function ($mentoria) {
+                return [
+                    'id' => $mentoria->id,
+                    'fecha' => $mentoria->fecha,
+                    'hora' => $mentoria->hora,
+                    'fecha_formateada' => $mentoria->fecha_formateada,
+                    'hora_formateada' => $mentoria->hora_formateada,
+                    'duracion_minutos' => $mentoria->duracion_minutos,
+                    'estado' => $mentoria->estado,
+                    'mentor_id' => $mentoria->mentor_id,
+                    'mentor' => [
+                        'id' => $mentoria->mentor->id,
+                        'name' => $mentoria->mentor->name,
+                    ],
+                ];
+            });
         
         // Cargar sugerencias de mentores directamente (eager loading)
         // Lazy props no funcionan en primera carga - necesitan solicitud explícita del frontend
@@ -60,6 +85,7 @@ class StudentController extends Controller
             'solicitudesPendientes' => $solicitudes,
             'mentorSuggestions' => $mentorSuggestions,
             'mentoriasConfirmadas' => $mentoriasConfirmadas,
+            'mentoriasHistorial' => $mentoriasHistorial,
         ]);
     }
 

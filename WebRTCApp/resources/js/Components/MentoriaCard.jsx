@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 // Lazy load del modal de contactar mentor
 const ContactarMentorModal = lazy(() => import('@/Components/ContactarMentorModal'));
 
-export default function MentoriaCard({ mentoria, userRole = 'mentor' }) {
+export default function MentoriaCard({ mentoria, userRole = 'mentor', isHistorial = false }) {
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [showConcluirModal, setShowConcluirModal] = useState(false);
     const [showContactModal, setShowContactModal] = useState(false);
@@ -19,11 +19,20 @@ export default function MentoriaCard({ mentoria, userRole = 'mentor' }) {
     const nombreOtro = userRole === 'mentor' ? (mentoria?.aprendiz?.name || 'Aprendiz') : (mentoria?.mentor?.name || 'Mentor');
     const estado = mentoria.estado;
 
-    const badgeClass = estado === 'confirmada'
-        ? 'bg-green-100 text-green-800'
-        : estado === 'cancelada'
-            ? 'bg-red-100 text-red-800'
-            : 'bg-gray-100 text-gray-800';
+    // Badges mejorados para historial
+    const getBadgeClass = () => {
+        if (estado === 'confirmada') return 'bg-green-100 text-green-800';
+        if (estado === 'completada') return 'bg-blue-100 text-blue-800';
+        if (estado === 'cancelada') return 'bg-red-100 text-red-800';
+        return 'bg-gray-100 text-gray-800';
+    };
+
+    const getBadgeIcon = () => {
+        if (estado === 'confirmada') return '✓';
+        if (estado === 'completada') return '✅';
+        if (estado === 'cancelada') return '❌';
+        return '';
+    };
 
     const joinLabel = userRole === 'mentor' ? 'Iniciar reunión' : 'Unirse a la reunión';
 
@@ -66,8 +75,8 @@ export default function MentoriaCard({ mentoria, userRole = 'mentor' }) {
             <div className="border rounded-lg p-5 bg-white hover:shadow transition-shadow">
             <div className="flex items-start justify-between mb-3">
                 <h4 className="font-semibold text-gray-900">{nombreOtro}</h4>
-                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${badgeClass}`}>
-                    {estado}
+                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getBadgeClass()}`}>
+                    {getBadgeIcon()} {estado}
                 </span>
             </div>
             <div className="text-sm text-gray-700 space-y-1">
@@ -86,7 +95,8 @@ export default function MentoriaCard({ mentoria, userRole = 'mentor' }) {
                     <strong>Duración:</strong> {mentoria.duracion_minutos} min
                 </p>
             </div>
-            {mentoria.enlace_reunion && estado !== 'cancelada' && (
+            {/* Solo mostrar botones si NO es historial y tiene enlace de reunión */}
+            {!isHistorial && mentoria.enlace_reunion && estado !== 'cancelada' && (
                 <div className="mt-4 space-y-2">
                     <a
                         href={route('mentorias.unirse', mentoria.id)}

@@ -20,7 +20,7 @@ class MentorController extends Controller
         // Cargar perfil del mentor
         $mentorProfile = Mentor::where('user_id', $user->id)->first();
         
-        // Cargar mentorías programadas del mentor
+        // Cargar mentorías programadas del mentor (futuras y confirmadas)
         $mentoriasProgramadas = Mentoria::where('mentor_id', $user->id)
             ->where('estado', 'confirmada')
             ->where('fecha', '>=', now()->toDateString())
@@ -44,10 +44,35 @@ class MentorController extends Controller
                     ],
                 ];
             });
+
+        // Cargar historial de mentorías (completadas y canceladas)
+        $mentoriasHistorial = Mentoria::where('mentor_id', $user->id)
+            ->whereIn('estado', ['completada', 'cancelada'])
+            ->with(['aprendiz:id,name,email'])
+            ->orderBy('fecha', 'desc')
+            ->orderBy('hora', 'desc')
+            ->limit(20) // Últimas 20 mentorías
+            ->get()
+            ->map(function ($mentoria) {
+                return [
+                    'id' => $mentoria->id,
+                    'fecha' => $mentoria->fecha,
+                    'hora' => $mentoria->hora,
+                    'fecha_formateada' => $mentoria->fecha_formateada,
+                    'hora_formateada' => $mentoria->hora_formateada,
+                    'duracion_minutos' => $mentoria->duracion_minutos,
+                    'estado' => $mentoria->estado,
+                    'aprendiz' => [
+                        'id' => $mentoria->aprendiz->id,
+                        'name' => $mentoria->aprendiz->name,
+                    ],
+                ];
+            });
         
         return Inertia::render('Mentor/Dashboard/Index', [
             'mentorProfile' => $mentorProfile,
             'mentoriasProgramadas' => $mentoriasProgramadas,
+            'mentoriasHistorial' => $mentoriasHistorial,
         ]);
     }
 
