@@ -460,7 +460,7 @@ class SolicitudMentoriaController extends Controller
         $hasActive = SolicitudMentoria::tieneMentoriaActivaConMentor($estudiante->id, $mentor->id);
 
         return response()->json([
-            'has_active_mentoria' => $hasActive,
+            'hasActiveMentoria' => $hasActive,
         ]);
     }
 }

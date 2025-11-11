@@ -10,6 +10,46 @@ Este documento describe la implementación del sistema de conclusión de mentor�
 2. **Permitir mentorías recurrentes**: Una vez concluida, el estudiante puede solicitar nuevamente
 3. **Control del mentor**: Solo el mentor puede marcar una mentoría como concluida
 4. **Feedback claro al usuario**: Mensajes informativos sobre el estado de las mentorías
+5. **Testing rápido**: Permitir crear sesiones el mismo día (mínimo 1 minuto en el futuro)
+
+## ⚙️ Configuración de Validación
+
+### Reglas de Fecha y Hora
+
+La validación permite crear mentorías con las siguientes restricciones:
+
+- ✅ **Fecha mínima**: Hoy (mismo día)
+- ✅ **Hora**: Cualquier hora válida (validación en controlador con timezone)
+- ❌ **No permitido**: Fechas pasadas (validado por `after_or_equal:today`)
+- ❌ **No permitido**: Hora pasada en el momento de confirmación (validado con `isPast()`)
+
+**Ejemplo válido**: Puedes programar para cualquier hora del día actual, siempre que no sea en el pasado.
+
+**Implementación**:
+
+La validación se divide en dos niveles:
+
+1. **FormRequest** (`ConfirmarMentoriaRequest.php`):
+   - Valida formato de fecha y hora
+   - Previene fechas pasadas a nivel de día (`after_or_equal:today`)
+   - No valida timezone (evita falsos positivos)
+
+2. **Controlador** (`MentoriaController.php`):
+   - Considera timezone del usuario o del servidor
+   - Valida con `isPast()` para prevenir horas pasadas
+   - Manejo de errores con Inertia (`back()->withErrors()`)
+
+```php
+// En el controlador
+$tz = $request->input('timezone', config('app.timezone', 'UTC'));
+$start = Carbon::createFromFormat('Y-m-d H:i', $request->string('fecha') . ' ' . $request->string('hora'), $tz);
+
+if ($start->isPast()) {
+    return back()->withErrors(['hora' => 'La fecha/hora no puede ser en el pasado.'])->withInput();
+}
+```
+
+**Nota**: La validación en el FormRequest fue simplificada para evitar problemas de timezone. La validación definitiva se hace en el controlador donde tenemos acceso completo al contexto.
 
 ## 🏗️ Arquitectura
 

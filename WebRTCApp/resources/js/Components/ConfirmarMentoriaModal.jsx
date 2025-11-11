@@ -25,6 +25,7 @@ export default function ConfirmarMentoriaModal({ isOpen, onClose, solicitud }) {
         hora: '',
         duracion_minutos: 60,
         topic: '',
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, // Detectar timezone del navegador
     });
 
     // Reset form cuando se abre el modal (solo cuando isOpen cambia de false a true)
@@ -36,6 +37,7 @@ export default function ConfirmarMentoriaModal({ isOpen, onClose, solicitud }) {
                 hora: '',
                 duracion_minutos: 60,
                 topic: `Mentoría con ${solicitud.estudiante?.name || ''}`.trim(),
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             });
             setPreview(null);
             setApiError('');
@@ -77,6 +79,7 @@ export default function ConfirmarMentoriaModal({ isOpen, onClose, solicitud }) {
                 hora: formData.hora,
                 duracion_minutos: Number(formData.duracion_minutos),
                 topic: formData.topic,
+                timezone: formData.timezone,
             });
             
             setPreview(res.data || null);
@@ -114,6 +117,22 @@ export default function ConfirmarMentoriaModal({ isOpen, onClose, solicitud }) {
         
         setApiError('');
         
+        // 🔍 LOGGING TEMPORAL
+        const now = new Date();
+        const combined = new Date(`${formData.fecha}T${formData.hora}:00`);
+        console.log('📝 CONFIRMAR MENTORÍA - DEBUG', {
+            fecha: formData.fecha,
+            hora: formData.hora,
+            duracion_minutos: formData.duracion_minutos,
+            topic: formData.topic,
+            timezone: formData.timezone, // ✅ Ahora incluido
+            now_local: now.toISOString(),
+            combined_local: combined.toISOString(),
+            isPast: combined < now,
+            diffMinutes: Math.floor((combined - now) / 1000 / 60),
+            browser_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        });
+        
         // Registrar intento de submit
         window.__confirmMentoriaSubmissions.push({ cid, at: Date.now() });
 
@@ -125,6 +144,7 @@ export default function ConfirmarMentoriaModal({ isOpen, onClose, solicitud }) {
                 'X-CID': cid,
             },
             onSuccess: () => {
+                console.log('✅ MENTORÍA CONFIRMADA CON ÉXITO');
                 toast.success('¡Mentoría confirmada! Se ha enviado un correo al estudiante con los detalles de la reunión.');
                 reset();
                 setPreview(null);
@@ -133,6 +153,7 @@ export default function ConfirmarMentoriaModal({ isOpen, onClose, solicitud }) {
                 onClose?.();
             },
             onError: (errs) => {
+                console.error('❌ ERROR AL CONFIRMAR MENTORÍA', errs);
                 toast.error('No se pudo confirmar la mentoría. Por favor verifica los datos.');
                 const newErrors = {};
                 if (errs?.fecha) newErrors.fecha = errs.fecha;
@@ -152,7 +173,13 @@ export default function ConfirmarMentoriaModal({ isOpen, onClose, solicitud }) {
         onClose?.();
     };
 
-    const minDate = new Date().toISOString().split('T')[0];
+    const minDate = (() => {
+        const d = new Date();
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    })();
 
     if (!solicitud) return null;
 

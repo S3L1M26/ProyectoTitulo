@@ -15,7 +15,7 @@ const MentorDetailModal = memo(function MentorDetailModal({ isOpen, onClose, men
     useEffect(() => {
         if (isOpen && mentor && aprendiz) {
             setCheckingActiveMentoria(true);
-            axios.get(`/api/aprendiz/${aprendiz.id}/has-active-mentoria/${mentor.id}`)
+            axios.get(`/api/student/mentores/${mentor.id}/has-active-mentoria`)
                 .then(response => {
                     setHasActiveMentoria(response.data.hasActiveMentoria);
                 })

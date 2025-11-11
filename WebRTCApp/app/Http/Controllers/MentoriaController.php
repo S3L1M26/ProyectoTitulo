@@ -66,11 +66,26 @@ class MentoriaController extends Controller
         $tz = $request->input('timezone', config('app.timezone', 'UTC'));
         $start = Carbon::createFromFormat('Y-m-d H:i', $request->string('fecha') . ' ' . $request->string('hora'), $tz);
 
+        // 🔍 LOGGING TEMPORAL
+        Log::info('🕐 VALIDACIÓN DE FECHA/HORA', [
+            'fecha_input' => $request->string('fecha'),
+            'hora_input' => $request->string('hora'),
+            'timezone' => $tz,
+            'start_parsed' => $start->toIso8601String(),
+            'now_server' => now()->toIso8601String(),
+            'now_tz' => now($tz)->toIso8601String(),
+            'isPast' => $start->isPast(),
+            'diff_seconds' => now()->diffInSeconds($start, false),
+        ]);
+
         // Validar que no sea pasado (seguridad adicional a las rules)
+        // Ya validado en ConfirmarMentoriaRequest, pero doble verificación no está mal
         if ($start->isPast()) {
-            return response()->json([
-                'message' => 'La fecha/hora no puede ser en el pasado.'
-            ], 422);
+            Log::warning('⏰ FECHA EN EL PASADO RECHAZADA', [
+                'start' => $start->toIso8601String(),
+                'now' => now()->toIso8601String(),
+            ]);
+            return back()->withErrors(['hora' => 'La fecha/hora no puede ser en el pasado.'])->withInput();
         }
 
         try {
@@ -132,9 +147,13 @@ class MentoriaController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return response()->json([
-                'message' => 'No se pudo crear la reunión de Zoom. Intenta más tarde.',
-            ], 502);
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'message' => 'No se pudo crear la reunión de Zoom. Intenta más tarde.',
+                ], 502);
+            }
+
+            return back()->withErrors(['zoom' => 'No se pudo crear la reunión de Zoom. Intenta más tarde.'])->withInput();
         }
     }
 
@@ -205,10 +224,10 @@ class MentoriaController extends Controller
     {
         $user = Auth::user();
         if ($user->id !== $mentoria->mentor_id) {
-            return response()->json(['message' => 'No autorizado para cancelar esta mentoría.'], 403);
+            return back()->with('error', 'No autorizado para cancelar esta mentoría.');
         }
         if ($mentoria->estado !== 'confirmada') {
-            return response()->json(['message' => 'Solo mentorías confirmadas pueden cancelarse.'], 422);
+            return back()->with('error', 'Solo mentorías confirmadas pueden cancelarse.');
         }
 
         $zoomId = $mentoria->zoom_meeting_id;
