@@ -160,4 +160,19 @@ class SolicitudMentoria extends Model
     {
         return $this->estado === 'pendiente';
     }
+
+    /**
+     * Verificar si un estudiante tiene una mentoría confirmada activa con un mentor específico.
+     * 
+     * @param int $estudianteId
+     * @param int $mentorId
+     * @return bool
+     */
+    public static function tieneMentoriaActivaConMentor(int $estudianteId, int $mentorId): bool
+    {
+        return Mentoria::where('aprendiz_id', $estudianteId)
+            ->where('mentor_id', $mentorId)
+            ->where('estado', 'confirmada')
+            ->exists();
+    }
 }

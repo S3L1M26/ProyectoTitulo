@@ -101,8 +101,9 @@ class MentoriaController extends Controller
                 $solicitud->aceptar();
             }
 
-            // Invalidar caché de solicitudes del mentor
+            // Invalidar cachés del mentor
             Cache::forget('mentor_solicitudes_' . $solicitud->mentor_id);
+            Cache::forget('mentor_pending_solicitudes_' . $solicitud->mentor_id); // Contador del navbar
 
             // Disparar evento
             Log::info('📢 DESPACHANDO EVENTO MentoriaConfirmada', [
@@ -271,5 +272,52 @@ class MentoriaController extends Controller
         }
 
         return back()->with('status', 'Mentoría cancelada');
+    }
+
+    /**
+     * Marcar una mentoría como concluida/completada.
+     * Solo el mentor puede ejecutar esta acción.
+     */
+    public function concluir(Request $request, Mentoria $mentoria)
+    {
+        $user = $request->user();
+
+        // Validar que el usuario sea el mentor de esta mentoría
+        if ($mentoria->mentor_id !== $user->id) {
+            abort(403, 'No tienes permiso para concluir esta mentoría.');
+        }
+
+        // Validar que la mentoría esté confirmada
+        if ($mentoria->estado !== 'confirmada') {
+            return back()->withErrors([
+                'estado' => 'Solo se pueden concluir mentorías confirmadas.'
+            ]);
+        }
+
+        // Marcar como completada
+        $mentoria->update([
+            'estado' => 'completada',
+        ]);
+
+        // Invalidar cachés relevantes
+        Cache::forget('mentor_solicitudes_' . $mentoria->mentor_id);
+        Cache::forget('mentor_pending_solicitudes_' . $mentoria->mentor_id);
+        Cache::forget('student_solicitudes_' . $mentoria->aprendiz_id);
+        Cache::forget('student_notifications_' . $mentoria->aprendiz_id);
+
+        Log::info('✅ Mentoría marcada como completada', [
+            'mentoria_id' => $mentoria->id,
+            'mentor_id' => $user->id,
+            'estudiante_id' => $mentoria->aprendiz_id,
+        ]);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => 'Mentoría concluida exitosamente',
+                'mentoria' => $mentoria->refresh(),
+            ]);
+        }
+
+        return back()->with('success', 'Mentoría concluida exitosamente. El estudiante ahora puede solicitar una nueva sesión.');
     }
 }

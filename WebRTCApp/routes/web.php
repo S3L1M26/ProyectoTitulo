@@ -116,6 +116,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Cancelar mentoría (mentor)
         Route::delete('/mentor/mentorias/{mentoria}', [MentoriaController::class, 'cancelar'])
             ->name('mentor.mentorias.cancelar');
+        
+        // Concluir mentoría (marcar como completada - solo mentor)
+        Route::post('/mentor/mentorias/{mentoria}/concluir', [MentoriaController::class, 'concluir'])
+            ->name('mentor.mentorias.concluir');
     });
 
     // Mensajes a mentor (solo estudiantes con relación previa)
@@ -127,6 +131,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('student.mentores.contactables');
         Route::get('/api/student/mentores/{mentor}/can-contact', [\App\Http\Controllers\MensajeMentorController::class, 'canContact'])
             ->name('student.mentores.canContact');
+        Route::get('/api/student/mentores/{mentor}/has-active-mentoria', [\App\Http\Controllers\SolicitudMentoriaController::class, 'hasActiveMentoria'])
+            ->name('student.mentores.hasActiveMentoria');
     });
 });
 

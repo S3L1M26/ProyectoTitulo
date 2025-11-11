@@ -82,6 +82,13 @@ class SolicitudMentoriaController extends Controller
             ]);
         }
 
+        // Validar que no exista una mentoría confirmada activa con este mentor
+        if (SolicitudMentoria::tieneMentoriaActivaConMentor($estudiante->id, $validated['mentor_id'])) {
+            throw ValidationException::withMessages([
+                'mentoria_activa' => 'Ya tienes una mentoría activa con este mentor. Espera a que el mentor la marque como concluida para solicitar una nueva sesión.',
+            ]);
+        }
+
         // Crear la solicitud
         $solicitud = SolicitudMentoria::create([
             'estudiante_id' => $estudiante->id,
@@ -191,6 +198,10 @@ class SolicitudMentoriaController extends Controller
         Cache::forget('student_solicitudes_' . $solicitud->estudiante_id);
         Cache::forget('student_notifications_' . $solicitud->estudiante_id);
         Cache::forget('student_unread_notifications_' . $solicitud->estudiante_id);
+        
+        // INVALIDAR CACHÉ del mentor (contador del navbar)
+        Cache::forget('mentor_solicitudes_' . $solicitud->mentor_id);
+        Cache::forget('mentor_pending_solicitudes_' . $solicitud->mentor_id);
 
         return redirect()->back()->with('success', 'Solicitud aceptada exitosamente.');
     }
@@ -248,6 +259,10 @@ class SolicitudMentoriaController extends Controller
         Cache::forget('student_solicitudes_' . $solicitud->estudiante_id);
         Cache::forget('student_notifications_' . $solicitud->estudiante_id);
         Cache::forget('student_unread_notifications_' . $solicitud->estudiante_id);
+        
+        // INVALIDAR CACHÉ del mentor (contador del navbar)
+        Cache::forget('mentor_solicitudes_' . $solicitud->mentor_id);
+        Cache::forget('mentor_pending_solicitudes_' . $solicitud->mentor_id);
 
         return redirect()->back()->with('success', 'Solicitud rechazada.');
     }
@@ -433,5 +448,19 @@ class SolicitudMentoriaController extends Controller
         Cache::forget('student_unread_notifications_' . $estudiante->id);
 
         return redirect()->back()->with('success', 'Todas las notificaciones han sido marcadas como leídas.');
+    }
+
+    /**
+     * Verificar si el estudiante tiene una mentoría activa con un mentor específico.
+     */
+    public function hasActiveMentoria(Request $request, User $mentor)
+    {
+        $estudiante = $request->user();
+
+        $hasActive = SolicitudMentoria::tieneMentoriaActivaConMentor($estudiante->id, $mentor->id);
+
+        return response()->json([
+            'has_active_mentoria' => $hasActive,
+        ]);
     }
 }

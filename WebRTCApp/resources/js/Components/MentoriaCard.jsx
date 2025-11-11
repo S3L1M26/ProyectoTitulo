@@ -7,8 +7,10 @@ const ContactarMentorModal = lazy(() => import('@/Components/ContactarMentorModa
 
 export default function MentoriaCard({ mentoria, userRole = 'mentor' }) {
     const [showCancelModal, setShowCancelModal] = useState(false);
+    const [showConcluirModal, setShowConcluirModal] = useState(false);
     const [showContactModal, setShowContactModal] = useState(false);
     const [cancelling, setCancelling] = useState(false);
+    const [concluyendo, setConcluyendo] = useState(false);
 
     if (!mentoria) return null;
 
@@ -38,6 +40,23 @@ export default function MentoriaCard({ mentoria, userRole = 'mentor' }) {
             },
             onFinish: () => {
                 setCancelling(false);
+            },
+        });
+    };
+
+    const handleConcluirMentoria = () => {
+        setConcluyendo(true);
+        router.post(route('mentor.mentorias.concluir', mentoria.id), {}, {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Mentoría concluida exitosamente.');
+                setShowConcluirModal(false);
+            },
+            onError: (errors) => {
+                toast.error(errors.estado?.[0] || 'No se pudo concluir la mentoría.');
+            },
+            onFinish: () => {
+                setConcluyendo(false);
             },
         });
     };
@@ -76,13 +95,22 @@ export default function MentoriaCard({ mentoria, userRole = 'mentor' }) {
                         🎥 {joinLabel}
                     </a>
                     {userRole === 'mentor' && (
-                        <button
-                            type="button"
-                            onClick={() => setShowCancelModal(true)}
-                            className="inline-flex items-center justify-center w-full px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-                        >
-                            ❌ Cancelar Mentoría
-                        </button>
+                        <>
+                            <button
+                                type="button"
+                                onClick={() => setShowConcluirModal(true)}
+                                className="inline-flex items-center justify-center w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                            >
+                                ✅ Concluir Mentoría
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setShowCancelModal(true)}
+                                className="inline-flex items-center justify-center w-full px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                            >
+                                ❌ Cancelar Mentoría
+                            </button>
+                        </>
                     )}
                     {userRole === 'aprendiz' && (
                         <button
@@ -127,6 +155,40 @@ export default function MentoriaCard({ mentoria, userRole = 'mentor' }) {
                                 disabled={cancelling}
                             >
                                 {cancelling ? 'Cancelando...' : 'Sí, cancelar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal de confirmación para concluir */}
+            {showConcluirModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                    <div className="bg-white rounded-lg shadow-xl p-6 max-w-md mx-4">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                            ✅ ¿Concluir mentoría?
+                        </h3>
+                        <p className="text-gray-600 mb-6">
+                            ¿Estás seguro de que deseas marcar esta mentoría con <strong>{nombreOtro}</strong> como concluida?
+                            <br /><br />
+                            Al concluir, el estudiante podrá solicitar una nueva sesión contigo.
+                        </p>
+                        <div className="flex justify-end space-x-3">
+                            <button
+                                type="button"
+                                onClick={() => setShowConcluirModal(false)}
+                                className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+                                disabled={concluyendo}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleConcluirMentoria}
+                                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                                disabled={concluyendo}
+                            >
+                                {concluyendo ? 'Concluyendo...' : 'Sí, concluir'}
                             </button>
                         </div>
                     </div>
