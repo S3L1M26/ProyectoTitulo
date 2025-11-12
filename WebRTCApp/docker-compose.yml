@@ -168,6 +168,27 @@ services:
       retries: 5
       start_period: 30s
 
+  # Contenedor para ejecutar tests E2E con Playwright
+  # Incluye navegadores preinstalados (Chromium, Firefox, WebKit)
+  # Ejecutar: docker compose run --rm playwright npx playwright test
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.56.1-jammy
+    container_name: webrtcapp-playwright
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace:cached
+      - /dev/shm:/dev/shm
+    environment:
+      - NODE_ENV=development
+      - PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+      - BASE_URL=http://app:8000
+      - CI=true
+    depends_on:
+      - app
+      - db
+    profiles:
+      - testing
+
 volumes:
   db_data:
     name: webrtcapp-db_data

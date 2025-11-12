@@ -13,7 +13,8 @@ return new class extends Migration
     public function up(): void
     {
         // Modificar el enum para agregar 'cancelada'
-        DB::statement("ALTER TABLE solicitud_mentorias MODIFY COLUMN estado ENUM('pendiente', 'aceptada', 'rechazada', 'cancelada') DEFAULT 'pendiente'");
+        $connection = config('database.default');
+        DB::connection($connection)->statement("ALTER TABLE solicitud_mentorias MODIFY COLUMN estado ENUM('pendiente', 'aceptada', 'rechazada', 'cancelada') DEFAULT 'pendiente'");
     }
 
     /**
@@ -22,6 +23,7 @@ return new class extends Migration
     public function down(): void
     {
         // Revertir a los estados originales
-        DB::statement("ALTER TABLE solicitud_mentorias MODIFY COLUMN estado ENUM('pendiente', 'aceptada', 'rechazada') DEFAULT 'pendiente'");
+        $connection = config('database.default');
+        DB::connection($connection)->statement("ALTER TABLE solicitud_mentorias MODIFY COLUMN estado ENUM('pendiente', 'aceptada', 'rechazada') DEFAULT 'pendiente'");
     }
 };

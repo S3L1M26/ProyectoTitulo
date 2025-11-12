@@ -25,3 +25,7 @@ public/images/unab-269764597-3474721.pdfrr
 .rr.yaml
 rr
 unab-269764597-3474721.pdf
+/tests/e2e/results
+/tests/e2e/videos
+/tests/e2e/traces
+/tests/e2e/screenshots
