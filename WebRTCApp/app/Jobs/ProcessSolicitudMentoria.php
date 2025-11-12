@@ -36,12 +36,12 @@ class ProcessSolicitudMentoria implements ShouldQueue
      */
     public $backoff = 5;
 
-    /**
-     * The mentorship request instance.
+        /**
+     * The mentorship request ID.
      *
-     * @var SolicitudMentoria
+     * @var int
      */
-    public $solicitud;
+    public $solicitud_id;
 
     /**
      * The action to perform.
@@ -53,9 +53,9 @@ class ProcessSolicitudMentoria implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct(SolicitudMentoria $solicitud, string $action = 'created')
+    public function __construct(int $solicitud_id, string $action = 'created')
     {
-        $this->solicitud = $solicitud;
+        $this->solicitud_id = $solicitud_id;
         $this->action = $action;
     }
 
@@ -64,31 +64,35 @@ class ProcessSolicitudMentoria implements ShouldQueue
      */
     public function handle(): void
     {
+        // Cargar la solicitud con todas las relaciones necesarias
+        $solicitud = SolicitudMentoria::with(['estudiante', 'mentor', 'mentorProfile'])
+            ->findOrFail($this->solicitud_id);
+        
         switch ($this->action) {
             case 'created':
-                // Enviar notificación al mentor
-                $this->solicitud->mentor->notify(new SolicitudMentoriaRecibida($this->solicitud));
+                // Enviar notificación al mentor (sincronamente)
+                $solicitud->mentor->notifyNow(new SolicitudMentoriaRecibida($solicitud));
                 break;
 
             case 'accepted':
-                // Enviar notificación al estudiante
-                $this->solicitud->estudiante->notify(new SolicitudMentoriaAceptada($this->solicitud));
+                // Enviar notificación al estudiante (sincronamente)
+                $solicitud->estudiante->notifyNow(new SolicitudMentoriaAceptada($solicitud));
                 // INVALIDAR CACHÉ del estudiante para reflejar la nueva notificación/estado
-                Cache::forget('student_notifications_' . $this->solicitud->estudiante_id);
-                Cache::forget('student_unread_notifications_' . $this->solicitud->estudiante_id);
-                Cache::forget('student_solicitudes_' . $this->solicitud->estudiante_id);
+                Cache::forget('student_notifications_' . $solicitud->estudiante_id);
+                Cache::forget('student_unread_notifications_' . $solicitud->estudiante_id);
+                Cache::forget('student_solicitudes_' . $solicitud->estudiante_id);
                 
                 // Verificar si el mentor alcanzó su límite de solicitudes aceptadas
-                $this->updateMentorAvailability();
+                $this->updateMentorAvailability($solicitud);
                 break;
 
             case 'rejected':
-                // Enviar notificación al estudiante
-                $this->solicitud->estudiante->notify(new SolicitudMentoriaRechazada($this->solicitud));
+                // Enviar notificación al estudiante (sincronamente)
+                $solicitud->estudiante->notifyNow(new SolicitudMentoriaRechazada($solicitud));
                 // INVALIDAR CACHÉ del estudiante para reflejar la nueva notificación/estado
-                Cache::forget('student_notifications_' . $this->solicitud->estudiante_id);
-                Cache::forget('student_unread_notifications_' . $this->solicitud->estudiante_id);
-                Cache::forget('student_solicitudes_' . $this->solicitud->estudiante_id);
+                Cache::forget('student_notifications_' . $solicitud->estudiante_id);
+                Cache::forget('student_unread_notifications_' . $solicitud->estudiante_id);
+                Cache::forget('student_solicitudes_' . $solicitud->estudiante_id);
                 break;
         }
     }
@@ -96,16 +100,16 @@ class ProcessSolicitudMentoria implements ShouldQueue
     /**
      * Update mentor availability if limit is reached.
      */
-    protected function updateMentorAvailability(): void
+    protected function updateMentorAvailability(SolicitudMentoria $solicitud): void
     {
-        $mentorProfile = Mentor::where('user_id', $this->solicitud->mentor_id)->first();
+        $mentorProfile = Mentor::where('user_id', $solicitud->mentor_id)->first();
         
         if (!$mentorProfile) {
             return;
         }
 
         // Contar solicitudes aceptadas del mentor
-        $solicitudesAceptadas = SolicitudMentoria::where('mentor_id', $this->solicitud->mentor_id)
+        $solicitudesAceptadas = SolicitudMentoria::where('mentor_id', $solicitud->mentor_id)
             ->where('estado', 'aceptada')
             ->count();
 

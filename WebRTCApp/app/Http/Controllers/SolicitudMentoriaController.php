@@ -99,7 +99,7 @@ class SolicitudMentoriaController extends Controller
         ]);
 
         // Enviar notificación al mentor de forma asíncrona
-        ProcessSolicitudMentoria::dispatch($solicitud, 'created');
+        ProcessSolicitudMentoria::dispatchSync($solicitud->id, 'created');
 
         // INVALIDAR CACHÉ: Listas dependientes del estudiante y mentor
         Cache::forget('student_solicitudes_' . $estudiante->id);
@@ -192,7 +192,7 @@ class SolicitudMentoriaController extends Controller
         ]);
 
         // Enviar notificación al estudiante de forma asíncrona
-        ProcessSolicitudMentoria::dispatch($solicitud, 'accepted');
+        ProcessSolicitudMentoria::dispatchSync($solicitud->id, 'accepted');
 
         // INVALIDAR CACHÉ del estudiante afectado
         Cache::forget('student_solicitudes_' . $solicitud->estudiante_id);
@@ -253,7 +253,7 @@ class SolicitudMentoriaController extends Controller
         ]);
 
         // Enviar notificación al estudiante de forma asíncrona
-        ProcessSolicitudMentoria::dispatch($solicitud, 'rejected');
+        ProcessSolicitudMentoria::dispatchSync($solicitud->id, 'rejected');
 
         // INVALIDAR CACHÉ del estudiante afectado
         Cache::forget('student_solicitudes_' . $solicitud->estudiante_id);

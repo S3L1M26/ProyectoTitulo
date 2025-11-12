@@ -88,12 +88,16 @@ class SolicitudMentoriaAceptada extends Notification implements ShouldQueue
      */
     public function toArray(object $notifiable): array
     {
+        // Recargar la solicitud con las relaciones para asegurar que estén disponibles
+        $solicitud = $this->solicitud->fresh(['mentor', 'mentorProfile']);
+        $mentorProfile = $solicitud->mentorProfile;
+        
         return [
-            'solicitud_id' => $this->solicitud->id,
-            'mentor_id' => $this->solicitud->mentor_id,
-            'mentor_nombre' => $this->solicitud->mentor->name,
-            'mentor_experiencia' => $this->solicitud->mentorProfile->años_experiencia ?? null,
-            'fecha_respuesta' => $this->solicitud->fecha_respuesta,
+            'solicitud_id' => $solicitud->id,
+            'mentor_id' => $solicitud->mentor_id,
+            'mentor_nombre' => $solicitud->mentor->name ?? 'Mentor',
+            'mentor_experiencia' => $mentorProfile ? $mentorProfile->años_experiencia : null,
+            'fecha_respuesta' => $solicitud->fecha_respuesta,
             'estado' => 'aceptada',
             'tipo' => 'SolicitudMentoriaAceptada',
         ];
