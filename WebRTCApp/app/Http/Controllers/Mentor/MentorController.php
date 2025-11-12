@@ -4,7 +4,8 @@ namespace App\Http\Controllers\Mentor;
 
 use App\Http\Controllers\Controller;
 use App\Models\Mentor;
-use App\Models\Models\SolicitudMentoria;
+use App\Models\SolicitudMentoria;
+use App\Models\Mentoria;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -16,19 +17,85 @@ class MentorController extends Controller
     {
         $user = Auth::user();
         
+        // Cargar perfil del mentor
+        $mentorProfile = Mentor::where('user_id', $user->id)->first();
+        
+        // Cargar mentorías programadas del mentor (futuras y confirmadas)
+        $mentoriasProgramadas = Mentoria::where('mentor_id', $user->id)
+            ->where('estado', 'confirmada')
+            ->where('fecha', '>=', now()->toDateString())
+            ->with(['aprendiz:id,name,email'])
+            ->orderBy('fecha')
+            ->orderBy('hora')
+            ->get()
+            ->map(function ($mentoria) {
+                return [
+                    'id' => $mentoria->id,
+                    'fecha' => $mentoria->fecha,
+                    'hora' => $mentoria->hora,
+                    'fecha_formateada' => $mentoria->fecha_formateada,
+                    'hora_formateada' => $mentoria->hora_formateada,
+                    'duracion_minutos' => $mentoria->duracion_minutos,
+                    'enlace_reunion' => $mentoria->enlace_reunion,
+                    'estado' => $mentoria->estado,
+                    'aprendiz' => [
+                        'id' => $mentoria->aprendiz->id,
+                        'name' => $mentoria->aprendiz->name,
+                    ],
+                ];
+            });
+
+        // Cargar historial de mentorías (completadas y canceladas)
+        $mentoriasHistorial = Mentoria::where('mentor_id', $user->id)
+            ->whereIn('estado', ['completada', 'cancelada'])
+            ->with(['aprendiz:id,name,email'])
+            ->orderBy('fecha', 'desc')
+            ->orderBy('hora', 'desc')
+            ->limit(20) // Últimas 20 mentorías
+            ->get()
+            ->map(function ($mentoria) {
+                return [
+                    'id' => $mentoria->id,
+                    'fecha' => $mentoria->fecha,
+                    'hora' => $mentoria->hora,
+                    'fecha_formateada' => $mentoria->fecha_formateada,
+                    'hora_formateada' => $mentoria->hora_formateada,
+                    'duracion_minutos' => $mentoria->duracion_minutos,
+                    'estado' => $mentoria->estado,
+                    'aprendiz' => [
+                        'id' => $mentoria->aprendiz->id,
+                        'name' => $mentoria->aprendiz->name,
+                    ],
+                ];
+            });
+        
         return Inertia::render('Mentor/Dashboard/Index', [
-            // Datos críticos (siempre cargados)
-            'mentorProfile' => fn () => Mentor::where('user_id', $user->id)->first(),
-            
-            // Lazy prop: Solo se carga si el componente lo solicita
-            'solicitudes' => fn () => Cache::remember(
+            'mentorProfile' => $mentorProfile,
+            'mentoriasProgramadas' => $mentoriasProgramadas,
+            'mentoriasHistorial' => $mentoriasHistorial,
+        ]);
+    }
+
+        public function solicitudes()
+        {
+            $user = Auth::user();
+        
+            // Cargar perfil del mentor
+            $mentorProfile = Mentor::where('user_id', $user->id)->first();
+        
+            // Cargar solicitudes con cache
+            $solicitudes = Cache::remember(
                 'mentor_solicitudes_' . $user->id,
                 300, // 5 minutos
                 fn () => SolicitudMentoria::where('mentor_id', $user->id)
                     ->with(['estudiante:id,name,email', 'aprendiz.areasInteres:id,nombre'])
                     ->orderBy('fecha_solicitud', 'desc')
                     ->get()
-            ),
-        ]);
-    }
+            );
+        
+            return Inertia::render('Mentor/Solicitudes/Index', [
+                'mentorProfile' => $mentorProfile,
+                'solicitudes' => $solicitudes,
+            ]);
+        }
 }

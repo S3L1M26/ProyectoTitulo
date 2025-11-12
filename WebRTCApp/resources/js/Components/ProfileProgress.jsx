@@ -27,7 +27,8 @@ export default function ProfileProgress({ className = '' }) {
             missingFields.push('Semestre');
         }
 
-        if (aprendiz?.areas_interes && Array.isArray(aprendiz.areas_interes) && aprendiz.areas_interes.length > 0) {
+    const areas = aprendiz?.areas_interes ?? aprendiz?.areasInteres ?? [];
+    if (Array.isArray(areas) && areas.length > 0) {
             completedFields++;
         } else {
             missingFields.push('Áreas de interés');
@@ -67,7 +68,8 @@ export default function ProfileProgress({ className = '' }) {
             missingFields.push('Años de experiencia');
         }
 
-        if (mentor?.areas_interes && Array.isArray(mentor.areas_interes) && mentor.areas_interes.length > 0) {
+    const areas = mentor?.areas_interes ?? mentor?.areasInteres ?? [];
+    if (Array.isArray(areas) && areas.length > 0) {
             completedFields++;
         } else {
             missingFields.push('Áreas de especialidad');

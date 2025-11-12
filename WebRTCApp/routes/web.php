@@ -7,6 +7,7 @@ use App\Http\Controllers\Student\StudentController;
 use App\Http\Controllers\Student\CertificateController;
 use App\Http\Controllers\Mentor\MentorController;
 use App\Http\Controllers\SolicitudMentoriaController;
+use App\Http\Controllers\MentoriaController;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -82,6 +83,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('role:student')->group(function () {
         Route::get('/student/solicitudes', [SolicitudMentoriaController::class, 'misSolicitudes'])
             ->name('student.solicitudes');
+        // Polling API para solicitudes del estudiante
+        Route::get('/api/student/solicitudes', [SolicitudMentoriaController::class, 'pollSolicitudes'])
+            ->middleware('throttle:60,1')
+            ->name('api.student.solicitudes');
         
         Route::get('/student/notifications', [SolicitudMentoriaController::class, 'misNotificaciones'])
             ->name('student.notifications');
@@ -95,14 +100,39 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
     // Rutas para mentores: gestionar solicitudes
     Route::middleware('role:mentor')->group(function () {
-        Route::get('/mentor/solicitudes', [SolicitudMentoriaController::class, 'index'])
-            ->name('mentor.solicitudes.index');
+        Route::get('/mentor/solicitudes', [MentorController::class, 'solicitudes'])
+            ->name('mentor.solicitudes');
         
         Route::post('/mentor/solicitudes/{id}/accept', [SolicitudMentoriaController::class, 'accept'])
             ->name('mentor.solicitudes.accept');
         
         Route::post('/mentor/solicitudes/{id}/reject', [SolicitudMentoriaController::class, 'reject'])
             ->name('mentor.solicitudes.reject');
+
+        // Confirmar mentoría (crea reunión Zoom y guarda)
+        Route::post('/mentorias/solicitudes/{solicitud}/confirmar', [MentoriaController::class, 'confirmar'])
+            ->name('mentorias.confirmar');
+
+        // Cancelar mentoría (mentor)
+        Route::delete('/mentor/mentorias/{mentoria}', [MentoriaController::class, 'cancelar'])
+            ->name('mentor.mentorias.cancelar');
+        
+        // Concluir mentoría (marcar como completada - solo mentor)
+        Route::post('/mentor/mentorias/{mentoria}/concluir', [MentoriaController::class, 'concluir'])
+            ->name('mentor.mentorias.concluir');
+    });
+
+    // Mensajes a mentor (solo estudiantes con relación previa)
+    Route::middleware('role:student')->group(function () {
+        Route::post('/student/mentores/{mentor}/contactar', [\App\Http\Controllers\MensajeMentorController::class, 'store'])
+            ->name('student.mentores.contactar')
+            ->middleware('throttle:5,1');
+        Route::get('/api/student/mentores-contactables', [\App\Http\Controllers\MensajeMentorController::class, 'contactables'])
+            ->name('student.mentores.contactables');
+        Route::get('/api/student/mentores/{mentor}/can-contact', [\App\Http\Controllers\MensajeMentorController::class, 'canContact'])
+            ->name('student.mentores.canContact');
+        Route::get('/api/student/mentores/{mentor}/has-active-mentoria', [\App\Http\Controllers\SolicitudMentoriaController::class, 'hasActiveMentoria'])
+            ->name('student.mentores.hasActiveMentoria');
     });
 });
 
@@ -116,4 +146,16 @@ Route::middleware(['auth', 'adminMiddleware'])->group(function () {
     Route::get('/admin/users/{user}/edit', [AdminController::class, 'edit'])->name('admin.users.edit');
     Route::put('/admin/users/{user}', [AdminController::class, 'update'])->name('admin.users.update');
     Route::delete('/admin/users/{user}', [AdminController::class, 'destroy'])->name('admin.users.destroy');
+});
+
+// Endpoint público autenticado para generar enlace (preview) con rate limiting
+Route::middleware(['auth:sanctum', 'throttle:10,1'])->group(function () {
+    Route::post('/api/mentorias/generar-enlace', [MentoriaController::class, 'generarEnlacePreview'])
+        ->name('api.mentorias.generar-enlace');
+});
+
+// Unirse a una mentoría (mentor o aprendiz)
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/mentorias/{mentoria}/unirse', [MentoriaController::class, 'unirse'])
+        ->name('mentorias.unirse');
 });

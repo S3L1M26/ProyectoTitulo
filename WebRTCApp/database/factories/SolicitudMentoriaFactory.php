@@ -3,11 +3,11 @@
 namespace Database\Factories;
 
 use App\Models\User;
-use App\Models\Models\SolicitudMentoria;
+use App\Models\SolicitudMentoria;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Models\SolicitudMentoria>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\SolicitudMentoria>
  */
 class SolicitudMentoriaFactory extends Factory
 {

@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, usePage, router } from '@inertiajs/react';
 import { useState, lazy, Suspense, memo, useEffect } from 'react';
+import MentoriaCard from '@/Components/MentoriaCard';
 
 // OPTIMIZACIÓN: Lazy loading de componentes pesados
 const ProfileReminderNotification = lazy(() => import('@/Components/ProfileReminderNotification'));
@@ -9,11 +10,31 @@ const MentorDetailModal = lazy(() => import('@/Components/MentorDetailModal'));
 const Dashboard = memo(function Dashboard({ 
     mentorSuggestions = [], 
     aprendiz, 
-    solicitudesPendientes = []
+    solicitudesPendientes = [],
+    mentoriasConfirmadas = [],
+    mentoriasHistorial = []
 }) {
     const { flash } = usePage().props;
     const [selectedMentor, setSelectedMentor] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [showMentorias, setShowMentorias] = useState(false); // Lazy mount
+    const [vistaMentorias, setVistaMentorias] = useState('confirmadas'); // 'confirmadas' o 'historial'
+
+    // Expandir automáticamente si hay mentorías confirmadas
+    useEffect(() => {
+        if (mentoriasConfirmadas.length > 0) {
+            setShowMentorias(true);
+        }
+    }, [mentoriasConfirmadas.length]);
+
+    // Polling para actualizar mentorías confirmadas cada 30 segundos
+    useEffect(() => {
+        const interval = setInterval(() => {
+            router.reload({ only: ['mentoriasConfirmadas', 'solicitudesPendientes'] });
+        }, 30000); // 30 segundos
+
+        return () => clearInterval(interval);
+    }, []);
 
     // Mostrar mensaje de éxito si existe
     useEffect(() => {
@@ -23,6 +44,8 @@ const Dashboard = memo(function Dashboard({
             }, 100);
             return () => clearTimeout(timer);
         }
+
+        console.log(mentorSuggestions);
     }, [flash]);
 
     const openMentorModal = (mentor) => {
@@ -35,11 +58,12 @@ const Dashboard = memo(function Dashboard({
         setSelectedMentor(null);
     };
 
-    // Verificar si requiere verificación de certificado
-    const requiresVerification = mentorSuggestions?.requires_verification === true;
-    const mentorList = requiresVerification ? [] : (Array.isArray(mentorSuggestions) ? mentorSuggestions : []);
+    // Estado de carga para props lazy de Inertia
+    const isLoadingSuggestions = mentorSuggestions === undefined || mentorSuggestions === null;
 
-    console.log('Mentor suggestions:', mentorSuggestions);
+    // Verificar si requiere verificación de certificado (cuando no está cargando)
+    const requiresVerification = !isLoadingSuggestions && mentorSuggestions?.requires_verification === true;
+    const mentorList = requiresVerification ? [] : (Array.isArray(mentorSuggestions) ? mentorSuggestions : []);
 
     return (
         <AuthenticatedLayout
@@ -60,11 +84,28 @@ const Dashboard = memo(function Dashboard({
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <div className="p-6 text-gray-900">
                             <h4 className="text-lg font-semibold text-gray-800 mb-4">¡Bienvenido a tu panel de estudiante!</h4>
-                            <p className="text-gray-600">Aquí podrás encontrar mentores que te ayuden en tu orientación profesional.</p>
+                            <p className="textgray-600">Aquí podrás encontrar mentores que te ayuden en tu orientación profesional.</p>
                         </div>
                     </div>
                     {/* Sección de sugerencias de mentores */}
-                    {requiresVerification ? (
+                    {isLoadingSuggestions ? (
+                        <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                            <div className="p-6">
+                                <div className="animate-pulse space-y-3">
+                                    <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {Array.from({ length: 3 }).map((_, i) => (
+                                            <div key={i} className="border rounded-lg p-4">
+                                                <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                                                <div className="h-3 bg-gray-200 rounded w-1/3 mb-2"></div>
+                                                <div className="h-16 bg-gray-200 rounded"></div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : requiresVerification ? (
                         /* Mensaje de certificado requerido */
                         <div className="overflow-hidden bg-yellow-50 border-2 border-yellow-200 shadow-sm sm:rounded-lg">
                             <div className="p-8 text-center">
@@ -115,7 +156,7 @@ const Dashboard = memo(function Dashboard({
                                                 {mentorUser.mentor.biografia || mentorUser.mentor.experiencia}
                                             </p>
                                             <div className="flex flex-wrap gap-1 mb-3">
-                                                {mentorUser.mentor.areas_interes.slice(0, 3).map((area) => (
+                                                {(mentorUser.mentor.areas_interes ?? mentorUser.mentor.areasInteres ?? []).slice(0, 3).map((area) => (
                                                     <span 
                                                         key={area.id} 
                                                         className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
@@ -123,9 +164,9 @@ const Dashboard = memo(function Dashboard({
                                                         {area.nombre}
                                                     </span>
                                                 ))}
-                                                {mentorUser.mentor.areas_interes.length > 3 && (
+                                                {(mentorUser.mentor.areas_interes ?? mentorUser.mentor.areasInteres ?? []).length > 3 && (
                                                     <span className="text-xs text-gray-500">
-                                                        +{mentorUser.mentor.areas_interes.length - 3} más
+                                                        +{(mentorUser.mentor.areas_interes ?? mentorUser.mentor.areasInteres ?? []).length - 3} más
                                                     </span>
                                                 )}
                                             </div>
@@ -156,42 +197,147 @@ const Dashboard = memo(function Dashboard({
                             </div>
                         </div>
                     ) : (
-                        <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                        <div className="overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 shadow-sm sm:rounded-lg">
                             <div className="p-8 text-center">
-                                <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-6">
-                                    <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                <div className="mx-auto w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mb-6">
+                                    <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                     </svg>
                                 </div>
-                                <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                                    No hay mentores sugeridos aún
+                                <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                                    🔍 No encontramos mentores en tus áreas
                                 </h3>
-                                <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                                    Para recibir sugerencias personalizadas de mentores, asegúrate de completar tu perfil con tus áreas de interés. También verifica que haya mentores disponibles en tus áreas de especialización.
+                                <p className="text-gray-700 mb-6 max-w-2xl mx-auto leading-relaxed">
+                                    Actualmente no hay mentores disponibles que coincidan con tus áreas de interés seleccionadas. 
+                                    <br />
+                                    <span className="font-medium text-indigo-700">¿Qué tal si exploras otras áreas?</span> Podrías encontrar mentores increíbles en campos relacionados.
                                 </p>
                                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                                     <a 
                                         href="/profile" 
-                                        className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                        className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg font-medium"
                                     >
-                                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                         </svg>
-                                        Completar mi perfil
+                                        Ajustar áreas de interés
                                     </a>
                                     <button 
                                         onClick={() => window.location.reload()} 
-                                        className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                                        className="inline-flex items-center px-6 py-3 bg-white border-2 border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-all font-medium"
                                     >
-                                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                         </svg>
-                                        Actualizar sugerencias
+                                        Recargar sugerencias
                                     </button>
+                                </div>
+                                <div className="mt-6 p-4 bg-white/60 rounded-lg border border-blue-100">
+                                    <p className="text-sm text-gray-600">
+                                        💡 <span className="font-semibold">Tip:</span> Los mentores se actualizan cuando cambian su disponibilidad. 
+                                        Vuelve más tarde o amplía tus áreas para más opciones.
+                                    </p>
                                 </div>
                             </div>
                         </div>
                     )}
+
+                    {/* Mis Mentorías - Tabs y contenido */}
+                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                        <div className="p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                    <h3 className="text-lg font-semibold text-gray-900">Mis Mentorías</h3>
+                                    {vistaMentorias === 'confirmadas' && mentoriasConfirmadas.length > 0 && (
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            {mentoriasConfirmadas.length}
+                                        </span>
+                                    )}
+                                </div>
+                                <button 
+                                    onClick={() => setShowMentorias((v) => !v)} 
+                                    className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium text-sm transition-colors"
+                                >
+                                    {showMentorias ? (
+                                        <>
+                                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                            </svg>
+                                            Ocultar
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                            Mostrar
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                            {showMentorias && (
+                                <>
+                                    {/* Tabs */}
+                                    <div className="flex gap-4 mb-6 border-b border-gray-200">
+                                        <button 
+                                            className={`pb-2 px-1 font-semibold transition-colors ${vistaMentorias === 'confirmadas' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                            onClick={() => setVistaMentorias('confirmadas')}
+                                        >
+                                            Confirmadas
+                                        </button>
+                                        <button 
+                                            className={`pb-2 px-1 font-semibold transition-colors ${vistaMentorias === 'historial' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                            onClick={() => setVistaMentorias('historial')}
+                                        >
+                                            Historial
+                                        </button>
+                                    </div>
+
+                                    {/* Contenido de Confirmadas */}
+                                    {vistaMentorias === 'confirmadas' && (
+                                        mentoriasConfirmadas.length === 0 ? (
+                                            <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                                                <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                    </svg>
+                                                </div>
+                                                <p className="text-gray-500 font-medium mb-2">Aún no tienes mentorías confirmadas</p>
+                                                <p className="text-sm text-gray-400">Cuando un mentor confirme una de tus solicitudes, aparecerá aquí.</p>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                {mentoriasConfirmadas.map((m) => (
+                                                    <MentoriaCard key={m.id} mentoria={m} userRole="aprendiz" />
+                                                ))}
+                                            </div>
+                                        )
+                                    )}
+
+                                    {/* Contenido de Historial */}
+                                    {vistaMentorias === 'historial' && (
+                                        mentoriasHistorial.length === 0 ? (
+                                            <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                                                <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                </div>
+                                                <p className="text-gray-500 font-medium mb-2">No hay mentorías en el historial</p>
+                                                <p className="text-sm text-gray-400">Las mentorías completadas y canceladas aparecerán aquí.</p>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                {mentoriasHistorial.map((m) => (
+                                                    <MentoriaCard key={m.id} mentoria={m} userRole="aprendiz" isHistorial={true} />
+                                                ))}
+                                            </div>
+                                        )
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    </div>
 
                 </div>
             </div>

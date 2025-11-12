@@ -5,7 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use App\Models\Aprendiz;
 use App\Models\Mentor;
-use App\Models\Models\SolicitudMentoria;
+use App\Models\SolicitudMentoria;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 

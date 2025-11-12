@@ -59,9 +59,8 @@ class Aprendiz extends Model
     /**
      * Get the mentorship requests made by the student.
      */
-    public function solicitudesMentoria(): HasMany
+    public function solicitudesMentoria()
     {
-        return $this->hasMany(\App\Models\Models\SolicitudMentoria::class, 'estudiante_id', 'user_id');
+        return $this->hasMany(\App\Models\SolicitudMentoria::class, 'estudiante_id', 'user_id');
     }
-
 }

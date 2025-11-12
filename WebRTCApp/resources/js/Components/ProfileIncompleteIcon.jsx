@@ -8,13 +8,14 @@ export default function ProfileIncompleteIcon({ className = '' }) {
     if (user.role !== 'student' && user.role !== 'mentor') return null;
 
     // Verificación simplificada del perfil
+    const getAreas = (entity) => entity?.areas_interes ?? entity?.areasInteres ?? [];
     const isProfileIncomplete = () => {
         if (user.role === 'student') {
             const aprendiz = user.aprendiz;
-            return !aprendiz || !aprendiz.semestre || !aprendiz.areas_interes?.length || !aprendiz.objetivos?.trim();
+            return !aprendiz || !aprendiz.semestre || getAreas(aprendiz).length === 0 || !aprendiz.objetivos?.trim();
         } else if (user.role === 'mentor') {
             const mentor = user.mentor;
-            return !mentor || !mentor.experiencia?.trim() || !mentor.biografia?.trim() || !mentor.años_experiencia || !mentor.areas_interes?.length;
+            return !mentor || !mentor.experiencia?.trim() || !mentor.biografia?.trim() || !mentor.años_experiencia || getAreas(mentor).length === 0;
         }
         return false;
     };

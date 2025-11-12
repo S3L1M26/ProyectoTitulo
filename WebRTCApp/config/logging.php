@@ -73,6 +73,15 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Canal dedicado para integración con Zoom API
+        'zoom' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/zoom.log'),
+            'level' => env('LOG_ZOOM_LEVEL', 'info'),
+            'days' => 14,
+            'replace_placeholders' => true,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

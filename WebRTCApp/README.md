@@ -160,3 +160,37 @@ Comandos útiles:
   docker compose exec app php artisan migrate
   docker compose exec app composer install
   docker compose restart vite
+
+---
+
+## 🧯 Incidentes (Historial de Debug)
+
+Esta sección resume incidentes relevantes y su resolución para acelerar futuros diagnósticos.
+
+### 2025-11-08 · MentorSuggestions vacío en Dashboard de Estudiante
+**Síntoma:** La lista de mentores sugeridos aparecía vacía pese a perfil 100% completo y mentores disponibles.
+
+**Observaciones:**
+- `data-page` de Inertia no incluía la prop `mentorSuggestions`.
+- Logs de `getMentorSuggestions()` nunca se emitían.
+- Perfil y áreas de interés correctos (verificados con Tinker y cache).
+
+**Causa raíz:** Uso de `Inertia::lazy()` en la primera carga (hard refresh). Las lazy props no se solicitan automáticamente; requieren un request parcial (`X-Inertia-Partial-Data`). Al no dispararse, la función nunca se ejecutó.
+
+**Fix:** Convertir a carga directa (eager):
+```php
+'mentorSuggestions' => $this->getMentorSuggestions(),
+```
+Se reactivó la validación de certificado y se limpió cache.
+
+**Prevención:**
+1. Evitar lazy props para datos críticos del primer render.
+2. Si se usan, disparar `router.reload({ only: [...] })` en `useEffect`.
+3. Inspeccionar siempre `data-page` al depurar props ausentes.
+4. Añadir logs visibles alrededor de callbacks lazy.
+5. Normalizar nombres de atributos (camelCase vs snake_case) para evitar falsos negativos.
+
+**Doc ampliada:** `docs/debugging/mentor-suggestions-empty.md`.
+
+### Cómo añadir nuevos incidentes
+Crear archivo en `docs/debugging/` y añadir entrada aquí con: fecha, síntoma, causa, fix, prevención.

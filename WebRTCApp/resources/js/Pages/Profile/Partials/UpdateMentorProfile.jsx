@@ -75,24 +75,14 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
     };
 
     const toggleAvailability = () => {
-        console.log('Toggle clicked:', { currentState: isAvailable, willBe: !isAvailable });
-        
         router.post('/profile/mentor/toggle-disponibilidad', 
             { disponible: !isAvailable },
             {
                 preserveScroll: true,
-                onStart: () => {
-                    console.log('Request started');
-                },
-                onSuccess: (page) => {
-                    console.log('Toggle success:', page);
-                    // Cambiar el estado local
+                onSuccess: () => {
                     setIsAvailable(!isAvailable);
                 },
                 onError: (errors) => {
-                    console.error('Error al cambiar disponibilidad:', errors);
-                    
-                    // Mostrar mensaje específico sobre CV si es el error
                     if (errors.cv_verification) {
                         alert('⚠️ ' + errors.cv_verification + '\n\nPor favor, sube y verifica tu CV en la sección de arriba antes de activar tu disponibilidad.');
                     } else if (errors.disponibilidad) {
@@ -100,9 +90,6 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
                     } else {
                         alert('⚠️ Hubo un error al cambiar la disponibilidad. Por favor, verifica que hayas completado todos los requisitos.');
                     }
-                },
-                onFinish: () => {
-                    console.log('Request finished');
                 }
             }
         );

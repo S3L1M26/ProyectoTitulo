@@ -10,19 +10,15 @@ const ProfileReminderNotification = memo(function ProfileReminderNotification({ 
 
     // Usar los datos calculados por el backend con ponderaciones correctas
     const getProfileCompletenessData = () => {
-        // Usar datos calculados por el middleware/Inertia (más confiable)
-        if (profile_completeness) {
+        // Preferir SIEMPRE el valor del backend; si falta o es inválido, asumir completo
+        if (profile_completeness && typeof profile_completeness.percentage === 'number') {
             return profile_completeness;
         }
 
-        // Fallback: calcular usando las mismas ponderaciones que el backend
-        if (user.role === 'student') {
-            return calculateStudentCompleteness();
-        } else if (user.role === 'mentor') {
-            return calculateMentorCompleteness();
-        }
-
-        return { percentage: 100, missing_fields: [], completed_fields: [] };
+        // Como medida de seguridad, si no tenemos dato confiable del backend, no molestamos al usuario
+        // con falsos positivos. En caso extremo, podríamos habilitar el fallback local:
+        // return user.role === 'student' ? calculateStudentCompleteness() : calculateMentorCompleteness();
+        return { percentage: 100, missing_fields: [], completed_fields: [], weights: {} };
     };
 
     // Cálculo de estudiante con ponderaciones correctas
@@ -47,7 +43,8 @@ const ProfileReminderNotification = memo(function ProfileReminderNotification({ 
         }
 
         // Verificar áreas de interés
-        if (aprendiz?.areas_interes && aprendiz.areas_interes.length > 0) {
+    const areas = aprendiz?.areas_interes ?? aprendiz?.areasInteres ?? [];
+    if (areas.length > 0) {
             completedFields.push('areas_interes');
             totalScore += weights.areas_interes;
         } else {
@@ -103,7 +100,8 @@ const ProfileReminderNotification = memo(function ProfileReminderNotification({ 
         }
 
         // Verificar áreas de especialidad (peso 25%)
-        if (mentor.areas_interes && mentor.areas_interes.length > 0) {
+    const areas = mentor.areas_interes ?? mentor.areasInteres ?? [];
+    if (areas.length > 0) {
             completedFields.push('areas_interes');
             totalScore += weights.areas_interes;
         } else {

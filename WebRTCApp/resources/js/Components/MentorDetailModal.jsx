@@ -1,15 +1,37 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import SolicitudMentoriaForm from '@/Components/SolicitudMentoriaForm';
+import { router } from '@inertiajs/react';
+import { toast } from 'react-toastify';
+import axios from 'axios';
 
 const MentorDetailModal = memo(function MentorDetailModal({ isOpen, onClose, mentor, aprendiz, solicitudesPendientes = [] }) {
     const [isSolicitudFormOpen, setIsSolicitudFormOpen] = useState(false);
+    const [hasActiveMentoria, setHasActiveMentoria] = useState(false);
+    const [checkingActiveMentoria, setCheckingActiveMentoria] = useState(false);
+
+    // Verificar si el estudiante tiene una mentoría activa con este mentor
+    useEffect(() => {
+        if (isOpen && mentor && aprendiz) {
+            setCheckingActiveMentoria(true);
+            axios.get(`/api/student/mentores/${mentor.id}/has-active-mentoria`)
+                .then(response => {
+                    setHasActiveMentoria(response.data.hasActiveMentoria);
+                })
+                .catch(error => {
+                    console.error('Error checking active mentoria:', error);
+                    setHasActiveMentoria(false);
+                })
+                .finally(() => {
+                    setCheckingActiveMentoria(false);
+                });
+        }
+    }, [isOpen, mentor, aprendiz]);
     
     if (!mentor) return null;
     
-    // Debug: verificar los datos del mentor
-    console.log('Mentor data in modal:', mentor);
+    // (debug removido)
 
     return (
         <Transition appear show={isOpen} as={Fragment}>
@@ -170,27 +192,47 @@ const MentorDetailModal = memo(function MentorDetailModal({ isOpen, onClose, men
                                 </div>
 
                                 {/* Actions */}
-                                <div className="mt-8 flex flex-col sm:flex-row gap-3">
-                                    <button
-                                        onClick={() => setIsSolicitudFormOpen(true)}
-                                        disabled={mentor.mentor.disponible_ahora != 1}
-                                        className={`flex-1 inline-flex justify-center items-center px-6 py-3 rounded-lg font-medium transition-colors ${
-                                            mentor.mentor.disponible_ahora == 1
-                                                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                        }`}
-                                    >
-                                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                        </svg>
-                                        {mentor.mentor.disponible_ahora == 1 ? 'Solicitar Mentoría' : 'No Disponible'}
-                                    </button>
-                                    <button
-                                        onClick={onClose}
-                                        className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-                                    >
-                                        Cerrar
-                                    </button>
+                                <div className="mt-8">
+                                    {/* Mensaje informativo si hay mentoría activa */}
+                                    {hasActiveMentoria && (
+                                        <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                            <div className="flex items-start">
+                                                <svg className="w-5 h-5 text-yellow-600 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                                </svg>
+                                                <div>
+                                                    <h5 className="font-semibold text-yellow-800 mb-1">Ya tienes una mentoría activa con este mentor</h5>
+                                                    <p className="text-sm text-yellow-700">
+                                                        Solo puedes tener una mentoría activa por mentor. Una vez que el mentor marque la mentoría actual como concluida, podrás solicitar una nueva sesión.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="flex flex-col sm:flex-row gap-3">
+                                        <button
+                                            onClick={() => setIsSolicitudFormOpen(true)}
+                                            disabled={mentor.mentor.disponible_ahora != 1 || hasActiveMentoria || checkingActiveMentoria}
+                                            className={`flex-1 inline-flex justify-center items-center px-6 py-3 rounded-lg font-medium transition-colors ${
+                                                mentor.mentor.disponible_ahora == 1 && !hasActiveMentoria && !checkingActiveMentoria
+                                                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                            }`}
+                                            title={hasActiveMentoria ? 'Ya tienes una mentoría activa con este mentor' : (mentor.mentor.disponible_ahora != 1 ? 'Mentor no disponible' : '')}
+                                        >
+                                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                            </svg>
+                                            {checkingActiveMentoria ? 'Verificando...' : (hasActiveMentoria ? 'Mentoría Activa' : (mentor.mentor.disponible_ahora == 1 ? 'Solicitar Mentoría' : 'No Disponible'))}
+                                        </button>
+                                        <button
+                                            onClick={onClose}
+                                            className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                                        >
+                                            Cerrar
+                                        </button>
+                                    </div>
                                 </div>
                             </Dialog.Panel>
                         </Transition.Child>

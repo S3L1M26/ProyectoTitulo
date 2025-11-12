@@ -38,11 +38,11 @@ services:
       REDIS_PORT: 6379
       BROADCAST_DRIVER: log
     healthcheck:
-      test: ["CMD-SHELL", "php -r 'exit((bool) @fopen(\"http://127.0.0.1:8000/\", \"r\") ? 0 : 1);'"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 60s
+      test: ["CMD-SHELL", "pgrep -f 'artisan octane' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
     depends_on:
       db:
         condition: service_healthy
@@ -56,7 +56,7 @@ services:
     container_name: webrtcapp-queue
     restart: unless-stopped
     working_dir: /var/www/html
-    command: sh -c "php artisan migrate --force && php artisan queue:work redis --queue=default --sleep=1 --tries=3 --timeout=90 --max-time=3600 --verbose"
+    command: sh -c "php artisan migrate --force && php artisan queue:work redis --queue=emails,default --sleep=1 --tries=3 --timeout=90 --max-time=3600 --verbose"
     volumes:
       - ./:/var/www/html:cached
     environment:

@@ -1,13 +1,15 @@
 <?php
 
-namespace App\Models\Models;
+namespace App\Models;
 
 use App\Models\User;
 use App\Models\Aprendiz;
 use App\Models\Mentor;
+use App\Models\Mentoria;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SolicitudMentoria extends Model
@@ -78,6 +80,14 @@ class SolicitudMentoria extends Model
     }
 
     /**
+     * Get the mentoria (programmed session) associated with this request.
+     */
+    public function mentoria(): HasOne
+    {
+        return $this->hasOne(Mentoria::class, 'solicitud_id');
+    }
+
+    /**
      * Scope a query to only include pending requests.
      */
     public function scopePendientes($query)
@@ -99,5 +109,70 @@ class SolicitudMentoria extends Model
     public function scopeRechazadas($query)
     {
         return $query->where('estado', 'rechazada');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | MÉTODOS DE NEGOCIO
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Marcar la solicitud como aceptada.
+     * 
+     * @return bool
+     */
+    public function aceptar(): bool
+    {
+        $this->estado = 'aceptada';
+        $this->fecha_respuesta = now();
+        return $this->save();
+    }
+
+    /**
+     * Marcar la solicitud como rechazada.
+     * 
+     * @return bool
+     */
+    public function rechazar(): bool
+    {
+        $this->estado = 'rechazada';
+        $this->fecha_respuesta = now();
+        return $this->save();
+    }
+
+    /**
+     * Verificar si la solicitud ya tiene una mentoría programada.
+     * 
+     * @return bool
+     */
+    public function tieneMentoriaProgramada(): bool
+    {
+        return $this->mentoria()->exists();
+    }
+
+    /**
+     * Verificar si la solicitud está pendiente de respuesta.
+     * 
+     * @return bool
+     */
+    public function estaPendiente(): bool
+    {
+        return $this->estado === 'pendiente';
+    }
+
+    /**
+     * Verificar si un estudiante tiene una mentoría confirmada activa con un mentor específico.
+     * 
+     * @param int $estudianteId
+     * @param int $mentorId
+     * @return bool
+     */
+    public static function tieneMentoriaActivaConMentor(int $estudianteId, int $mentorId): bool
+    {
+        return Mentoria::where('aprendiz_id', $estudianteId)
+            ->where('mentor_id', $mentorId)
+            ->where('estado', 'confirmada')
+            ->exists();
     }
 }

@@ -5,10 +5,12 @@ import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import ProfileIncompleteIcon from '@/Components/ProfileIncompleteIcon';
 import { Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function AuthenticatedLayout({ header, children }) {
     const user = usePage().props.auth.user;
-    const { contadorNoLeidas } = usePage().props;
+        const { contadorNoLeidas, solicitudesPendientes } = usePage().props;
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
@@ -83,6 +85,21 @@ export default function AuthenticatedLayout({ header, children }) {
                                     >
                                         Panel de Usuario
                                     </NavLink>
+                                        {user.role === 'mentor' && (
+                                            <NavLink
+                                                href={route('mentor.solicitudes')}
+                                                active={route().current('mentor.solicitudes')}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <span>Solicitudes</span>
+                                                    {solicitudesPendientes > 0 && (
+                                                        <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-600 rounded-full">
+                                                            {solicitudesPendientes > 9 ? '9+' : solicitudesPendientes}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </NavLink>
+                                        )}
                                 </div>
                             )}
                             
@@ -268,6 +285,20 @@ export default function AuthenticatedLayout({ header, children }) {
             )}
 
             <main>{children}</main>
+            
+            {/* Toast notifications container */}
+            <ToastContainer 
+                position="top-right"
+                autoClose={4000}
+                hideProgressBar={false}
+                newestOnTop
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="light"
+            />
         </div>
     );
 }

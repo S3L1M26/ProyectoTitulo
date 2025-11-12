@@ -101,8 +101,8 @@ class Mentor extends Model
     /**
      * Get the mentorship requests received by the mentor.
      */
-    public function solicitudesMentoria(): HasMany
+    public function solicitudesMentoria()
     {
-        return $this->hasMany(\App\Models\Models\SolicitudMentoria::class, 'mentor_id', 'user_id');
+        return $this->hasMany(\App\Models\SolicitudMentoria::class, 'mentor_id', 'user_id');
     }
 }

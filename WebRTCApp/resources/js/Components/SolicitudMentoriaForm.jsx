@@ -5,6 +5,7 @@ import { useForm } from '@inertiajs/react';
 import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
+import { toast } from 'react-toastify';
 
 export default function SolicitudMentoriaForm({ isOpen, onClose, mentor, aprendiz, solicitudesPendientes = [] }) {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -18,8 +19,20 @@ export default function SolicitudMentoriaForm({ isOpen, onClose, mentor, aprendi
         post(route('solicitud-mentoria.store'), {
             preserveScroll: true,
             onSuccess: () => {
+                toast.success('¡Solicitud de mentoría enviada! El mentor será notificado.');
                 reset();
                 onClose();
+            },
+            onError: (errors) => {
+                if (errors.perfil) {
+                    toast.error(errors.perfil);
+                } else if (errors.certificado) {
+                    toast.error(errors.certificado);
+                } else if (errors.mensaje) {
+                    toast.error('Por favor escribe un mensaje para el mentor.');
+                } else {
+                    toast.error('No se pudo enviar la solicitud. Inténtalo nuevamente.');
+                }
             },
         });
     };
