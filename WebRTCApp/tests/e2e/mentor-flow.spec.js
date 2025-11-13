@@ -131,7 +131,7 @@ test.describe('Flujo completo del Mentor', () => {
       const successMessage = page.locator('text=/mentoría.*confirmada|reunión.*creada/i, [role="alert"]');
       
       // Buscar el enlace de Zoom en la página
-      const zoomLink = page.locator('a[href*="zoom.us/j/"], text=/zoom.us\\/j\\/\\d+/');
+      const zoomLink = page.locator('text=/zoom.us\\/j\\/\\d+/');
       
       // Verificar que el enlace de Zoom está visible
       await expect(zoomLink.first()).toBeVisible({ timeout: 10000 });

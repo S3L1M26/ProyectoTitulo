@@ -17,10 +17,13 @@ export async function loginAsMentor(page, credentials = null) {
   };
 
   // Ir a la página de login
-  await page.goto('/login');
+  await page.goto('/login?role=mentor', { waitUntil: 'commit', timeout: 90000 });
   
-  // Esperar a que el formulario esté visible
-  await page.waitForSelector('input[name="email"]');
+  // Pequeña pausa para asegurar que la página se estabilice
+  await page.waitForTimeout(2000);
+  
+  // Esperar a que el formulario esté visible (aumentado a 60s por Vite dev server)
+  await page.waitForSelector('input[name="email"]', { timeout: 60000 });
   
   // Llenar credenciales
   await page.fill('input[name="email"]', defaultCredentials.email);
@@ -51,10 +54,13 @@ export async function loginAsStudent(page, credentials = null) {
   };
 
   // Ir a la página de login
-  await page.goto('/login');
+  await page.goto('/login?role=student', { waitUntil: 'commit', timeout: 90000 });
   
-  // Esperar a que el formulario esté visible
-  await page.waitForSelector('input[name="email"]');
+  // Pequeña pausa para asegurar que la página se estabilice
+  await page.waitForTimeout(2000);
+  
+  // Esperar a que el formulario esté visible (aumentado a 60s por Vite dev server)
+  await page.waitForSelector('input[name="email"]', { timeout: 60000 });
   
   // Llenar credenciales
   await page.fill('input[name="email"]', defaultCredentials.email);

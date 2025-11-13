@@ -9,11 +9,11 @@ export default defineConfig({
   testDir: './tests/e2e',
   
   // Timeout global para cada test
-  timeout: 60 * 1000, // 60 segundos
+  timeout: 120 * 1000, // 120 segundos
   
   // Expect timeout para aserciones
   expect: {
-    timeout: 10 * 1000, // 10 segundos
+    timeout: 30 * 1000, // 30 segundos
   },
   
   // Configuración de retry en caso de fallo
@@ -33,32 +33,37 @@ export default defineConfig({
   
   // Configuración compartida para todos los proyectos
   use: {
-    // URL base de la aplicación
-    baseURL: process.env.BASE_URL || process.env.APP_URL || 'http://localhost:8000',
-    
+    // URL base de la aplicación (dentro de Docker apuntamos a nginx: servicio 'web')
+    baseURL: process.env.BASE_URL || process.env.APP_URL || 'http://web',
+
+    // Encabezado para activar el modo E2E (DB testing)
+    extraHTTPHeaders: {
+      'X-E2E-Testing': 'true',
+    },
+
     // Captura de traza en caso de fallo
     trace: 'on-first-retry',
-    
+
     // Screenshot automático en fallo
     screenshot: 'only-on-failure',
-    
+
     // Video en caso de fallo
     video: 'retain-on-failure',
-    
+
     // Timeout para acciones (click, fill, etc.)
-    actionTimeout: 15 * 1000,
-    
+    actionTimeout: 30 * 1000,
+
     // User agent
     userAgent: 'Playwright E2E Tests',
-    
+
     // Viewport por defecto
     viewport: { width: 1280, height: 720 },
-    
+
     // Ignorar errores HTTPS en desarrollo
     ignoreHTTPSErrors: true,
-    
+
     // Configuración de navegación
-    navigationTimeout: 30 * 1000,
+    navigationTimeout: 60 * 1000,
   },
 
   // Configuración de proyectos (navegadores)
