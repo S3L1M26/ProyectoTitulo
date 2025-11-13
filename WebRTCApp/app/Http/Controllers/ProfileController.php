@@ -13,6 +13,7 @@ use Inertia\Response;
 use App\Models\Aprendiz;
 use App\Models\AreaInteres;
 use App\Models\Mentor;
+use Illuminate\Support\Facades\Cache;
 
 class ProfileController extends Controller
 {
@@ -120,6 +121,9 @@ class ProfileController extends Controller
         // Sincronizar áreas de interés (many-to-many)
         $aprendiz->areasInteres()->sync($validated['areas_interes']);
         
+        // INVALIDAR CACHÉ: Completitud de perfil para el usuario autenticado
+        Cache::forget('profile_completeness_' . Auth::id());
+        
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
 
@@ -190,6 +194,9 @@ class ProfileController extends Controller
         // Sincronizar áreas de especialidad (many-to-many)
         $mentor->areasInteres()->sync($validated['areas_especialidad']);
         
+        // INVALIDAR CACHÉ: Completitud de perfil para el usuario autenticado
+        Cache::forget('profile_completeness_' . Auth::id());
+        
         return Redirect::route('profile.edit')->with('status', 'mentor-profile-updated');
     }
 
@@ -198,7 +205,10 @@ class ProfileController extends Controller
      */
     public function toggleMentorDisponibilidad(Request $request): RedirectResponse
     {
-        $mentor = Auth::user()->mentor;
+        // Recargar la relación mentor desde la base de datos
+        $user = Auth::user();
+        $user->load('mentor');
+        $mentor = $user->mentor;
         
         if (!$mentor) {
             return Redirect::route('profile.edit')->withErrors([
@@ -256,6 +266,9 @@ class ProfileController extends Controller
         }
 
         $mentor->save();
+
+        // INVALIDAR CACHÉ: Completitud de perfil puede depender de disponibilidad
+        Cache::forget('profile_completeness_' . Auth::id());
 
         $message = $disponible ? 'Ahora estás disponible para mentoría.' : 'Has pausado tu disponibilidad.';
         

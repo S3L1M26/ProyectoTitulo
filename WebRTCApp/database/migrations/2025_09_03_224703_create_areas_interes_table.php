@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::connection('mysql')->create('areas_interes', function (Blueprint $table) {
+        Schema::create('areas_interes', function (Blueprint $table) {
             $table->id();
             $table->string('nombre');
             $table->string('descripcion');
@@ -24,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::connection('mysql')->dropIfExists('areas_interes');
+        Schema::dropIfExists('areas_interes');
     }
 };

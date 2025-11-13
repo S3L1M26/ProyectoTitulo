@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Aprendiz extends Model
@@ -55,4 +56,11 @@ class Aprendiz extends Model
         return $this->belongsToMany(AreaInteres::class, 'aprendiz_area_interes');
     }
 
+    /**
+     * Get the mentorship requests made by the student.
+     */
+    public function solicitudesMentoria()
+    {
+        return $this->hasMany(\App\Models\SolicitudMentoria::class, 'estudiante_id', 'user_id');
+    }
 }

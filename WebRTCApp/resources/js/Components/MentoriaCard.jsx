@@ -1,0 +1,224 @@
+import React, { useState, lazy, Suspense } from 'react';
+import { router } from '@inertiajs/react';
+import { toast } from 'react-toastify';
+
+// Lazy load del modal de contactar mentor
+const ContactarMentorModal = lazy(() => import('@/Components/ContactarMentorModal'));
+
+export default function MentoriaCard({ mentoria, userRole = 'mentor', isHistorial = false }) {
+    const [showCancelModal, setShowCancelModal] = useState(false);
+    const [showConcluirModal, setShowConcluirModal] = useState(false);
+    const [showContactModal, setShowContactModal] = useState(false);
+    const [cancelling, setCancelling] = useState(false);
+    const [concluyendo, setConcluyendo] = useState(false);
+
+    if (!mentoria) return null;
+
+    const fecha = new Date(mentoria.fecha);
+    const hora = new Date(mentoria.hora);
+    const nombreOtro = userRole === 'mentor' ? (mentoria?.aprendiz?.name || 'Aprendiz') : (mentoria?.mentor?.name || 'Mentor');
+    const estado = mentoria.estado;
+
+    // Badges mejorados para historial
+    const getBadgeClass = () => {
+        if (estado === 'confirmada') return 'bg-green-100 text-green-800';
+        if (estado === 'completada') return 'bg-blue-100 text-blue-800';
+        if (estado === 'cancelada') return 'bg-red-100 text-red-800';
+        return 'bg-gray-100 text-gray-800';
+    };
+
+    const getBadgeIcon = () => {
+        if (estado === 'confirmada') return '✓';
+        if (estado === 'completada') return '✅';
+        if (estado === 'cancelada') return '❌';
+        return '';
+    };
+
+    const joinLabel = userRole === 'mentor' ? 'Iniciar reunión' : 'Unirse a la reunión';
+
+    const handleCancelMentoria = () => {
+        setCancelling(true);
+        router.delete(route('mentor.mentorias.cancelar', mentoria.id), {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Mentoría cancelada exitosamente.');
+                setShowCancelModal(false);
+            },
+            onError: (errors) => {
+                toast.error(errors.message || 'No se pudo cancelar la mentoría.');
+            },
+            onFinish: () => {
+                setCancelling(false);
+            },
+        });
+    };
+
+    const handleConcluirMentoria = () => {
+        setConcluyendo(true);
+        router.post(route('mentor.mentorias.concluir', mentoria.id), {}, {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Mentoría concluida exitosamente.');
+                setShowConcluirModal(false);
+            },
+            onError: (errors) => {
+                toast.error(errors.estado?.[0] || 'No se pudo concluir la mentoría.');
+            },
+            onFinish: () => {
+                setConcluyendo(false);
+            },
+        });
+    };
+
+    return (
+        <>
+            <div className="border rounded-lg p-5 bg-white hover:shadow transition-shadow">
+            <div className="flex items-start justify-between mb-3">
+                <h4 className="font-semibold text-gray-900">{nombreOtro}</h4>
+                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getBadgeClass()}`}>
+                    {getBadgeIcon()} {estado}
+                </span>
+            </div>
+            <div className="text-sm text-gray-700 space-y-1">
+                <p>
+                    <strong>Fecha:</strong> {fecha.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}
+                </p>
+                <p>
+                    <strong>Hora:</strong> {hora.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                </p>
+                {mentoria?.area?.nombre && (
+                    <p>
+                        <strong>Área:</strong> {mentoria.area.nombre}
+                    </p>
+                )}
+                <p>
+                    <strong>Duración:</strong> {mentoria.duracion_minutos} min
+                </p>
+            </div>
+            {/* Solo mostrar botones si NO es historial y tiene enlace de reunión */}
+            {!isHistorial && mentoria.enlace_reunion && estado !== 'cancelada' && (
+                <div className="mt-4 space-y-2">
+                    <a
+                        href={route('mentorias.unirse', mentoria.id)}
+                        className="inline-flex items-center justify-center w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                    >
+                        🎥 {joinLabel}
+                    </a>
+                    {userRole === 'mentor' && (
+                        <>
+                            <button
+                                type="button"
+                                onClick={() => setShowConcluirModal(true)}
+                                className="inline-flex items-center justify-center w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                            >
+                                ✅ Concluir Mentoría
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setShowCancelModal(true)}
+                                className="inline-flex items-center justify-center w-full px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                            >
+                                ❌ Cancelar Mentoría
+                            </button>
+                        </>
+                    )}
+                    {userRole === 'aprendiz' && (
+                        <button
+                            type="button"
+                            onClick={() => setShowContactModal(true)}
+                            className="inline-flex items-center justify-center w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                        >
+                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            Contactar Mentor
+                        </button>
+                    )}
+                </div>
+            )}
+        </div>
+
+            {/* Modal de confirmación */}
+            {showCancelModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                    <div className="bg-white rounded-lg shadow-xl p-6 max-w-md mx-4">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                            ¿Cancelar mentoría?
+                        </h3>
+                        <p className="text-gray-600 mb-6">
+                            ¿Estás seguro de que deseas cancelar esta mentoría con <strong>{nombreOtro}</strong>?
+                            Esta acción eliminará la reunión de Zoom y notificará al aprendiz.
+                        </p>
+                        <div className="flex justify-end space-x-3">
+                            <button
+                                type="button"
+                                onClick={() => setShowCancelModal(false)}
+                                className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+                                disabled={cancelling}
+                            >
+                                No, mantener
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleCancelMentoria}
+                                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                                disabled={cancelling}
+                            >
+                                {cancelling ? 'Cancelando...' : 'Sí, cancelar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal de confirmación para concluir */}
+            {showConcluirModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                    <div className="bg-white rounded-lg shadow-xl p-6 max-w-md mx-4">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                            ✅ ¿Concluir mentoría?
+                        </h3>
+                        <p className="text-gray-600 mb-6">
+                            ¿Estás seguro de que deseas marcar esta mentoría con <strong>{nombreOtro}</strong> como concluida?
+                            <br /><br />
+                            Al concluir, el estudiante podrá solicitar una nueva sesión contigo.
+                        </p>
+                        <div className="flex justify-end space-x-3">
+                            <button
+                                type="button"
+                                onClick={() => setShowConcluirModal(false)}
+                                className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+                                disabled={concluyendo}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleConcluirMentoria}
+                                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                                disabled={concluyendo}
+                            >
+                                {concluyendo ? 'Concluyendo...' : 'Sí, concluir'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal de contactar mentor */}
+            {showContactModal && userRole === 'aprendiz' && (
+                <Suspense fallback={
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+                    </div>
+                }>
+                    <ContactarMentorModal
+                        isOpen={showContactModal}
+                        onClose={() => setShowContactModal(false)}
+                        mentor={{ id: mentoria.mentor_id || mentoria.mentor?.id, name: nombreOtro }}
+                    />
+                </Suspense>
+            )}
+        </>
+    );
+}

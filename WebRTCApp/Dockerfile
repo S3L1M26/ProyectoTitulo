@@ -14,10 +14,14 @@ ENV TZ=UTC \
     COMPOSER_NO_INTERACTION=1
 RUN apk add --no-cache \
     bash git curl zip unzip icu-dev oniguruma-dev libzip-dev libpng-dev \
-    shadow tzdata openssl mysql-client build-base \
+        shadow tzdata openssl mysql-client build-base linux-headers \
     tesseract-ocr tesseract-ocr-data-spa poppler-utils imagemagick
 RUN docker-php-ext-configure intl \
-    && docker-php-ext-install pdo pdo_mysql intl mbstring zip bcmath gd
+    && docker-php-ext-install pdo pdo_mysql intl mbstring zip bcmath gd sockets pcntl opcache
+# Copiar configuración PHP-FPM optimizada
+COPY docker/php/www.conf /usr/local/etc/php-fpm.d/www.conf
+# Copiar configuración de OPcache
+COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
 # Instalar extensión Redis para PHP
 RUN apk add --no-cache $PHPIZE_DEPS \
     && pecl install redis \

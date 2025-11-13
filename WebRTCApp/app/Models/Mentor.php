@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Mentor extends Model
 {
@@ -96,4 +97,12 @@ class Mentor extends Model
     // {
     //     return $this->hasMany(Mentoria::class, 'idMentor');
     // }
+
+    /**
+     * Get the mentorship requests received by the mentor.
+     */
+    public function solicitudesMentoria()
+    {
+        return $this->hasMany(\App\Models\SolicitudMentoria::class, 'mentor_id', 'user_id');
+    }
 }

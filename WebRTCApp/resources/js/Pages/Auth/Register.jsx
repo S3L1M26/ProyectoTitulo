@@ -17,13 +17,9 @@ export default function Register({ role }) {
     const submit = (e) => {
         e.preventDefault();
 
-        console.log('Submitting registration with data:', data);
-
         post(route('register'), {
             onFinish: () => reset('password', 'password_confirmation'),
-            onError: (errors) => {
-                console.log('Registration errors:', errors);
-            }
+            onError: () => {}
         });
     };
 
