@@ -21,23 +21,10 @@ class MentorDocumentObserver
      */
     public function updated(MentorDocument $mentorDocument): void
     {
-        logger()->info('Observer updated called', [
-            'document_id' => $mentorDocument->id,
-            'status' => $mentorDocument->status,
-            'wasChanged' => $mentorDocument->wasChanged('status'),
-            'changes' => $mentorDocument->getChanges(),
-        ]);
-
         // Verificar si el estado cambió a 'approved'
         if ($mentorDocument->wasChanged('status') && $mentorDocument->status === 'approved') {
             // Obtener el mentor asociado al usuario
             $mentor = $mentorDocument->user->mentor;
-            
-            logger()->info('Status changed to approved', [
-                'user_id' => $mentorDocument->user_id,
-                'mentor_found' => $mentor ? 'yes' : 'no',
-                'mentor_id' => $mentor?->id,
-            ]);
             
             if ($mentor) {
                 $mentor->update([
@@ -48,7 +35,6 @@ class MentorDocumentObserver
                     'mentor_id' => $mentor->id,
                     'user_id' => $mentorDocument->user_id,
                     'document_id' => $mentorDocument->id,
-                    'cv_verified' => $mentor->fresh()->cv_verified,
                 ]);
             }
         }
