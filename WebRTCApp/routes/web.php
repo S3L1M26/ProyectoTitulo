@@ -8,6 +8,7 @@ use App\Http\Controllers\Student\CertificateController;
 use App\Http\Controllers\Mentor\MentorController;
 use App\Http\Controllers\SolicitudMentoriaController;
 use App\Http\Controllers\MentoriaController;
+use App\Http\Controllers\MentorReviewController;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -32,6 +33,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['role:student', 'performance'])->group(function () {
         Route::get('/student/dashboard', [StudentController::class, 'index'])->name('student.dashboard');
         Route::post('/student/certificate/upload', [CertificateController::class, 'upload'])->name('student.certificate.upload');
+
+        // Reseñas de mentores (única reseña por estudiante/mentor, editable)
+        Route::post('/mentors/{mentor}/reviews', [MentorReviewController::class, 'store'])
+            ->name('mentors.reviews.store');
     });
 
     // Rutas para mentores con monitoreo de performance
