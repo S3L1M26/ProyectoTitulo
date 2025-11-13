@@ -145,6 +145,93 @@ El proyecto incluye **middleware de performance** que detecta automáticamente:
 
 ---
 
+## 🎯 Funcionalidades Principales
+
+### 📬 Sistema de Solicitudes de Mentoría
+Proceso completo de solicitud, aceptación, confirmación y finalización de mentorías.
+
+**Características:**
+- **Búsqueda de Mentores**: Estudiantes pueden buscar mentores disponibles por nombre, especialidad o skills
+- **Contacto Directo**: Sistema de solicitudes con mensaje personalizado
+- **Flujo de Estados**: Pendiente → Aceptada → Confirmada → Completada
+- **Validaciones**: CV verificado, disponibilidad activa, sin solicitudes duplicadas
+- **Notificaciones**: Email + notificaciones in-app en cada cambio de estado
+
+**Documentación:**
+- 📄 [Contactar Mentor - Guía Completa](docs/funcionalidad/contactar-mentor.md)
+- 📊 [Flujo de Solicitudes - Estados y Validaciones](docs/funcionalidad/flujo-solicitudes.md)
+
+### 🔔 Sistema de Notificaciones
+Mantiene a estudiantes y mentores informados sobre el estado de sus solicitudes y mentorías.
+
+**Tipos de Notificaciones:**
+- **Solicitud Enviada**: Confirmación inmediata al estudiante
+- **Solicitud Aceptada/Rechazada**: Actualización de estado con próximos pasos
+- **Mentoría Confirmada**: Detalles de reunión Zoom + enlace de calendario
+- **Recordatorio**: 24 horas antes de la mentoría
+- **Mentoría Cancelada**: Notificación urgente con motivo
+- **Mentoría Completada**: Agradecimiento e invitación a feedback
+
+**Canales:**
+- ✉️ Email (plantillas personalizadas)
+- 🔔 Notificaciones in-app (campana en navbar)
+- 📱 Push notifications (opcional)
+- 🔄 Polling cada 30 segundos para actualizaciones en tiempo real
+
+**Documentación:**
+- 📄 [Sistema de Notificaciones - Guía de Usuario](docs/funcionalidad/notificaciones-estudiante.md)
+
+### 📹 Integración con Zoom API
+Creación y gestión automática de reuniones de Zoom para mentorías confirmadas.
+
+**Características:**
+- **Server-to-Server OAuth**: Autenticación segura con tokens de acceso
+- **Creación Automática**: Al confirmar mentoría se crea reunión de Zoom
+- **Detalles en Email**: Enlace de reunión + contraseña enviados por email
+- **Gestión de Ciclo de Vida**: Cancelación automática si se cancela la mentoría
+- **Rate Limiting**: Manejo de límites de API (100 requests/segundo)
+
+**Scopes Requeridos:**
+- `meeting:write:admin` - Crear reuniones
+- `meeting:read:admin` - Leer detalles
+- `meeting:update:admin` - Actualizar reuniones
+- `meeting:delete:admin` - Cancelar reuniones
+- `user:read:admin` - Obtener datos del usuario
+
+**Documentación:**
+- 📄 [Zoom API - Configuración y Uso](docs/funcionalidad/zoom-api-configuracion.md)
+
+### 🎓 Verificación de CV de Mentores
+Sistema de procesamiento y verificación de CVs con análisis de keywords.
+
+**Flujo:**
+1. Mentor sube CV (PDF)
+2. Job asíncrono extrae texto y analiza keywords
+3. Calificación basada en keywords relevantes
+4. Mentor recibe notificación de aprobación/rechazo
+5. Solo mentores con CV verificado pueden ofrecer mentorías
+
+**Tecnologías:**
+- `spatie/pdf-to-text` - Extracción de texto de PDF
+- Job queue para procesamiento asíncrono
+- Sistema de scoring basado en keywords
+- Notificaciones automáticas de resultado
+
+### 🔐 Autenticación por Roles
+Sistema de autenticación multi-rol con dashboards diferenciados.
+
+**Roles:**
+- **Estudiante**: Buscar mentores, enviar solicitudes, gestionar mentorías
+- **Mentor**: Gestionar solicitudes, confirmar mentorías, verificar CV
+
+**Características:**
+- Login con parámetro `?role=mentor` o `?role=student`
+- Dashboards personalizados por rol
+- Middleware de protección de rutas
+- Validaciones específicas por rol
+
+---
+
 ## 📋 Configuración del Entorno
 
 Requisitos: Docker + Docker Compose
@@ -154,11 +241,13 @@ Acceder:
   App:       http://localhost:8000
   Vite HMR:  http://localhost:5173
   Mailhog:   http://localhost:8025
+  PHPMyAdmin: http://localhost:8080
 Base de datos:
   Host: 127.0.0.1  Puerto: 3307  Usuario: laravel  Password: secret  DB: laravel
 Comandos útiles:
   docker compose exec app php artisan migrate
   docker compose exec app composer install
+  docker compose exec app php artisan queue:work
   docker compose restart vite
 
 ---

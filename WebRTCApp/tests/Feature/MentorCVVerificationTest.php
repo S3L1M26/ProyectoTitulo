@@ -61,13 +61,32 @@ class MentorCVVerificationTest extends TestCase
     {
         $user = User::factory()->mentor()->create();
         $mentor = Mentor::factory()->for($user)->create([
-            'cv_verified' => true,
+            'cv_verified' => false,
             'disponible_ahora' => false,
             'experiencia' => str_repeat('Experiencia en desarrollo web con Laravel y PHP. ', 10),
             'biografia' => str_repeat('Soy un desarrollador fullstack apasionado por la tecnología. ', 5),
             'años_experiencia' => 5,
         ]);
         $mentor->areasInteres()->attach(\App\Models\AreaInteres::factory()->create()->id);
+
+        dump('User ID:', $user->id);
+        dump('Mentor ID:', $mentor->id);
+        dump('Mentor cv_verified before:', $mentor->cv_verified);
+
+        // Crear CV pending y luego aprobar (dispara Observer)
+        $document = MentorDocument::factory()->pending()->for($user, 'user')->create();
+        dump('Document created:', $document->id, 'Status:', $document->status);
+        
+        $document->update(['status' => 'approved']);
+        dump('Document updated to approved');
+        
+        // Recargar mentor desde DB
+        $mentor = $mentor->fresh();
+        dump('Mentor cv_verified after update:', $mentor->cv_verified);
+        dump('User->mentor->cv_verified:', $user->fresh()->mentor->cv_verified);
+
+        // Verificar que el observer actualizó cv_verified
+        $this->assertTrue($mentor->cv_verified, 'CV should be verified after approval');
 
         $response = $this->actingAs($user)->post(route('profile.mentor.toggle-disponibilidad'), [
             'disponible' => true,

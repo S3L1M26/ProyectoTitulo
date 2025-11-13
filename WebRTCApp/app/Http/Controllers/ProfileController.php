@@ -205,7 +205,8 @@ class ProfileController extends Controller
      */
     public function toggleMentorDisponibilidad(Request $request): RedirectResponse
     {
-        $mentor = Auth::user()->mentor;
+        // Recargar el usuario para obtener la relación mentor actualizada
+        $mentor = Auth::user()->fresh()->mentor;
         
         if (!$mentor) {
             return Redirect::route('profile.edit')->withErrors([
