@@ -44,10 +44,10 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
 
     // Verificar disponibilidad actual
     useEffect(() => {
-        // Usar el campo disponible_ahora de la base de datos
-        const currentAvailability = mentor.disponible_ahora === true;
+        // Recargar disponibilidad desde props cuando el mentor cambia (post exitoso)
+        const currentAvailability = mentor.disponible_ahora === true || mentor.disponible_ahora === 1;
         setIsAvailable(currentAvailability);
-    }, [mentor]);
+    }, [mentor.disponible_ahora]);
 
     // Función para verificar si todos los campos requeridos están completos
     const isProfileComplete = () => {
@@ -57,8 +57,7 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
             data.años_experiencia > 0 &&
             data.areas_especialidad.length > 0 &&
             data.disponibilidad.trim().length > 0 &&
-            data.disponibilidad_detalle.trim().length > 0 &&
-            cvVerified // Agregar validación de CV verificado
+            cvVerified // CV verificado requerido; detalle de disponibilidad es opcional
         );
     };
 
@@ -79,7 +78,9 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
             { disponible: !isAvailable },
             {
                 preserveScroll: true,
+                replace: true,
                 onSuccess: () => {
+                    // El estado se actualiza vía props Inertia, no forzar manualmente
                     setIsAvailable(!isAvailable);
                 },
                 onError: (errors) => {
@@ -229,7 +230,7 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
                         { field: 'areas', completed: data.areas_especialidad.length > 0, weight: 20 },
                         { field: 'biografia', completed: data.biografia.trim().length >= 100, weight: 20 },
                         { field: 'años', completed: data.años_experiencia > 0, weight: 15 },
-                        { field: 'disponibilidad', completed: data.disponibilidad_detalle.trim().length > 0, weight: 10 },
+                        { field: 'disponibilidad', completed: data.disponibilidad.trim().length > 0, weight: 10 },
                         { field: 'cv', completed: cvVerified, weight: 10 }
                     ];
                     const totalProgress = progress.reduce((sum, item) => sum + (item.completed ? item.weight : 0), 0);
@@ -501,8 +502,8 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
                                         <li className={data.areas_especialidad.length > 0 ? 'line-through opacity-60' : ''}>
                                             • Al menos un área de especialidad
                                         </li>
-                                        <li className={data.disponibilidad.trim().length > 0 && data.disponibilidad_detalle.trim().length > 0 ? 'line-through opacity-60' : ''}>
-                                            • Información de disponibilidad
+                                        <li className={data.disponibilidad.trim().length > 0 ? 'line-through opacity-60' : ''}>
+                                            • Disponibilidad general
                                         </li>
                                         <li className={cvVerified ? 'line-through opacity-60' : 'font-semibold'}>
                                             {cvVerified ? '✅ CV verificado' : '⚠️ CV verificado (sube tu CV arriba)'}

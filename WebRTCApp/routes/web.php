@@ -34,8 +34,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/student/dashboard', [StudentController::class, 'index'])->name('student.dashboard');
         Route::post('/student/certificate/upload', [CertificateController::class, 'upload'])->name('student.certificate.upload');
 
-        // Reseñas de mentores (única reseña por estudiante/mentor, editable)
-        Route::post('/mentors/{mentor}/reviews', [MentorReviewController::class, 'store'])
+        // Reseñas de mentores (única reseña por estudiante/mentor, editable). Bind por user_id
+        Route::post('/mentors/{mentor:user_id}/reviews', [MentorReviewController::class, 'store'])
             ->name('mentors.reviews.store');
     });
 

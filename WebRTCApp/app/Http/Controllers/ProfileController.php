@@ -272,7 +272,7 @@ class ProfileController extends Controller
 
         $message = $disponible ? 'Ahora estás disponible para mentoría.' : 'Has pausado tu disponibilidad.';
         
-        return Redirect::route('profile.edit')->with('status', $message);
+        return Redirect::back()->with('status', $message);
     }
 
     /**
