@@ -118,7 +118,27 @@
 
 **Impacto:** Bajo - Solo afecta vista preview, datos reales son correctos.
 
-**Estado:** ⏳ Pendiente
+**Estado:** ✅ RESUELTO
+
+**Solución aplicada:**
+- **Root cause**: `freshCalificacion` se inicializaba con `useState(mentor.calificacionPromedio || 0)` pero nunca se actualizaba cuando cambiaba el rating
+- El componente ya tenía un endpoint `/api/mentor/calificacion` disponible pero no lo usaba
+- **Fix**: Agregado `useEffect` para cargar calificación fresca del servidor, igual que se hace con `freshDisponibilidad`:
+  ```jsx
+  useEffect(() => {
+      const fetchFreshCalificacion = async () => {
+          try {
+              const response = await axios.get('/api/mentor/calificacion');
+              setFreshCalificacion(response.data.calificacionPromedio || 0);
+          } catch (error) {
+              console.error('Error cargando calificación:', error);
+              setFreshCalificacion(mentor.calificacionPromedio || 0);
+          }
+      };
+      fetchFreshCalificacion();
+  }, [mentor.id]);
+  ```
+- Ahora el rating se obtiene directamente del servidor sin caché, como en los otros componentes.
 
 ---
 

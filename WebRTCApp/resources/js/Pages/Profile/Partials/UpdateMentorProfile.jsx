@@ -49,6 +49,21 @@ export default function UpdateMentorProfile({ className = '' }) {
         fetchFreshDisponibilidad();
     }, [mentor.id]);
 
+    // Cargar calificación fresca del servidor (sin caché)
+    useEffect(() => {
+        const fetchFreshCalificacion = async () => {
+            try {
+                const response = await axios.get('/api/mentor/calificacion');
+                setFreshCalificacion(response.data.calificacionPromedio || 0);
+            } catch (error) {
+                console.error('Error cargando calificación:', error);
+                setFreshCalificacion(mentor.calificacionPromedio || 0);
+            }
+        };
+        
+        fetchFreshCalificacion();
+    }, [mentor.id]);
+
     // Cargar áreas de interés disponibles
     useEffect(() => {
         const fetchAreasInteres = async () => {
