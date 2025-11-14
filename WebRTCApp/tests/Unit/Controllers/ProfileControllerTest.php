@@ -87,14 +87,14 @@ class ProfileControllerTest extends TestCase
         $this->assertTrue($reflection->hasMethod('toggleMentorDisponibilidad'));
     }
 
-    public function test_controller_has_seven_public_methods()
+    public function test_controller_has_nine_public_methods()
     {
         $reflection = new \ReflectionClass(ProfileController::class);
         $publicMethods = array_filter($reflection->getMethods(\ReflectionMethod::IS_PUBLIC), function($method) {
             return $method->class === ProfileController::class;
         });
         
-        $this->assertCount(7, $publicMethods);
+        $this->assertCount(9, $publicMethods);
     }
 
     public function test_edit_method_accepts_request_parameter()

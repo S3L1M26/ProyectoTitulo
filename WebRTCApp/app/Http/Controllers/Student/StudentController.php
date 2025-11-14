@@ -209,6 +209,7 @@ class StudentController extends Controller
             ->where('users.role', 'mentor')
             ->where('mentors.disponible_ahora', true)
             ->whereIn('mentor_area_interes.area_interes_id', $studentAreaIds)
+            ->orderBy('mentors.calificacionPromedio', 'desc') // Ordenar por rating de mayor a menor
             ->with([
                 'mentor' => function($query) {
                     // Solo cargar campos necesarios (SIN calificacionPromedio)

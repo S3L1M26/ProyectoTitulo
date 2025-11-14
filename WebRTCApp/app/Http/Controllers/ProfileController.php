@@ -271,7 +271,7 @@ class ProfileController extends Controller
                 ]);
             }
 
-            // Parsear el booleano correctamente - esperar true, "true", 1
+            // Parsear el booleano correctamente
             $newDisponible = $request->input('disponible') === true 
                            || $request->input('disponible') === 'true' 
                            || $request->input('disponible') == 1;
@@ -282,7 +282,56 @@ class ProfileController extends Controller
                 'parsed_as' => $newDisponible,
             ]);
 
-            // SOLO HACER EL TOGGLE - sin validaciones complejas
+            // Si intenta ACTIVAR disponibilidad, validar perfil completo
+            if ($newDisponible) {
+                // Validar que el perfil esté completo
+                if (empty($mentor->experiencia) || strlen($mentor->experiencia) < 50 ||
+                    empty($mentor->biografia) || strlen($mentor->biografia) < 100 ||
+                    empty($mentor->disponibilidad) ||
+                    $mentor->años_experiencia <= 0) {
+                    
+                    Log::info('🔴 [TOGGLE] Profile incomplete', [
+                        'experiencia_len' => strlen($mentor->experiencia ?? ''),
+                        'biografia_len' => strlen($mentor->biografia ?? ''),
+                        'disponibilidad' => $mentor->disponibilidad,
+                        'años_experiencia' => $mentor->años_experiencia,
+                    ]);
+
+                    return Redirect::route('profile.edit')->withErrors([
+                        'disponibilidad' => 'Debes completar tu perfil de mentor antes de activar disponibilidad.'
+                    ]);
+                }
+
+                // Validar CV
+                if (!$mentor->cv_verified) {
+                    // Verificar si tiene CV aprobado
+                    $hasApprovedCV = $user->mentorDocuments()
+                        ->where('status', 'approved')
+                        ->exists();
+
+                    Log::info('🔴 [TOGGLE] CV verification check', [
+                        'cv_verified_flag' => $mentor->cv_verified,
+                        'has_approved_cv' => $hasApprovedCV,
+                    ]);
+
+                    if (!$hasApprovedCV) {
+                        return Redirect::route('profile.edit')
+                            ->withErrors([
+                                'cv_verification' => 'Debes verificar tu CV para ofrecer mentorías.'
+                            ])
+                            ->with('cv_upload_required', [
+                                'action' => 'upload_cv',
+                                'upload_url' => route('mentor.cv.upload')
+                            ]);
+                    } else {
+                        // Auto-marcar como verificado si tiene CV aprobado
+                        $mentor->update(['cv_verified' => true]);
+                        Log::info('🔴 [TOGGLE] Auto-marked CV as verified', ['mentor_id' => $mentor->id]);
+                    }
+                }
+            }
+
+            // Hacer el toggle
             $mentor->disponible_ahora = $newDisponible;
             $mentor->save();
 
@@ -291,7 +340,6 @@ class ProfileController extends Controller
                 'disponible_ahora_in_db' => $newDisponible,
             ]);
 
-            // Verificar que se guardó correctamente
             $mentor->refresh();
             Log::info('🔴 [TOGGLE] After refresh', [
                 'disponible_ahora_from_db' => $mentor->disponible_ahora,
@@ -304,11 +352,11 @@ class ProfileController extends Controller
                 ? 'Ahora estás disponible para mentoría.' 
                 : 'Has pausado tu disponibilidad.';
 
-            Log::info('🔴 [TOGGLE] COMPLETE - Redirecting back with message', [
+            Log::info('🔴 [TOGGLE] COMPLETE - Redirecting with message', [
                 'message' => $message,
             ]);
 
-            return Redirect::back()->with('status', $message);
+            return Redirect::route('profile.edit')->with('status', $message);
 
         } catch (\Exception $e) {
             Log::error('🔴 [TOGGLE] EXCEPTION CAUGHT', [
@@ -318,7 +366,7 @@ class ProfileController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            return Redirect::back()->withErrors([
+            return Redirect::route('profile.edit')->withErrors([
                 'disponibilidad' => 'Error al cambiar disponibilidad: ' . $e->getMessage()
             ]);
         }
