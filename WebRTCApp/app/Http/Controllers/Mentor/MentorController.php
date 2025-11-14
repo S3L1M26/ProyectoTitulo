@@ -17,8 +17,22 @@ class MentorController extends Controller
     {
         $user = Auth::user();
         
-        // Cargar perfil del mentor
-        $mentorProfile = Mentor::where('user_id', $user->id)->first();
+        // Cargar perfil del mentor con reseñas y calificación fresca
+        $mentorProfile = Mentor::where('user_id', $user->id)
+            ->with([
+                'reviews' => function($query) {
+                    // Cargar últimas 10 reseñas anónimas
+                    $query->select('id', 'mentor_id', 'rating', 'comment', 'created_at')
+                          ->latest('created_at')
+                          ->limit(10);
+                }
+            ])
+            ->first();
+        
+        // Asegurar que calificacionPromedio sea fresco (no cacheado)
+        if ($mentorProfile) {
+            $mentorProfile->refresh();
+        }
         
         // Cargar mentorías programadas del mentor (futuras y confirmadas)
         $mentoriasProgramadas = Mentoria::where('mentor_id', $user->id)

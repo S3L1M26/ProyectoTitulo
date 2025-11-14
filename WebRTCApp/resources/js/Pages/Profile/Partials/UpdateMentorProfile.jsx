@@ -5,6 +5,7 @@ import TextInput from '@/Components/TextInput';
 import { Transition } from '@headlessui/react';
 import { useForm, usePage, router } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 
 export default function UpdateMentorProfile({ cvVerified = false, className = '' }) {
     const { auth, errors: pageErrors } = usePage().props;
@@ -15,6 +16,8 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
     const [loadingAreas, setLoadingAreas] = useState(true);
     const [showPreview, setShowPreview] = useState(false);
     const [isAvailable, setIsAvailable] = useState(false);
+    const [freshCalificacion, setFreshCalificacion] = useState(mentor.calificacionPromedio || 0);
+    const [freshDisponibilidad, setFreshDisponibilidad] = useState(mentor.disponible_ahora || false);
 
     const { data, setData, patch, errors, processing, recentlySuccessful, clearErrors } = useForm({
         experiencia: mentor.experiencia || '',
@@ -24,6 +27,21 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
         disponibilidad_detalle: mentor.disponibilidad_detalle || '',
         areas_especialidad: mentor.areas_interes ? mentor.areas_interes.map(area => area.id) : []
     });
+
+    // Cargar disponibilidad fresca del servidor (igual que calificación)
+    useEffect(() => {
+        const fetchFreshDisponibilidad = async () => {
+            try {
+                const response = await axios.get('/api/mentor/disponibilidad');
+                setFreshDisponibilidad(response.data.disponible_ahora || false);
+            } catch (error) {
+                console.error('Error cargando disponibilidad:', error);
+                setFreshDisponibilidad(mentor.disponible_ahora || false);
+            }
+        };
+        
+        fetchFreshDisponibilidad();
+    }, [mentor.id]);
 
     // Cargar áreas de interés disponibles
     useEffect(() => {
@@ -42,12 +60,10 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
         fetchAreasInteres();
     }, []);
 
-    // Verificar disponibilidad actual
+    // Verificar disponibilidad actual - usa freshDisponibilidad como fuente de verdad
     useEffect(() => {
-        // Usar el campo disponible_ahora de la base de datos
-        const currentAvailability = mentor.disponible_ahora === true;
-        setIsAvailable(currentAvailability);
-    }, [mentor]);
+        setIsAvailable(freshDisponibilidad === true || freshDisponibilidad === 1);
+    }, [freshDisponibilidad]);
 
     // Función para verificar si todos los campos requeridos están completos
     const isProfileComplete = () => {
@@ -57,8 +73,7 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
             data.años_experiencia > 0 &&
             data.areas_especialidad.length > 0 &&
             data.disponibilidad.trim().length > 0 &&
-            data.disponibilidad_detalle.trim().length > 0 &&
-            cvVerified // Agregar validación de CV verificado
+            cvVerified // CV verificado requerido; detalle de disponibilidad es opcional
         );
     };
 
@@ -74,25 +89,69 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
         });
     };
 
-    const toggleAvailability = () => {
-        router.post('/profile/mentor/toggle-disponibilidad', 
-            { disponible: !isAvailable },
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    setIsAvailable(!isAvailable);
-                },
-                onError: (errors) => {
-                    if (errors.cv_verification) {
-                        alert('⚠️ ' + errors.cv_verification + '\n\nPor favor, sube y verifica tu CV en la sección de arriba antes de activar tu disponibilidad.');
-                    } else if (errors.disponibilidad) {
-                        alert('⚠️ ' + errors.disponibilidad);
-                    } else {
-                        alert('⚠️ Hubo un error al cambiar la disponibilidad. Por favor, verifica que hayas completado todos los requisitos.');
+    const toggleAvailability = async () => {
+        console.log('🔘🔘🔘 TOGGLE CLICKED!');
+        console.log('  isAvailable (before toggle):', isAvailable);
+        console.log('  mentor.id:', mentor.id);
+        console.log('  Will send: disponible =', !isAvailable);
+        
+        try {
+            console.log('📤 Calling router.post()...');
+            
+            const result = router.post(
+                '/profile/mentor/toggle-disponibilidad', 
+                { disponible: !isAvailable },
+                {
+                    preserveScroll: true,
+                    onBefore: () => {
+                        console.log('🟡 [onBefore] Request about to be sent');
+                        return true;
+                    },
+                    onStart: () => {
+                        console.log('🟡 [onStart] Request started');
+                    },
+                    onProgress: (progress) => {
+                        console.log('🟡 [onProgress]', progress);
+                    },
+                    onSuccess: (page) => {
+                        console.log('✅ [onSuccess] Response received!');
+                        console.log('  Status:', 'success');
+                        console.log('  Page props:', page.props);
+                        
+                        // Actualizar la disponibilidad fresca inmediatamente (antes de reload)
+                        setFreshDisponibilidad(!freshDisponibilidad);
+                        console.log('✅ Updated freshDisponibilidad to:', !freshDisponibilidad);
+                        
+                        console.log('🔄 Reloading page in 1s...');
+                        
+                        setTimeout(() => {
+                            console.log('🔄 Executing router.reload()...');
+                            router.reload();
+                        }, 1000);
+                    },
+                    onError: (errors) => {
+                        console.error('❌ [onError] Request failed!');
+                        console.error('  Errors object:', errors);
+                        Object.entries(errors).forEach(([key, value]) => {
+                            console.error(`    ${key}: ${value}`);
+                        });
+                    },
+                    onFinish: () => {
+                        console.log('🏁 [onFinish] Request completed');
                     }
                 }
-            }
-        );
+            );
+            
+            console.log('📤 router.post() called, result:', result);
+            
+        } catch (err) {
+            console.error('❌ Exception in toggleAvailability:', err);
+        }
+    };
+
+    const handleToggleAvailabilityClick = () => {
+        console.log('🖱️ Toggle button clicked');
+        toggleAvailability();
     };
 
     const handleAreaToggle = (areaId) => {
@@ -140,7 +199,7 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
                         <div className="flex items-center">
                             <span className="text-yellow-400 mr-1">★</span>
                             <span className="text-sm font-medium text-gray-700">
-                                {mentor.calificacionPromedio ? Number(mentor.calificacionPromedio).toFixed(1) : '0.0'}/5
+                                {freshCalificacion ? Number(freshCalificacion).toFixed(1) : '0.0'}/5
                             </span>
                         </div>
                     </div>
@@ -229,7 +288,7 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
                         { field: 'areas', completed: data.areas_especialidad.length > 0, weight: 20 },
                         { field: 'biografia', completed: data.biografia.trim().length >= 100, weight: 20 },
                         { field: 'años', completed: data.años_experiencia > 0, weight: 15 },
-                        { field: 'disponibilidad', completed: data.disponibilidad_detalle.trim().length > 0, weight: 10 },
+                        { field: 'disponibilidad', completed: data.disponibilidad.trim().length > 0, weight: 10 },
                         { field: 'cv', completed: cvVerified, weight: 10 }
                     ];
                     const totalProgress = progress.reduce((sum, item) => sum + (item.completed ? item.weight : 0), 0);
@@ -444,7 +503,7 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
                                          data.biografia.trim().length >= 100 && 
                                          data.años_experiencia > 0 && 
                                          data.areas_especialidad.length > 0 &&
-                                         data.disponibilidad_detalle.trim().length > 0;
+                                         data.disponibilidad.trim().length > 0;
                         
                         return (
                             <PrimaryButton 
@@ -468,7 +527,7 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
                     {isProfileComplete() && (
                         <button
                             type="button"
-                            onClick={toggleAvailability}
+                            onClick={handleToggleAvailabilityClick}
                             className={`px-4 py-2 rounded-md font-medium transition-colors ${
                                 isAvailable
                                     ? 'bg-red-100 text-red-700 hover:bg-red-200'
@@ -501,8 +560,8 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
                                         <li className={data.areas_especialidad.length > 0 ? 'line-through opacity-60' : ''}>
                                             • Al menos un área de especialidad
                                         </li>
-                                        <li className={data.disponibilidad.trim().length > 0 && data.disponibilidad_detalle.trim().length > 0 ? 'line-through opacity-60' : ''}>
-                                            • Información de disponibilidad
+                                        <li className={data.disponibilidad.trim().length > 0 ? 'line-through opacity-60' : ''}>
+                                            • Disponibilidad general
                                         </li>
                                         <li className={cvVerified ? 'line-through opacity-60' : 'font-semibold'}>
                                             {cvVerified ? '✅ CV verificado' : '⚠️ CV verificado (sube tu CV arriba)'}

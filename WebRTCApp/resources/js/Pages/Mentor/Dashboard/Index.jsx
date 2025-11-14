@@ -66,6 +66,84 @@ export default function Dashboard({ mentorProfile, mentoriasProgramadas = [], me
                         </div>
                     </div>
 
+                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                        <div className="p-6">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                                Tus Reseñas y Calificación
+                            </h3>
+                            
+                            {/* Calificación General */}
+                            <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm text-gray-600 mb-2">Calificación General</p>
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex items-center">
+                                                <span className="text-4xl font-bold text-yellow-500">★</span>
+                                                <span className="text-3xl font-bold text-gray-900 ml-2">
+                                                    {mentorProfile?.calificacionPromedio ? Number(mentorProfile.calificacionPromedio).toFixed(1) : '0.0'}
+                                                </span>
+                                                <span className="text-lg text-gray-500 ml-1">/5</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-2xl font-bold text-blue-600">
+                                            {mentorProfile?.reviews?.length || 0}
+                                        </p>
+                                        <p className="text-sm text-gray-600">
+                                            {mentorProfile?.reviews?.length === 1 ? 'reseña' : 'reseñas'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Reseñas Recientes */}
+                            {(!mentorProfile?.reviews || mentorProfile.reviews.length === 0) ? (
+                                <div className="text-center py-8 text-gray-500">
+                                    <p>Aún no tienes reseñas. Completa mentorías para que los estudiantes puedan dejarte comentarios.</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    <h4 className="font-semibold text-gray-900 mb-3">Últimas Reseñas</h4>
+                                    {mentorProfile.reviews.map((review) => (
+                                        <div key={review.id} className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+                                            <div className="flex items-start justify-between mb-2">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex gap-0.5">
+                                                        {[...Array(5)].map((_, i) => (
+                                                            <span
+                                                                key={i}
+                                                                className={i < review.rating ? 'text-yellow-400' : 'text-gray-300'}
+                                                            >
+                                                                ★
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                    <span className="text-sm font-semibold text-gray-700">
+                                                        {review.rating}/5
+                                                    </span>
+                                                </div>
+                                                <span className="text-xs text-gray-500">
+                                                    {new Date(review.created_at).toLocaleDateString('es-ES', {
+                                                        year: 'numeric',
+                                                        month: 'short',
+                                                        day: 'numeric'
+                                                    })}
+                                                </span>
+                                            </div>
+                                            {review.comment && (
+                                                <p className="text-sm text-gray-700 leading-relaxed italic">
+                                                    "{review.comment}"
+                                                </p>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
                     {/* Mentorías - Tabs y contenido */}
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <div className="p-6">
