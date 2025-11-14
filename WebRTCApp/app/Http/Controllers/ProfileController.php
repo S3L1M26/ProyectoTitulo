@@ -29,7 +29,16 @@ class ProfileController extends Controller
         if ($user->role === 'student') {
             $user->load(['aprendiz.areasInteres', 'latestStudentDocument']);
         } elseif ($user->role === 'mentor') {
-            $user->load(['mentor.areasInteres', 'latestMentorDocument']);
+            $user->load([
+                'mentor.areasInteres',
+                'mentor.reviews' => function($query) {
+                    // Cargar las 5 reseñas más recientes anónimas
+                    $query->select('id', 'mentor_id', 'rating', 'comment', 'created_at')
+                          ->latest('created_at')
+                          ->limit(5);
+                },
+                'latestMentorDocument'
+            ]);
         }
 
         // Preparar datos del certificado para estudiantes
@@ -97,6 +106,25 @@ class ProfileController extends Controller
         return response()->json($areas);
     }
 
+    /**
+     * Get fresh mentor calificación (not cached)
+     * Used in profile update form to show real-time rating
+     */
+    public function getMentorCalificacion()
+    {
+        $mentor = Auth::user()->mentor;
+        
+        if (!$mentor) {
+            return response()->json(['calificacionPromedio' => 0]);
+        }
+        
+        // Always refresh to get fresh value from DB (not cached)
+        $mentor->refresh();
+        
+        return response()->json([
+            'calificacionPromedio' => (float) $mentor->calificacionPromedio
+        ]);
+    }
 
     /**
      * Update the aprendiz profile information.

@@ -75,6 +75,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
     Route::get('/api/areas-interes', [ProfileController::class, 'getAreasInteres'])
         ->name('api.areas-interes');
+    
+    // API para obtener calificación fresca del mentor (no cacheada)
+    Route::get('/api/mentor/calificacion', [ProfileController::class, 'getMentorCalificacion'])
+        ->middleware('role:mentor')
+        ->name('api.mentor.calificacion');
 });
 
 // Rutas para solicitudes de mentoría

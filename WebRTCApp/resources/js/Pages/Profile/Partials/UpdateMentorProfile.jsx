@@ -5,6 +5,7 @@ import TextInput from '@/Components/TextInput';
 import { Transition } from '@headlessui/react';
 import { useForm, usePage, router } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 
 export default function UpdateMentorProfile({ cvVerified = false, className = '' }) {
     const { auth, errors: pageErrors } = usePage().props;
@@ -15,6 +16,7 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
     const [loadingAreas, setLoadingAreas] = useState(true);
     const [showPreview, setShowPreview] = useState(false);
     const [isAvailable, setIsAvailable] = useState(false);
+    const [freshCalificacion, setFreshCalificacion] = useState(mentor.calificacionPromedio || 0);
 
     const { data, setData, patch, errors, processing, recentlySuccessful, clearErrors } = useForm({
         experiencia: mentor.experiencia || '',
@@ -24,6 +26,21 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
         disponibilidad_detalle: mentor.disponibilidad_detalle || '',
         areas_especialidad: mentor.areas_interes ? mentor.areas_interes.map(area => area.id) : []
     });
+
+    // Cargar calificación fresca del servidor
+    useEffect(() => {
+        const fetchFreshCalificacion = async () => {
+            try {
+                const response = await axios.get('/api/mentor/calificacion');
+                setFreshCalificacion(response.data.calificacionPromedio || 0);
+            } catch (error) {
+                console.error('Error cargando calificación:', error);
+                setFreshCalificacion(mentor.calificacionPromedio || 0);
+            }
+        };
+        
+        fetchFreshCalificacion();
+    }, [mentor.id]);
 
     // Cargar áreas de interés disponibles
     useEffect(() => {
@@ -141,7 +158,7 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
                         <div className="flex items-center">
                             <span className="text-yellow-400 mr-1">★</span>
                             <span className="text-sm font-medium text-gray-700">
-                                {mentor.calificacionPromedio ? Number(mentor.calificacionPromedio).toFixed(1) : '0.0'}/5
+                                {freshCalificacion ? Number(freshCalificacion).toFixed(1) : '0.0'}/5
                             </span>
                         </div>
                     </div>
