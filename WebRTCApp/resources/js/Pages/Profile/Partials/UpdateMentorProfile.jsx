@@ -17,6 +17,7 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
     const [showPreview, setShowPreview] = useState(false);
     const [isAvailable, setIsAvailable] = useState(false);
     const [freshCalificacion, setFreshCalificacion] = useState(mentor.calificacionPromedio || 0);
+    const [freshDisponibilidad, setFreshDisponibilidad] = useState(mentor.disponible_ahora || false);
 
     const { data, setData, patch, errors, processing, recentlySuccessful, clearErrors } = useForm({
         experiencia: mentor.experiencia || '',
@@ -27,19 +28,19 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
         areas_especialidad: mentor.areas_interes ? mentor.areas_interes.map(area => area.id) : []
     });
 
-    // Cargar calificación fresca del servidor
+    // Cargar disponibilidad fresca del servidor (igual que calificación)
     useEffect(() => {
-        const fetchFreshCalificacion = async () => {
+        const fetchFreshDisponibilidad = async () => {
             try {
-                const response = await axios.get('/api/mentor/calificacion');
-                setFreshCalificacion(response.data.calificacionPromedio || 0);
+                const response = await axios.get('/api/mentor/disponibilidad');
+                setFreshDisponibilidad(response.data.disponible_ahora || false);
             } catch (error) {
-                console.error('Error cargando calificación:', error);
-                setFreshCalificacion(mentor.calificacionPromedio || 0);
+                console.error('Error cargando disponibilidad:', error);
+                setFreshDisponibilidad(mentor.disponible_ahora || false);
             }
         };
         
-        fetchFreshCalificacion();
+        fetchFreshDisponibilidad();
     }, [mentor.id]);
 
     // Cargar áreas de interés disponibles
@@ -59,12 +60,10 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
         fetchAreasInteres();
     }, []);
 
-    // Verificar disponibilidad actual
+    // Verificar disponibilidad actual - usa freshDisponibilidad como fuente de verdad
     useEffect(() => {
-        // Recargar disponibilidad desde props cuando el mentor cambia (post exitoso)
-        const currentAvailability = mentor.disponible_ahora === true || mentor.disponible_ahora === 1;
-        setIsAvailable(currentAvailability);
-    }, [mentor.disponible_ahora]);
+        setIsAvailable(freshDisponibilidad === true || freshDisponibilidad === 1);
+    }, [freshDisponibilidad]);
 
     // Función para verificar si todos los campos requeridos están completos
     const isProfileComplete = () => {
@@ -90,27 +89,69 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
         });
     };
 
-    const toggleAvailability = () => {
-        router.post('/profile/mentor/toggle-disponibilidad', 
-            { disponible: !isAvailable },
-            {
-                preserveScroll: true,
-                replace: true,
-                onSuccess: () => {
-                    // El estado se actualiza vía props Inertia, no forzar manualmente
-                    setIsAvailable(!isAvailable);
-                },
-                onError: (errors) => {
-                    if (errors.cv_verification) {
-                        alert('⚠️ ' + errors.cv_verification + '\n\nPor favor, sube y verifica tu CV en la sección de arriba antes de activar tu disponibilidad.');
-                    } else if (errors.disponibilidad) {
-                        alert('⚠️ ' + errors.disponibilidad);
-                    } else {
-                        alert('⚠️ Hubo un error al cambiar la disponibilidad. Por favor, verifica que hayas completado todos los requisitos.');
+    const toggleAvailability = async () => {
+        console.log('🔘🔘🔘 TOGGLE CLICKED!');
+        console.log('  isAvailable (before toggle):', isAvailable);
+        console.log('  mentor.id:', mentor.id);
+        console.log('  Will send: disponible =', !isAvailable);
+        
+        try {
+            console.log('📤 Calling router.post()...');
+            
+            const result = router.post(
+                '/profile/mentor/toggle-disponibilidad', 
+                { disponible: !isAvailable },
+                {
+                    preserveScroll: true,
+                    onBefore: () => {
+                        console.log('🟡 [onBefore] Request about to be sent');
+                        return true;
+                    },
+                    onStart: () => {
+                        console.log('🟡 [onStart] Request started');
+                    },
+                    onProgress: (progress) => {
+                        console.log('🟡 [onProgress]', progress);
+                    },
+                    onSuccess: (page) => {
+                        console.log('✅ [onSuccess] Response received!');
+                        console.log('  Status:', 'success');
+                        console.log('  Page props:', page.props);
+                        
+                        // Actualizar la disponibilidad fresca inmediatamente (antes de reload)
+                        setFreshDisponibilidad(!freshDisponibilidad);
+                        console.log('✅ Updated freshDisponibilidad to:', !freshDisponibilidad);
+                        
+                        console.log('🔄 Reloading page in 1s...');
+                        
+                        setTimeout(() => {
+                            console.log('🔄 Executing router.reload()...');
+                            router.reload();
+                        }, 1000);
+                    },
+                    onError: (errors) => {
+                        console.error('❌ [onError] Request failed!');
+                        console.error('  Errors object:', errors);
+                        Object.entries(errors).forEach(([key, value]) => {
+                            console.error(`    ${key}: ${value}`);
+                        });
+                    },
+                    onFinish: () => {
+                        console.log('🏁 [onFinish] Request completed');
                     }
                 }
-            }
-        );
+            );
+            
+            console.log('📤 router.post() called, result:', result);
+            
+        } catch (err) {
+            console.error('❌ Exception in toggleAvailability:', err);
+        }
+    };
+
+    const handleToggleAvailabilityClick = () => {
+        console.log('🖱️ Toggle button clicked');
+        toggleAvailability();
     };
 
     const handleAreaToggle = (areaId) => {
@@ -462,7 +503,7 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
                                          data.biografia.trim().length >= 100 && 
                                          data.años_experiencia > 0 && 
                                          data.areas_especialidad.length > 0 &&
-                                         data.disponibilidad_detalle.trim().length > 0;
+                                         data.disponibilidad.trim().length > 0;
                         
                         return (
                             <PrimaryButton 
@@ -486,7 +527,7 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
                     {isProfileComplete() && (
                         <button
                             type="button"
-                            onClick={toggleAvailability}
+                            onClick={handleToggleAvailabilityClick}
                             className={`px-4 py-2 rounded-md font-medium transition-colors ${
                                 isAvailable
                                     ? 'bg-red-100 text-red-700 hover:bg-red-200'

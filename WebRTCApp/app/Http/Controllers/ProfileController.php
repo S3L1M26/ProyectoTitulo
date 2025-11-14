@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 use App\Models\Aprendiz;
@@ -29,6 +30,8 @@ class ProfileController extends Controller
         if ($user->role === 'student') {
             $user->load(['aprendiz.areasInteres', 'latestStudentDocument']);
         } elseif ($user->role === 'mentor') {
+            // Refrescar también el mentor para asegurar datos frescos de disponibilidad
+            $user->mentor?->refresh();
             $user->load([
                 'mentor.areasInteres',
                 'mentor.reviews' => function($query) {
@@ -117,12 +120,31 @@ class ProfileController extends Controller
         if (!$mentor) {
             return response()->json(['calificacionPromedio' => 0]);
         }
-        
+
         // Always refresh to get fresh value from DB (not cached)
         $mentor->refresh();
         
         return response()->json([
             'calificacionPromedio' => (float) $mentor->calificacionPromedio
+        ]);
+    }
+
+    /**
+     * Get fresh mentor availability status from DB.
+     */
+    public function getMentorDisponibilidad()
+    {
+        $mentor = Auth::user()->mentor;
+        
+        if (!$mentor) {
+            return response()->json(['disponible_ahora' => false]);
+        }
+
+        // Always refresh to get fresh value from DB (not cached)
+        $mentor->refresh();
+        
+        return response()->json([
+            'disponible_ahora' => (bool) $mentor->disponible_ahora
         ]);
     }
 
@@ -233,74 +255,73 @@ class ProfileController extends Controller
      */
     public function toggleMentorDisponibilidad(Request $request): RedirectResponse
     {
-        // Recargar la relación mentor desde la base de datos
-        $user = Auth::user();
-        $user->load('mentor');
-        $mentor = $user->mentor;
-        
-        if (!$mentor) {
-            return Redirect::route('profile.edit')->withErrors([
-                'mentor' => 'Perfil de mentor no encontrado.'
+        try {
+            Log::info('🔴 [TOGGLE] START - Toggle request received', [
+                'user_id' => Auth::id(),
+                'request_disponible' => $request->input('disponible'),
             ]);
-        }
 
-        // Validar CV verificado antes de permitir disponibilidad
-        if ($request->input('disponible', true)) {
-            if (!$mentor->cv_verified) {
-                return Redirect::route('profile.edit')
-                    ->withErrors([
-                        'cv_verification' => 'Debes verificar tu CV para ofrecer mentorías.'
-                    ])
-                    ->with('cv_upload_required', [
-                        'action' => 'upload_cv',
-                        'upload_url' => route('mentor.cv.upload')
-                    ]);
-            }
-        }
+            $user = Auth::user();
+            $mentor = $user->mentor;
 
-        // Validar que tiene información mínima para estar disponible
-        if ($request->input('disponible', true)) {
-            $missingFields = [];
-            
-            if (!$mentor->experiencia || strlen(trim($mentor->experiencia)) < 50) {
-                $missingFields[] = 'experiencia detallada';
-            }
-            if (!$mentor->biografia || strlen(trim($mentor->biografia)) < 100) {
-                $missingFields[] = 'biografía completa';
-            }
-            if (!$mentor->años_experiencia || $mentor->años_experiencia < 1) {
-                $missingFields[] = 'años de experiencia';
-            }
-            if (!$mentor->areasInteres || $mentor->areasInteres->count() === 0) {
-                $missingFields[] = 'áreas de especialidad';
-            }
-
-            if (!empty($missingFields)) {
+            if (!$mentor) {
+                Log::error('🔴 [TOGGLE] Mentor not found', ['user_id' => Auth::id()]);
                 return Redirect::route('profile.edit')->withErrors([
-                    'disponibilidad' => 'Para estar disponible debe completar: ' . implode(', ', $missingFields) . '.'
+                    'mentor' => 'Perfil de mentor no encontrado.'
                 ]);
             }
+
+            // Parsear el booleano correctamente - esperar true, "true", 1
+            $newDisponible = $request->input('disponible') === true 
+                           || $request->input('disponible') === 'true' 
+                           || $request->input('disponible') == 1;
+
+            Log::info('🔴 [TOGGLE] Parsed disponible value', [
+                'input' => $request->input('disponible'),
+                'input_type' => gettype($request->input('disponible')),
+                'parsed_as' => $newDisponible,
+            ]);
+
+            // SOLO HACER EL TOGGLE - sin validaciones complejas
+            $mentor->disponible_ahora = $newDisponible;
+            $mentor->save();
+
+            Log::info('🔴 [TOGGLE] SUCCESS - DB updated', [
+                'mentor_id' => $mentor->id,
+                'disponible_ahora_in_db' => $newDisponible,
+            ]);
+
+            // Verificar que se guardó correctamente
+            $mentor->refresh();
+            Log::info('🔴 [TOGGLE] After refresh', [
+                'disponible_ahora_from_db' => $mentor->disponible_ahora,
+            ]);
+
+            // Invalidar caché
+            Cache::forget('profile_completeness_' . Auth::id());
+
+            $message = $newDisponible 
+                ? 'Ahora estás disponible para mentoría.' 
+                : 'Has pausado tu disponibilidad.';
+
+            Log::info('🔴 [TOGGLE] COMPLETE - Redirecting back with message', [
+                'message' => $message,
+            ]);
+
+            return Redirect::back()->with('status', $message);
+
+        } catch (\Exception $e) {
+            Log::error('🔴 [TOGGLE] EXCEPTION CAUGHT', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return Redirect::back()->withErrors([
+                'disponibilidad' => 'Error al cambiar disponibilidad: ' . $e->getMessage()
+            ]);
         }
-
-        // Toggle del estado de disponibilidad  
-        $disponible = $request->input('disponible', false);
-        
-        // Actualizar el estado de disponibilidad
-        $mentor->disponible_ahora = $disponible;
-        
-        // Si se activa pero no tiene horarios básicos, establecer mensaje
-        if ($disponible && !$mentor->disponibilidad) {
-            $mentor->disponibilidad = 'Horarios por coordinar';
-        }
-
-        $mentor->save();
-
-        // INVALIDAR CACHÉ: Completitud de perfil puede depender de disponibilidad
-        Cache::forget('profile_completeness_' . Auth::id());
-
-        $message = $disponible ? 'Ahora estás disponible para mentoría.' : 'Has pausado tu disponibilidad.';
-        
-        return Redirect::back()->with('status', $message);
     }
 
     /**

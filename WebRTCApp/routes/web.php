@@ -20,6 +20,9 @@ Route::get('/', function () {
         'canRegister' => Route::has('register'),
         'laravelVersion' => Application::VERSION,
         'phpVersion' => PHP_VERSION,
+        'auth' => [
+            'user' => auth()->user(),
+        ],
     ]);
 });
 
@@ -80,6 +83,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/api/mentor/calificacion', [ProfileController::class, 'getMentorCalificacion'])
         ->middleware('role:mentor')
         ->name('api.mentor.calificacion');
+    
+    // API para obtener disponibilidad fresca del mentor (no cacheada)
+    Route::get('/api/mentor/disponibilidad', [ProfileController::class, 'getMentorDisponibilidad'])
+        ->middleware('role:mentor')
+        ->name('api.mentor.disponibilidad');
 });
 
 // Rutas para solicitudes de mentoría
