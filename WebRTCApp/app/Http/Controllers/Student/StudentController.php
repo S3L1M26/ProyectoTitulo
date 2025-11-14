@@ -213,14 +213,20 @@ class StudentController extends Controller
      */
     private function buildMentorSuggestionsQuery($studentAreaIds)
     {
-        // OPTIMIZACIÓN CRÍTICA: Usar joins en lugar de whereHas + eager loading completo
-        // IMPORTANTE: NO seleccionar calificacionPromedio aquí - se obtiene fresco después
+        // OPTIMIZACIÓN CRÍTICA: Usar subquery para evitar problemas con distinct + join
+        // Primero obtener IDs de mentores que tienen al menos 1 área en común
+        $mentorUserIds = DB::table('mentors')
+            ->join('mentor_area_interes', 'mentors.id', '=', 'mentor_area_interes.mentor_id')
+            ->whereIn('mentor_area_interes.area_interes_id', $studentAreaIds)
+            ->where('mentors.disponible_ahora', true)
+            ->distinct()
+            ->pluck('mentors.user_id');
+
+        // Luego cargar los usuarios con eager loading completo
         $mentors = User::select('users.id', 'users.name', 'mentors.calificacionPromedio')
             ->join('mentors', 'users.id', '=', 'mentors.user_id')
-            ->join('mentor_area_interes', 'mentors.id', '=', 'mentor_area_interes.mentor_id')
             ->where('users.role', 'mentor')
-            ->where('mentors.disponible_ahora', true)
-            ->whereIn('mentor_area_interes.area_interes_id', $studentAreaIds)
+            ->whereIn('users.id', $mentorUserIds)
             ->orderBy('mentors.calificacionPromedio', 'desc') // Ordenar por rating de mayor a menor
             ->with([
                 'mentor' => function($query) {
@@ -246,7 +252,6 @@ class StudentController extends Controller
                           ->limit(1);
                 }
             ])
-            ->distinct()
             ->limit(6)
             ->get();
 

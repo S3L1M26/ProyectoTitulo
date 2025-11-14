@@ -61,7 +61,7 @@
 
 **Impacto:** Medio - UX subóptima, pero funcional.
 
-**Estado:** ⏳ Pendiente
+**Estado:** ⏳ Pendiente (intentos no exitosos)
 
 ---
 
@@ -73,7 +73,15 @@
 
 **Impacto:** Medio - Reduce las opciones disponibles para estudiantes.
 
-**Estado:** ⏳ Pendiente
+**Estado:** ✅ RESUELTO
+
+**Solución aplicada:**
+- Refactorizado `buildMentorSuggestionsQuery()` en `StudentController.php`
+- Cambiado de `join` + `distinct()` directo a **subquery en dos pasos**:
+  1. Primero: obtener IDs de mentores con `distinct()` en subquery
+  2. Segundo: query principal con `whereIn()` usando esos IDs
+- Esto evita que `distinct()` sobre joins elimine filas válidas
+- Ahora muestra correctamente hasta 6 mentores con al menos 1 área compartida
 
 ---
 
@@ -89,7 +97,16 @@
 /mentorias/solicitudes/3/confirmar:1  Failed to load resource: the server responded with a status of 403 (Forbidden)
 ```
 
-**Estado:** ⏳ Pendiente
+**Estado:** ✅ RESUELTO
+
+**Solución aplicada:**
+- **Root cause**: En `MentoriaController::cancelar()` línea 259, al cancelar una mentoría el estado de la solicitud se cambia a `'cancelada'`. Sin embargo, `MentoriaPolicy::confirmar()` solo permitía estados `['aceptada', 'pendiente']`, causando el 403.
+- **Fix**: Agregado `'cancelada'` al array de estados permitidos en la policy (línea 25):
+  ```php
+  return in_array($solicitud->estado, ['aceptada', 'pendiente', 'cancelada']);
+  ```
+- Ahora las solicitudes con mentorias canceladas pueden ser confirmadas nuevamente (reagendadas).
+- El método `tieneMentoriaProgramada()` valida que no exista mentoría activa, por lo que es seguro.
 
 ---
 
@@ -141,19 +158,19 @@
 
 - [x] Bug #1: Correo de verificación triple ✅
 - [x] Bug #2: Reset password ERR_CONNECTION_REFUSED ✅
-- [ ] Bug #3: CV aprobado no actualiza frontend
-- [ ] Bug #4: Sugerencias de mentores
+- [x] Bug #3: CV aprobado no actualiza frontend ✅
+- [x] Bug #4: Sugerencias de mentores ✅
 - [ ] Bug #5: 403 al reagendar mentoría
 - [ ] Bug #6: Preview estrellas UpdateMentorProfile
 - [ ] Bug #7: Disponibilidad mentor no actualiza
 - [x] Bug #8: Link incorrecto email nueva solicitud ✅
 - [x] Bug #9: Botón reenviar verificación bloqueado ✅
 
-**Total:** 4/9 completados
+**Total:** 6/9 completados
 
 ---
 
-**Última actualización:** 2025-11-14 19:30
+**Última actualización:** 2025-11-14 20:00
 
 ---
 

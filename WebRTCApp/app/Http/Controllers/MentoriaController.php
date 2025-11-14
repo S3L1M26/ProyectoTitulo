@@ -59,8 +59,18 @@ class MentoriaController extends Controller
             'payload' => $request->only(['fecha','hora','duracion_minutos','topic']),
         ]);
         
+        Log::info('🔓 ANTES DE AUTHORIZE', [
+            'solicitud_id' => $solicitud->id,
+            'solicitud_mentor_id' => $solicitud->mentor_id,
+            'solicitud_estado' => $solicitud->estado,
+            'auth_user_id' => Auth::id(),
+            'tiene_mentoria_programada' => $solicitud->tieneMentoriaProgramada(),
+        ]);
+        
         // Verificar autorización (Gate definido en AppServiceProvider)
         $this->authorize('mentoria.confirmar', $solicitud);
+        
+        Log::info('✅ AUTHORIZE PASSED');
 
         // Combinar fecha y hora en una instancia Carbon usando timezone provista o la de app
         $tz = $request->input('timezone', config('app.timezone', 'UTC'));

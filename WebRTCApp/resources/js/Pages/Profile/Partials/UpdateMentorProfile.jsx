@@ -7,8 +7,8 @@ import { useForm, usePage, router } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-export default function UpdateMentorProfile({ cvVerified = false, className = '' }) {
-    const { auth, errors: pageErrors } = usePage().props;
+export default function UpdateMentorProfile({ className = '' }) {
+    const { auth, errors: pageErrors, cvVerified = false } = usePage().props;
     const user = auth.user;
     const mentor = user.mentor || {};
 
@@ -18,6 +18,12 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
     const [isAvailable, setIsAvailable] = useState(false);
     const [freshCalificacion, setFreshCalificacion] = useState(mentor.calificacionPromedio || 0);
     const [freshDisponibilidad, setFreshDisponibilidad] = useState(mentor.disponible_ahora || false);
+    const [localCvVerified, setLocalCvVerified] = useState(cvVerified);
+
+    // Sincronizar cvVerified cuando cambia en las props
+    useEffect(() => {
+        setLocalCvVerified(cvVerified);
+    }, [cvVerified]);
 
     const { data, setData, patch, errors, processing, recentlySuccessful, clearErrors } = useForm({
         experiencia: mentor.experiencia || '',
@@ -73,7 +79,7 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
             data.años_experiencia > 0 &&
             data.areas_especialidad.length > 0 &&
             data.disponibilidad.trim().length > 0 &&
-            cvVerified // CV verificado requerido; detalle de disponibilidad es opcional
+            localCvVerified // Usar estado local que se sincroniza con props
         );
     };
 
@@ -289,7 +295,7 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
                         { field: 'biografia', completed: data.biografia.trim().length >= 100, weight: 20 },
                         { field: 'años', completed: data.años_experiencia > 0, weight: 15 },
                         { field: 'disponibilidad', completed: data.disponibilidad.trim().length > 0, weight: 10 },
-                        { field: 'cv', completed: cvVerified, weight: 10 }
+                        { field: 'cv', completed: localCvVerified, weight: 10 }
                     ];
                     const totalProgress = progress.reduce((sum, item) => sum + (item.completed ? item.weight : 0), 0);
                     
@@ -563,8 +569,8 @@ export default function UpdateMentorProfile({ cvVerified = false, className = ''
                                         <li className={data.disponibilidad.trim().length > 0 ? 'line-through opacity-60' : ''}>
                                             • Disponibilidad general
                                         </li>
-                                        <li className={cvVerified ? 'line-through opacity-60' : 'font-semibold'}>
-                                            {cvVerified ? '✅ CV verificado' : '⚠️ CV verificado (sube tu CV arriba)'}
+                                        <li className={localCvVerified ? 'line-through opacity-60' : 'font-semibold'}>
+                                            {localCvVerified ? '✅ CV verificado' : '⚠️ CV verificado (sube tu CV arriba)'}
                                         </li>
                                     </ul>
                                 </div>
