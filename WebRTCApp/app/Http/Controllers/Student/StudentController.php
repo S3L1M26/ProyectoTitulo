@@ -80,7 +80,19 @@ class StudentController extends Controller
         
         // Cargar sugerencias de mentores directamente (eager loading)
         // Lazy props no funcionan en primera carga - necesitan solicitud explícita del frontend
-        $mentorSuggestions = $this->getMentorSuggestions();
+        try {
+            $mentorSuggestions = $this->getMentorSuggestions();
+        } catch (\Throwable $e) {
+            logger()->error('StudentController::index - getMentorSuggestions failed', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            // Re-throw so tests still observe failure, but we have a log entry with full trace
+            throw $e;
+        }
         
         return Inertia::render('Student/Dashboard/Index', [
             // Datos críticos (siempre cargados) - optimizados con cache
@@ -203,7 +215,7 @@ class StudentController extends Controller
     {
         // OPTIMIZACIÓN CRÍTICA: Usar joins en lugar de whereHas + eager loading completo
         // IMPORTANTE: NO seleccionar calificacionPromedio aquí - se obtiene fresco después
-        $mentors = User::select('users.id', 'users.name')
+        $mentors = User::select('users.id', 'users.name', 'mentors.calificacionPromedio')
             ->join('mentors', 'users.id', '=', 'mentors.user_id')
             ->join('mentor_area_interes', 'mentors.id', '=', 'mentor_area_interes.mentor_id')
             ->where('users.role', 'mentor')
