@@ -69,7 +69,7 @@ class SolicitudMentoriaRecibida extends Notification implements ShouldQueue
             ->line('Semestre: ' . ($aprendiz ? $aprendiz->semestre : 'No especificado'))
             ->line('**Mensaje del estudiante:**')
             ->line($this->solicitud->mensaje ?? 'Sin mensaje')
-            ->action('Ver solicitud en tu dashboard', url('/dashboard'))
+            ->action('Ver solicitud en tu dashboard', url('/mentor/solicitudes'))
             ->line('Puedes aceptar o rechazar esta solicitud desde tu panel de control.')
             ->salutation('Saludos,<br>' . config('app.name'));
     }

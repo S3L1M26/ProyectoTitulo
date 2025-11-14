@@ -4,6 +4,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Transition } from '@headlessui/react';
 import { Link, useForm, usePage } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 
 export default function UpdateProfileInformation({
     mustVerifyEmail,
@@ -11,12 +12,29 @@ export default function UpdateProfileInformation({
     className = '',
 }) {
     const user = usePage().props.auth.user;
+    const [countdown, setCountdown] = useState(0);
 
     const { data, setData, patch, errors, processing, recentlySuccessful } =
         useForm({
             name: user.name,
             email: user.email,
         });
+
+    // Countdown timer para rate limiting
+    useEffect(() => {
+        if (status === 'verification-link-sent' || status === 'verification-rate-limited') {
+            setCountdown(60);
+        }
+    }, [status]);
+
+    useEffect(() => {
+        if (countdown > 0) {
+            const timer = setTimeout(() => {
+                setCountdown(countdown - 1);
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [countdown]);
 
     const submit = (e) => {
         e.preventDefault();
@@ -73,20 +91,41 @@ export default function UpdateProfileInformation({
                     <div>
                         <p className="mt-2 text-sm text-gray-800">
                             Tu dirección de correo electrónico no está verificada.
-                            <Link
-                                href={route('verification.send')}
-                                method="post"
-                                as="button"
-                                className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                            >
-                                Haz clic aquí para reenviar el correo de verificación.
-                            </Link>
+                            {countdown > 0 ? (
+                                <span className="ml-1 text-gray-500">
+                                    (Espera {countdown}s para reenviar)
+                                </span>
+                            ) : (
+                                <Link
+                                    href={route('verification.send')}
+                                    method="post"
+                                    as="button"
+                                    className="ml-1 rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                >
+                                    Haz clic aquí para reenviar el correo de verificación.
+                                </Link>
+                            )}
                         </p>
 
                         {status === 'verification-link-sent' && (
                             <div className="mt-2 text-sm font-medium text-[#9fc031]">
-                                Se ha enviado un nuevo enlace de verificación a tu
-                                dirección de correo electrónico.
+                                ✓ Se ha enviado un nuevo enlace de verificación a tu dirección de correo electrónico.
+                                {countdown > 0 && (
+                                    <span className="block text-xs text-gray-600 mt-1">
+                                        Podrás solicitar otro en {countdown} segundos
+                                    </span>
+                                )}
+                            </div>
+                        )}
+                        
+                        {status === 'verification-rate-limited' && (
+                            <div className="mt-2 text-sm font-medium text-orange-600">
+                                ⏱️ Por favor espera para solicitar otro correo de verificación.
+                                {countdown > 0 && (
+                                    <span className="block text-xs text-orange-700 mt-1">
+                                        Disponible en {countdown} segundos
+                                    </span>
+                                )}
                             </div>
                         )}
                     </div>

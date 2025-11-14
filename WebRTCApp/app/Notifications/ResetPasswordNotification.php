@@ -15,7 +15,10 @@ class ResetPasswordNotification extends BaseResetPassword implements ShouldQueue
      */
     public function toMail($notifiable): MailMessage
     {
-        $url = 'http://localhost:8000/reset-password/'.$this->token.'?email='.urlencode($notifiable->email);
+        $url = url(route('password.reset', [
+            'token' => $this->token,
+            'email' => $notifiable->email,
+        ], false));
 
         return (new MailMessage)
             ->subject('Restablecer Contraseña')
