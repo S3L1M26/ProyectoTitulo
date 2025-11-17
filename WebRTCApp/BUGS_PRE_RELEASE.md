@@ -145,13 +145,26 @@
 ### 🟡 Bug #7: Disponibilidad del mentor no se actualiza en tiempo real
 **Descripción:** 
 - Al pausar disponibilidad en el perfil del mentor
-- `MentorDetailModal` sigue mostrando "Disponible ahora"
-- El mentor sigue apareciendo en `MentorSuggestions`
-- No se actualiza hasta recargar la página
+- El mentor sigue apareciendo en `MentorSuggestions` del estudiante
+- La DB se actualiza correctamente pero el caché retiene datos antiguos por 10 minutos
+- Al intentar solicitar mentoría sí valida correctamente (dice que no está disponible)
 
-**Impacto:** Medio - Información desincronizada entre frontend y backend.
+**Impacto:** Medio - Información desincronizada entre frontend y backend, confusión de usuarios.
 
-**Estado:** ⏳ Pendiente
+**Estado:** ✅ RESUELTO
+
+**Solución aplicada:**
+- **Root cause**: El query de `buildMentorSuggestionsQuery()` filtra por `disponible_ahora = true` (línea 221), pero estos resultados se cachean por 10 minutos (600s). Cuando un mentor desactiva disponibilidad, la DB se actualiza pero el caché sigue mostrándolo como disponible.
+- **Fix implementado**: Sistema de versionado de caché global
+  1. `ProfileController::toggleMentorDisponibilidad()` incrementa `mentor_suggestions_version` en caché
+  2. `StudentController::getMentorSuggestions()` incluye la versión en las claves de caché:
+     ```php
+     $version = Cache::get('mentor_suggestions_version', 0);
+     $cacheKey = "mentor_suggestions_{$version}_{$baseKey}";
+     ```
+  3. Cuando la versión cambia, las claves anteriores quedan obsoletas automáticamente
+- Esto invalida TODOS los cachés de sugerencias de forma eficiente sin necesidad de iterar o usar wildcards
+- El cambio de disponibilidad ahora se refleja inmediatamente en el dashboard del estudiante
 
 ---
 

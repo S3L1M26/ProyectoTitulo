@@ -345,8 +345,17 @@ class ProfileController extends Controller
                 'disponible_ahora_from_db' => $mentor->disponible_ahora,
             ]);
 
-            // Invalidar caché
+            // Invalidar caché de perfil
             Cache::forget('profile_completeness_' . Auth::id());
+
+            // CRÍTICO: Invalidar cachés de sugerencias incrementando versión global
+            // Esto invalida TODOS los cachés de sugerencias de forma eficiente
+            Cache::increment('mentor_suggestions_version');
+            
+            Log::info('🗑️ [CACHE] Incremented mentor suggestions version', [
+                'mentor_id' => $mentor->id,
+                'new_version' => Cache::get('mentor_suggestions_version'),
+            ]);
 
             $message = $newDisponible 
                 ? 'Ahora estás disponible para mentoría.' 

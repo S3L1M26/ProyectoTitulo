@@ -140,8 +140,11 @@ class StudentController extends Controller
         
         // CACHÉ INTELIGENTE: Cache solo datos básicos, NO el calificacionPromedio
         // El calificacionPromedio SIEMPRE se obtiene fresco de la BD
-        $cacheKey = 'mentor_suggestions_' . md5($studentAreaIds->sort()->implode(','));
-        $longTermCacheKey = 'mentor_pool_' . md5($studentAreaIds->sort()->implode(','));
+        // VERSIÓN: Incluir versión global para invalidar todos los cachés cuando cambia disponibilidad
+        $version = Cache::get('mentor_suggestions_version', 0);
+        $baseKey = md5($studentAreaIds->sort()->implode(','));
+        $cacheKey = "mentor_suggestions_{$version}_{$baseKey}";
+        $longTermCacheKey = "mentor_pool_{$version}_{$baseKey}";
         
         // Nivel 1: Cache rápido (2 minutos) para requests frecuentes - mentores sin promedios
         $mentorsBasicData = Cache::remember($cacheKey, 120, function() use ($studentAreaIds, $longTermCacheKey) {
