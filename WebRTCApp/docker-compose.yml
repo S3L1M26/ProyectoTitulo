@@ -1,0 +1,203 @@
+name: webrtcapp
+services:
+  # Contenedor principal de la aplicación Laravel
+  # Ejecuta PHP-FPM y maneja las peticiones del backend
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev # change to runtime for production minimal image
+      args:
+        PHP_VERSION: "8.4.3"
+        NODE_VERSION: "20"
+        INSTALL_XDEBUG: 0
+    image: webrtcapp-php
+    container_name: webrtcapp-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    command: sh -lc "php artisan octane:start --server=roadrunner --host=0.0.0.0 --port=8000 --workers=4"
+    volumes:
+      - ./:/var/www/html:cached
+      - ./vendor:/var/www/html/vendor:delegated
+      - ./storage:/var/www/html/storage:delegated
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: "http://localhost"
+      LOG_CHANNEL: stack
+      DB_HOST: db
+      DB_DATABASE: laravel
+      DB_USERNAME: laravel
+      DB_PASSWORD: secret
+      # OPTIMIZACIÓN: Configuración de Redis para cache y sesiones
+      CACHE_DRIVER: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+      REDIS_HOST: redis
+      REDIS_PASSWORD: redis_secret_password
+      REDIS_PORT: 6379
+      BROADCAST_DRIVER: log
+      # Configuración de Vite para E2E tests en Docker
+      VITE_DEV_SERVER_URL: "http://host.docker.internal:5173"
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'artisan octane' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Contenedor para procesar trabajos en cola (jobs)
+  # Ejecuta php artisan queue:work para tareas asíncronas
+  queue:
+    image: webrtcapp-php
+    container_name: webrtcapp-queue
+    restart: unless-stopped
+    working_dir: /var/www/html
+    command: sh -c "php artisan migrate --force && php artisan queue:work redis --queue=emails,default --sleep=1 --tries=3 --timeout=90 --max-time=3600 --verbose"
+    volumes:
+      - ./:/var/www/html:cached
+    environment:
+      QUEUE_CONNECTION: redis
+      REDIS_HOST: redis
+      REDIS_PASSWORD: redis_secret_password
+      REDIS_PORT: 6379
+    depends_on:
+      - app
+      - db
+      - redis
+
+  # Contenedor para el servidor de desarrollo de Vite
+  # Compila y sirve los assets de frontend (JS, CSS) con hot reload
+  vite:
+    image: node:20-alpine
+    container_name: webrtcapp-vite
+    working_dir: /var/www/html
+    command: sh -c "npm install && npm run dev -- --host"
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./:/var/www/html:cached
+    environment:
+      VITE_HMR_HOST: "host.docker.internal"
+      VITE_HMR_PORT: 5173
+    depends_on:
+      - app
+
+  # Servidor web Nginx
+  # Actúa como proxy reverso y sirve archivos estáticos
+  # Puerto principal de la aplicación: http://localhost:8000
+  web:
+    image: nginx:1.27-alpine
+    container_name: webrtcapp-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./:/var/www/html:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./public:/var/www/html/public:ro
+    depends_on:
+      - app
+
+  # Base de datos MySQL
+  # Almacena todos los datos de la aplicación
+  # Puerto externo: 3307 (para evitar conflictos con MySQL local)
+  db:
+    image: mysql:8.0
+    container_name: webrtcapp-mysql
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "3307:3306" # host 3307 to avoid conflict if local MySQL already on 3306
+    volumes:
+      - db_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  # Servidor de correo para desarrollo
+  # Captura todos los emails enviados por la aplicación
+  # Interfaz web: http://localhost:8025
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: webrtcapp-mailhog
+    ports:
+      - "8025:8025"
+  
+  # Interfaz web para administrar la base de datos MySQL
+  # Permite ver tablas, ejecutar queries y generar diagramas ER
+  # Acceso: http://localhost:8090
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: webrtcapp-phpmyadmin
+    environment:
+      PMA_HOST: db
+      PMA_USER: laravel
+      PMA_PASSWORD: secret
+    ports:
+      - "8090:80"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Redis para caché distribuido y sesiones
+  # Mejora significativamente la performance de queries y session storage
+  redis:
+    image: redis:7.2-alpine
+    container_name: webrtcapp-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --requirepass "redis_secret_password"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "redis_secret_password", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
+
+  # Contenedor para ejecutar tests E2E con Playwright
+  # Incluye navegadores preinstalados (Chromium, Firefox, WebKit)
+  # Ejecutar: docker compose run --rm playwright npx playwright test
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.56.1-jammy
+    container_name: webrtcapp-playwright
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace:cached
+      - /dev/shm:/dev/shm
+    environment:
+      NODE_ENV: development
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+      BASE_URL: http://web
+      CI: "true"
+    depends_on:
+      - web
+      - db
+    profiles:
+      - testing
+
+volumes:
+  db_data:
+    name: webrtcapp-db_data
+    driver: local
+  redis_data:
+    name: webrtcapp-redis_data
+    driver: local

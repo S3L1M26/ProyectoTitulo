@@ -1,9 +1,15 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\Sip\SipUserController;
 use App\Http\Controllers\User\UserController;
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Student\StudentController;
+use App\Http\Controllers\Student\CertificateController;
+use App\Http\Controllers\Mentor\MentorController;
+use App\Http\Controllers\SolicitudMentoriaController;
+use App\Http\Controllers\MentoriaController;
+use App\Http\Controllers\MentorReviewController;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -14,38 +20,160 @@ Route::get('/', function () {
         'canRegister' => Route::has('register'),
         'laravelVersion' => Application::VERSION,
         'phpVersion' => PHP_VERSION,
+        'auth' => [
+            'user' => auth()->user(),
+        ],
     ]);
+});
+
+// Ruta pública para ver CV de mentor (con rate limiting)
+Route::get('/mentor/{mentor}/cv', [\App\Http\Controllers\Mentor\CVController::class, 'show'])
+    ->middleware('throttle:10,1') // 10 peticiones por minuto
+    ->name('mentor.cv.show');
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Rutas para estudiantes con monitoreo de performance
+    Route::middleware(['role:student', 'performance'])->group(function () {
+        Route::get('/student/dashboard', [StudentController::class, 'index'])->name('student.dashboard');
+        Route::post('/student/certificate/upload', [CertificateController::class, 'upload'])->name('student.certificate.upload');
+
+        // Reseñas de mentores (única reseña por estudiante/mentor, editable). Bind por user_id
+        Route::post('/mentors/{mentor:user_id}/reviews', [MentorReviewController::class, 'store'])
+            ->name('mentors.reviews.store');
+    });
+
+    // Rutas para mentores con monitoreo de performance
+    Route::middleware(['role:mentor', 'performance'])->group(function () {
+        Route::get('/mentor/dashboard', [MentorController::class, 'index'])->name('mentor.dashboard');
+        Route::post('/mentor/cv/upload', [\App\Http\Controllers\Mentor\CVController::class, 'upload'])->name('mentor.cv.upload');
+        Route::post('/mentor/cv/toggle-visibility', [\App\Http\Controllers\Mentor\CVController::class, 'toggleVisibility'])->name('mentor.cv.toggle-visibility');
+    });
 });
 
 // Route::get('/dashboard', function () {
 //     return Inertia::render('Dashboard');
 // })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__.'/auth.php';
-
-//rutas usuario
-Route::middleware(['auth', 'userMiddleware'])->group(function () {
-
-    Route::get('/dashboard', [UserController::class, 'index'])->name('dashboard');
-
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Ruta para obtener áreas de interés
+    Route::get('/profile/areas-interes', [ProfileController::class, 'getAreasInteres'])
+        ->name('profile.areas-interes');
+    
+    // Rutas para perfil de aprendiz
+    Route::patch('/profile/aprendiz', [ProfileController::class, 'updateAprendizProfile'])
+        ->name('profile.update-aprendiz');
+    
+    // Rutas para perfil de mentor
+    Route::patch('/profile/mentor', [ProfileController::class, 'updateMentorProfile'])
+        ->name('profile.update-mentor');
+    
+    Route::post('/profile/mentor/toggle-disponibilidad', [ProfileController::class, 'toggleMentorDisponibilidad'])
+        ->name('profile.mentor.toggle-disponibilidad');
+    
+    Route::get('/api/areas-interes', [ProfileController::class, 'getAreasInteres'])
+        ->name('api.areas-interes');
+    
+    // API para obtener calificación fresca del mentor (no cacheada)
+    Route::get('/api/mentor/calificacion', [ProfileController::class, 'getMentorCalificacion'])
+        ->middleware('role:mentor')
+        ->name('api.mentor.calificacion');
+    
+    // API para obtener disponibilidad fresca del mentor (no cacheada)
+    Route::get('/api/mentor/disponibilidad', [ProfileController::class, 'getMentorDisponibilidad'])
+        ->middleware('role:mentor')
+        ->name('api.mentor.disponibilidad');
 });
 
-//rutas admin
-Route::middleware(['auth', 'adminMiddleware'])->group(function () {
+// Rutas para solicitudes de mentoría
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Ruta para estudiantes: crear solicitud de mentoría
+    Route::post('/solicitud-mentoria', [SolicitudMentoriaController::class, 'store'])
+        ->middleware('role:student')
+        ->name('solicitud-mentoria.store');
+    
+    // Rutas para estudiantes: ver sus solicitudes y notificaciones
+    Route::middleware('role:student')->group(function () {
+        Route::get('/student/solicitudes', [SolicitudMentoriaController::class, 'misSolicitudes'])
+            ->name('student.solicitudes');
+        // Polling API para solicitudes del estudiante
+        Route::get('/api/student/solicitudes', [SolicitudMentoriaController::class, 'pollSolicitudes'])
+            ->middleware('throttle:60,1')
+            ->name('api.student.solicitudes');
+        
+        Route::get('/student/notifications', [SolicitudMentoriaController::class, 'misNotificaciones'])
+            ->name('student.notifications');
+        
+        Route::post('/student/notifications/{id}/read', [SolicitudMentoriaController::class, 'marcarComoLeida'])
+            ->name('student.notifications.read');
+        
+        Route::post('/student/notifications/read-all', [SolicitudMentoriaController::class, 'marcarTodasComoLeidas'])
+            ->name('student.notifications.read-all');
+    });
+    
+    // Rutas para mentores: gestionar solicitudes
+    Route::middleware('role:mentor')->group(function () {
+        Route::get('/mentor/solicitudes', [MentorController::class, 'solicitudes'])
+            ->name('mentor.solicitudes');
+        
+        Route::post('/mentor/solicitudes/{id}/accept', [SolicitudMentoriaController::class, 'accept'])
+            ->name('mentor.solicitudes.accept');
+        
+        Route::post('/mentor/solicitudes/{id}/reject', [SolicitudMentoriaController::class, 'reject'])
+            ->name('mentor.solicitudes.reject');
 
+        // Confirmar mentoría (crea reunión Zoom y guarda)
+        Route::post('/mentorias/solicitudes/{solicitud}/confirmar', [MentoriaController::class, 'confirmar'])
+            ->name('mentorias.confirmar');
+
+        // Cancelar mentoría (mentor)
+        Route::delete('/mentor/mentorias/{mentoria}', [MentoriaController::class, 'cancelar'])
+            ->name('mentor.mentorias.cancelar');
+        
+        // Concluir mentoría (marcar como completada - solo mentor)
+        Route::post('/mentor/mentorias/{mentoria}/concluir', [MentoriaController::class, 'concluir'])
+            ->name('mentor.mentorias.concluir');
+    });
+
+    // Mensajes a mentor (solo estudiantes con relación previa)
+    Route::middleware('role:student')->group(function () {
+        Route::post('/student/mentores/{mentor}/contactar', [\App\Http\Controllers\MensajeMentorController::class, 'store'])
+            ->name('student.mentores.contactar')
+            ->middleware('throttle:5,1');
+        Route::get('/api/student/mentores-contactables', [\App\Http\Controllers\MensajeMentorController::class, 'contactables'])
+            ->name('student.mentores.contactables');
+        Route::get('/api/student/mentores/{mentor}/can-contact', [\App\Http\Controllers\MensajeMentorController::class, 'canContact'])
+            ->name('student.mentores.canContact');
+        Route::get('/api/student/mentores/{mentor}/has-active-mentoria', [\App\Http\Controllers\SolicitudMentoriaController::class, 'hasActiveMentoria'])
+            ->name('student.mentores.hasActiveMentoria');
+    });
+});
+
+require __DIR__.'/auth.php';
+
+// Rutas admin
+Route::middleware(['auth', 'adminMiddleware'])->group(function () {
     Route::get('/admin/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
-    Route::delete('/admin/users/{id}', [AdminController::class, 'destroyUser'])->name('admin.users.destroy');
-    Route::get('/sip-users/create', [SipUserController::class, 'create'])->name('sip-users.create');
-    Route::post('/sip-users', [SipUserController::class, 'store'])->name('sip-users.store');
-    Route::get('/admin/users', [AdminController::class, 'users'])->name('admin.users');
-    Route::get('/admin/users/{id}/edit', [AdminController::class, 'editUser'])->name('admin.users.edit');
-    Route::put('/admin/users/{id}', [AdminController::class, 'updateUser'])->name('admin.users.update');
-    Route::put('/admin/users/{id}/password', [AdminController::class, 'resetPassword'])->name('admin.users.reset-password');
-    Route::put('/admin/users/{id}/sip-password', [AdminController::class, 'resetSipPassword'])->name('admin.users.reset-sip-password');
+    Route::get('/admin/users', [AdminController::class, 'index'])->name('admin.users');
+    Route::get('/admin/users/{user}', [AdminController::class, 'show'])->name('admin.users.show');
+    Route::get('/admin/users/{user}/edit', [AdminController::class, 'edit'])->name('admin.users.edit');
+    Route::put('/admin/users/{user}', [AdminController::class, 'update'])->name('admin.users.update');
+    Route::delete('/admin/users/{user}', [AdminController::class, 'destroy'])->name('admin.users.destroy');
+});
+
+// Endpoint público autenticado para generar enlace (preview) con rate limiting
+Route::middleware(['auth:sanctum', 'throttle:10,1'])->group(function () {
+    Route::post('/api/mentorias/generar-enlace', [MentoriaController::class, 'generarEnlacePreview'])
+        ->name('api.mentorias.generar-enlace');
+});
+
+// Unirse a una mentoría (mentor o aprendiz)
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/mentorias/{mentoria}/unirse', [MentoriaController::class, 'unirse'])
+        ->name('mentorias.unirse');
 });

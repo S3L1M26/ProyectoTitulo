@@ -1,0 +1,398 @@
+# ===========================================
+# DIGITALOCEAN APP PLATFORM CONFIGURATION
+# ===========================================
+# Archivo de configuración para desplegar en DigitalOcean App Platform
+# 
+# Uso:
+#   1. Conectar repositorio GitHub en DigitalOcean
+#   2. Seleccionar este archivo como configuración
+#   3. Configurar secrets en DigitalOcean dashboard
+#   4. Deploy automático en push a rama main
+#
+# Documentación: https://docs.digitalocean.com/products/app-platform/
+
+name: webrtcapp-production
+
+# ===========================================
+# SERVICIOS
+# ===========================================
+services:
+  # Aplicación principal (PHP + RoadRunner + Octane)
+  - name: app
+    github:
+      repo: your-github-username/WebRTCApp
+      branch: main
+    build_command: |
+      composer install --no-dev --prefer-dist --optimize-autoloader && \
+      npm install && \
+      npm run build
+    
+    http_port: 8000
+    
+    # Health check
+    health_check:
+      http_path: /health
+      http_port: 8000
+      period_seconds: 30
+      timeout_seconds: 10
+      healthy_threshold: 2
+      unhealthy_threshold: 3
+    
+    # Entrypoint para RoadRunner (Octane)
+    run_command: php artisan octane:start --server=roadrunner --host=0.0.0.0 --port=8000 --workers=4 --max-requests=500
+    
+    # Recursos
+    instance_count: 1
+    instance_size_slug: basic-xs  # 0.5 CPU, 512MB RAM - escalable
+    
+    # Variables de entorno
+    envs:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: LOG_CHANNEL
+        value: sentry
+      - key: APP_NAME
+        value: WebRTCApp
+      - key: DB_CONNECTION
+        value: mysql
+    
+    # Secretos (configurar en DigitalOcean dashboard)
+    envs:
+      - key: APP_KEY
+        scope: RUN_AND_BUILD_TIME
+        value: ${APP_KEY}
+      - key: DB_HOST
+        value: ${DB_HOST}
+      - key: DB_PORT
+        value: ${DB_PORT}
+      - key: DB_DATABASE
+        value: ${DB_DATABASE}
+      - key: DB_USERNAME
+        value: ${DB_USERNAME}
+      - key: DB_PASSWORD
+        value: ${DB_PASSWORD}
+      - key: REDIS_HOST
+        value: ${REDIS_HOST}
+      - key: REDIS_PORT
+        value: ${REDIS_PORT}
+      - key: REDIS_PASSWORD
+        value: ${REDIS_PASSWORD}
+      - key: AWS_ACCESS_KEY_ID
+        value: ${AWS_ACCESS_KEY_ID}
+      - key: AWS_SECRET_ACCESS_KEY
+        value: ${AWS_SECRET_ACCESS_KEY}
+      - key: AWS_DEFAULT_REGION
+        value: ${AWS_DEFAULT_REGION}
+      - key: AWS_BUCKET
+        value: ${AWS_BUCKET}
+      - key: AWS_ENDPOINT
+        value: ${AWS_ENDPOINT}
+      - key: MAIL_MAILER
+        value: smtp
+      - key: MAIL_FROM_ADDRESS
+        value: ${MAIL_FROM_ADDRESS}
+      - key: MAIL_PASSWORD
+        value: ${MAIL_PASSWORD}
+      - key: SENTRY_LARAVEL_DSN
+        value: ${SENTRY_LARAVEL_DSN}
+      - key: ZOOM_CLIENT_ID
+        value: ${ZOOM_CLIENT_ID}
+      - key: ZOOM_CLIENT_SECRET
+        value: ${ZOOM_CLIENT_SECRET}
+  
+  # Nginx (Web/Reverse Proxy)
+  - name: web
+    source:
+      type: image
+      registry: digitalocean
+      registry_type: DOCKER_HUB
+      repository: library/nginx
+      tag: "1.27-alpine"
+    
+    http_port: 80
+    https_redirect_uri: /
+    
+    health_check:
+      http_path: /health
+      http_port: 80
+      period_seconds: 30
+      timeout_seconds: 10
+      healthy_threshold: 2
+      unhealthy_threshold: 3
+    
+    # Montar configuración personalizada
+    source_dir: docker/nginx
+    dockerfile_path: ""  # Usar imagen existente
+    
+    instance_count: 1
+    instance_size_slug: basic-xs  # 0.5 CPU, 256MB RAM
+
+  # Queue Worker
+  - name: queue
+    github:
+      repo: your-github-username/WebRTCApp
+      branch: main
+    build_command: |
+      composer install --no-dev --prefer-dist --optimize-autoloader && \
+      npm install && \
+      npm run build
+    
+    # Sin puerto HTTP (trabajo en background)
+    instance_count: 1
+    instance_size_slug: basic-xs  # 0.5 CPU, 512MB RAM
+    
+    # Entrypoint para queue worker
+    run_command: |
+      php artisan queue:work redis \
+        --sleep=3 \
+        --tries=3 \
+        --timeout=60 \
+        --max-jobs=100 \
+        --max-time=3600
+    
+    envs:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: DB_CONNECTION
+        value: mysql
+      - key: QUEUE_CONNECTION
+        value: redis
+    
+    envs:
+      - key: APP_KEY
+        value: ${APP_KEY}
+      - key: DB_HOST
+        value: ${DB_HOST}
+      - key: DB_PORT
+        value: ${DB_PORT}
+      - key: DB_DATABASE
+        value: ${DB_DATABASE}
+      - key: DB_USERNAME
+        value: ${DB_USERNAME}
+      - key: DB_PASSWORD
+        value: ${DB_PASSWORD}
+      - key: REDIS_HOST
+        value: ${REDIS_HOST}
+      - key: REDIS_PORT
+        value: ${REDIS_PORT}
+      - key: REDIS_PASSWORD
+        value: ${REDIS_PASSWORD}
+      - key: MAIL_MAILER
+        value: smtp
+      - key: MAIL_FROM_ADDRESS
+        value: ${MAIL_FROM_ADDRESS}
+      - key: MAIL_PASSWORD
+        value: ${MAIL_PASSWORD}
+      - key: SENTRY_LARAVEL_DSN
+        value: ${SENTRY_LARAVEL_DSN}
+
+  # Scheduler (Tareas programadas - cron)
+  - name: scheduler
+    github:
+      repo: your-github-username/WebRTCApp
+      branch: main
+    build_command: |
+      composer install --no-dev --prefer-dist --optimize-autoloader && \
+      npm install && \
+      npm run build
+    
+    # Sin puerto HTTP
+    instance_count: 1
+    instance_size_slug: basic-xs  # 0.25 CPU, 256MB RAM
+    
+    # Entrypoint para scheduler
+    run_command: |
+      while true; do
+        php artisan schedule:run --verbose --no-interaction
+        sleep 60
+      done
+    
+    envs:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: DB_CONNECTION
+        value: mysql
+    
+    envs:
+      - key: APP_KEY
+        value: ${APP_KEY}
+      - key: DB_HOST
+        value: ${DB_HOST}
+      - key: DB_PORT
+        value: ${DB_PORT}
+      - key: DB_DATABASE
+        value: ${DB_DATABASE}
+      - key: DB_USERNAME
+        value: ${DB_USERNAME}
+      - key: DB_PASSWORD
+        value: ${DB_PASSWORD}
+      - key: REDIS_HOST
+        value: ${REDIS_HOST}
+      - key: REDIS_PORT
+        value: ${REDIS_PORT}
+      - key: REDIS_PASSWORD
+        value: ${REDIS_PASSWORD}
+      - key: MAIL_MAILER
+        value: smtp
+      - key: MAIL_FROM_ADDRESS
+        value: ${MAIL_FROM_ADDRESS}
+      - key: MAIL_PASSWORD
+        value: ${MAIL_PASSWORD}
+      - key: SENTRY_LARAVEL_DSN
+        value: ${SENTRY_LARAVEL_DSN}
+
+# ===========================================
+# MIGRACIONES Y POST-DEPLOY
+# ===========================================
+jobs:
+  - name: db-migrate
+    github:
+      repo: your-github-username/WebRTCApp
+      branch: main
+    build_command: |
+      composer install --no-dev --prefer-dist --optimize-autoloader && \
+      npm install && \
+      npm run build
+    
+    # Ejecutar DESPUÉS de desplegar la aplicación
+    run_command: |
+      php artisan migrate --force && \
+      php artisan config:cache && \
+      php artisan route:cache && \
+      php artisan view:cache && \
+      php artisan event:cache
+    
+    instance_size_slug: basic-xs
+    instance_count: 1
+    
+    # Variables de entorno (igual que app)
+    envs:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: DB_CONNECTION
+        value: mysql
+    
+    envs:
+      - key: APP_KEY
+        value: ${APP_KEY}
+      - key: DB_HOST
+        value: ${DB_HOST}
+      - key: DB_PORT
+        value: ${DB_PORT}
+      - key: DB_DATABASE
+        value: ${DB_DATABASE}
+      - key: DB_USERNAME
+        value: ${DB_USERNAME}
+      - key: DB_PASSWORD
+        value: ${DB_PASSWORD}
+
+# ===========================================
+# RECURSOS GESTIONADOS
+# ===========================================
+# Estos servicios deben crearse en DigitalOcean manualmente o via Terraform:
+#
+# 1. DATABASE (DigitalOcean Managed MySQL)
+#    - Nombre: webrtcapp-db
+#    - Versión: 8.0.38+
+#    - Cluster: 2 nodos (HA)
+#    - Storage: 100GB (aumentar según necesidad)
+#    - SSL requerido: Sí
+#    - Usuarios: doadmin (existente) + crear para app
+#
+# 2. REDIS (DigitalOcean Managed Redis)
+#    - Nombre: webrtcapp-redis
+#    - Versión: 7.0+
+#    - Cluster: 2 nodos (HA)
+#    - Memory: 250MB (aumentar según cache grow)
+#    - SSL: Sí
+#    - Auth requerido: Sí
+#
+# 3. SPACES (DigitalOcean Spaces Storage)
+#    - Nombre: webrtcapp-storage
+#    - Region: nyc3 (o tu región)
+#    - CDN: Habilitado (opcional, costo adicional)
+#
+# ===========================================
+# SETUP CHECKLIST
+# ===========================================
+# 
+# 1. GITHUB REPOSITORY
+#    - [ ] Conectar repositorio en DigitalOcean App Platform
+#    - [ ] Verificar que main branch contiene este archivo
+#    - [ ] Crear Personal Access Token (si needed)
+#
+# 2. MANAGED SERVICES (DigitalOcean Dashboard)
+#    - [ ] Crear Managed MySQL cluster
+#    - [ ] Crear Managed Redis cluster
+#    - [ ] Crear Spaces bucket
+#    - [ ] Anotar endpoints y credenciales
+#
+# 3. APP PLATFORM (DigitalOcean Dashboard)
+#    - [ ] Importar/crear app desde repositorio
+#    - [ ] Cargar este archivo (app.yaml)
+#    - [ ] Crear/editar 25+ variables secretas (ver abajo)
+#    - [ ] Configurar dominio personalizado
+#    - [ ] Habilitar SSL automático (Let's Encrypt)
+#
+# 4. SECRETOS A CONFIGURAR (DigitalOcean Dashboard)
+#    En Settings > Environment Variables, agregar:
+#    
+#    - APP_KEY: php artisan key:generate --show (local)
+#    - DB_HOST: <managed-db-hostname>
+#    - DB_PORT: 25060 (default)
+#    - DB_DATABASE: webrtcapp
+#    - DB_USERNAME: <create-user>
+#    - DB_PASSWORD: <strong-password>
+#    - REDIS_HOST: <managed-redis-hostname>
+#    - REDIS_PORT: 25061 (SSL port)
+#    - REDIS_PASSWORD: <redis-auth-token>
+#    - AWS_ACCESS_KEY_ID: <spaces-access-key>
+#    - AWS_SECRET_ACCESS_KEY: <spaces-secret-key>
+#    - AWS_DEFAULT_REGION: nyc3
+#    - AWS_BUCKET: webrtcapp-storage
+#    - AWS_ENDPOINT: https://nyc3.digitaloceanspaces.com
+#    - MAIL_FROM_ADDRESS: noreply@yourdomain.com
+#    - MAIL_PASSWORD: <sendgrid-api-key>
+#    - SENTRY_LARAVEL_DSN: https://<key>@<id>.ingest.sentry.io/<project>
+#    - ZOOM_CLIENT_ID: <zoom-api>
+#    - ZOOM_CLIENT_SECRET: <zoom-secret>
+#    - (más según .env.production.example)
+#
+# 5. TESTING POST-DEPLOY
+#    - [ ] Verificar health check: curl https://yourdomain.com/health
+#    - [ ] Verificar logs en DigitalOcean dashboard
+#    - [ ] Test login con usuario seed
+#    - [ ] Crear mentoria de prueba
+#    - [ ] Verificar emails en SendGrid
+#    - [ ] Verificar uploads a Spaces
+#
+# ===========================================
+# ESCALING & MONITORING
+# ===========================================
+# 
+# Monitoreo:
+#   - DigitalOcean Monitoring: CPU, RAM, banda ancha
+#   - Sentry: Errores de aplicación (free plan: 5000 eventos/mes)
+#   - DigitalOcean Logs: Stdout/stderr de servicios
+#
+# Escalado:
+#   - CPU/RAM aumentar: Editar instance_size_slug
+#   - Replicas: instance_count (cargar balanceo automático)
+#   - DB/Redis: Escalar via DigitalOcean Clusters dashboard
+#
+# Costo estimado (base tier):
+#   - App container: ~$5/mes
+#   - Queue worker: ~$5/mes
+#   - Scheduler: ~$3/mes
+#   - Managed MySQL: ~$15/mes
+#   - Managed Redis: ~$15/mes
+#   - Spaces: ~$5/mes
+#   TOTAL: ~$48/mes (con GitHub Student Pack: FREE)

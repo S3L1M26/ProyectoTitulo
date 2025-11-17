@@ -4,6 +4,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Transition } from '@headlessui/react';
 import { Link, useForm, usePage } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 
 export default function UpdateProfileInformation({
     mustVerifyEmail,
@@ -11,12 +12,29 @@ export default function UpdateProfileInformation({
     className = '',
 }) {
     const user = usePage().props.auth.user;
+    const [countdown, setCountdown] = useState(0);
 
     const { data, setData, patch, errors, processing, recentlySuccessful } =
         useForm({
             name: user.name,
             email: user.email,
         });
+
+    // Countdown timer para rate limiting
+    useEffect(() => {
+        if (status === 'verification-link-sent' || status === 'verification-rate-limited') {
+            setCountdown(60);
+        }
+    }, [status]);
+
+    useEffect(() => {
+        if (countdown > 0) {
+            const timer = setTimeout(() => {
+                setCountdown(countdown - 1);
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [countdown]);
 
     const submit = (e) => {
         e.preventDefault();
@@ -28,17 +46,17 @@ export default function UpdateProfileInformation({
         <section className={className}>
             <header>
                 <h2 className="text-lg font-medium text-gray-900">
-                    Profile Information
+                    Información del Perfil
                 </h2>
 
                 <p className="mt-1 text-sm text-gray-600">
-                    Update your account's profile information and email address.
+                    Actualiza la información de tu perfil y dirección de correo electrónico.
                 </p>
             </header>
 
             <form onSubmit={submit} className="mt-6 space-y-6">
                 <div>
-                    <InputLabel htmlFor="name" value="Name" />
+                    <InputLabel htmlFor="name" value="Nombre" />
 
                     <TextInput
                         id="name"
@@ -54,7 +72,7 @@ export default function UpdateProfileInformation({
                 </div>
 
                 <div>
-                    <InputLabel htmlFor="email" value="Email" />
+                    <InputLabel htmlFor="email" value="Correo electrónico" />
 
                     <TextInput
                         id="email"
@@ -72,28 +90,49 @@ export default function UpdateProfileInformation({
                 {mustVerifyEmail && user.email_verified_at === null && (
                     <div>
                         <p className="mt-2 text-sm text-gray-800">
-                            Your email address is unverified.
-                            <Link
-                                href={route('verification.send')}
-                                method="post"
-                                as="button"
-                                className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                            >
-                                Click here to re-send the verification email.
-                            </Link>
+                            Tu dirección de correo electrónico no está verificada.
+                            {countdown > 0 ? (
+                                <span className="ml-1 text-gray-500">
+                                    (Espera {countdown}s para reenviar)
+                                </span>
+                            ) : (
+                                <Link
+                                    href={route('verification.send')}
+                                    method="post"
+                                    as="button"
+                                    className="ml-1 rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                >
+                                    Haz clic aquí para reenviar el correo de verificación.
+                                </Link>
+                            )}
                         </p>
 
                         {status === 'verification-link-sent' && (
                             <div className="mt-2 text-sm font-medium text-[#9fc031]">
-                                A new verification link has been sent to your
-                                email address.
+                                ✓ Se ha enviado un nuevo enlace de verificación a tu dirección de correo electrónico.
+                                {countdown > 0 && (
+                                    <span className="block text-xs text-gray-600 mt-1">
+                                        Podrás solicitar otro en {countdown} segundos
+                                    </span>
+                                )}
+                            </div>
+                        )}
+                        
+                        {status === 'verification-rate-limited' && (
+                            <div className="mt-2 text-sm font-medium text-orange-600">
+                                ⏱️ Por favor espera para solicitar otro correo de verificación.
+                                {countdown > 0 && (
+                                    <span className="block text-xs text-orange-700 mt-1">
+                                        Disponible en {countdown} segundos
+                                    </span>
+                                )}
                             </div>
                         )}
                     </div>
                 )}
 
                 <div className="flex items-center gap-4">
-                    <PrimaryButton disabled={processing}>Save</PrimaryButton>
+                    <PrimaryButton disabled={processing}>Guardar</PrimaryButton>
 
                     <Transition
                         show={recentlySuccessful}
@@ -103,7 +142,7 @@ export default function UpdateProfileInformation({
                         leaveTo="opacity-0"
                     >
                         <p className="text-sm text-gray-600">
-                            Saved.
+                            Guardado.
                         </p>
                     </Transition>
                 </div>
