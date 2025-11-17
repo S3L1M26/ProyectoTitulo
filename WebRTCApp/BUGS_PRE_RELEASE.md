@@ -61,7 +61,26 @@
 
 **Impacto:** Medio - UX subóptima, pero funcional.
 
-**Estado:** ⏳ Pendiente (intentos no exitosos)
+**Estado:** ✅ RESUELTO
+
+**Análisis técnico**:
+- **Comparación con StudentCertificate** (que funciona perfectamente):
+  - StudentCertificate: `router.reload({ only: ['certificate'] })` - 1 prop simple
+  - MentorCV intentaba: `router.reload({ only: ['cv', 'cvVerified', 'auth'] })` - 3 props complejas
+  - `cvVerified` viene del middleware (`auth.user.mentor.cv_verified`), no del controlador
+  - Esta complejidad causa problemas de sincronización entre props
+
+**Solución aplicada**:
+- **Cambio a reload completo** en lugar de partial reload:
+  ```jsx
+  router.reload({ preserveScroll: true });
+  // Sin 'only' - recarga todo como refresh manual
+  ```
+- **Ventajas**:
+  1. Más simple y confiable que sincronizar props parciales
+  2. Misma velocidad que refresh manual (reportado como rápido por usuario)
+  3. Garantiza sincronización completa desde servidor
+  4. Preserva scroll position para buena UX
 
 ---
 

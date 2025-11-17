@@ -30,10 +30,11 @@ const MentorCV = memo(function MentorCV({ cv, cvVerified, className = '' }) {
         
         setIsPolling(true);
         pollingIntervalRef.current = setInterval(() => {
-            // Incluir 'auth.user' para actualizar mentor.cv_verified globalmente
+            // OPCIÓN SIMPLE: Reload completo de la página (más rápido y confiable que partial reload)
+            // Similar a un refresh manual del navegador, pero preservando scroll
             router.reload({ 
-                only: ['cv', 'cvVerified', 'auth'], 
-                preserveScroll: true 
+                preserveScroll: true,
+                // No usar 'only' - recargar todo para asegurar sincronización
             });
         }, 3000); // Cada 3 segundos
     };
