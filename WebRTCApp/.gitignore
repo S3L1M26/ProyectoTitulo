@@ -6,9 +6,17 @@
 /storage/*.key
 /storage/pail
 /vendor
+
+# Environment files - NEVER commit sensitive credentials
 .env
 .env.backup
 .env.production
+.env.local
+.env.*.local
+!.env.example
+!.env.production.example
+!.env.testing.example
+
 .phpactor.json
 .phpunit.result.cache
 Homestead.json

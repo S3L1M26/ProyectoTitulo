@@ -148,7 +148,7 @@ class SolicitudMentoria extends Model
      */
     public function tieneMentoriaProgramada(): bool
     {
-        return $this->mentoria()->exists();
+        return $this->mentoria()->where('estado', '!=', 'cancelada')->exists();
     }
 
     /**

@@ -1,6 +1,23 @@
 import { Link, Head } from '@inertiajs/react';
 
-export default function Welcome({ canLogin, canRegister }) {
+export default function Welcome({ canLogin, canRegister, auth }) {
+    // Determinar a qué dashboard redirigir según el rol
+    const getDashboardRoute = () => {
+        if (!auth?.user) return null;
+        
+        if (auth.user.role === 'mentor') {
+            return route('mentor.dashboard');
+        } else if (auth.user.role === 'student') {
+            return route('student.dashboard');
+        } else if (auth.user.role === 'admin') {
+            return route('admin.dashboard');
+        }
+        return null;
+    };
+
+    const dashboardRoute = getDashboardRoute();
+    const isAuthenticated = !!auth?.user;
+    
     return (
         <>
             <Head title="Bienvenido - Plataforma de Mentorías" />
@@ -15,7 +32,16 @@ export default function Welcome({ canLogin, canRegister }) {
                                     MentorMatch
                                 </h1>
                             </div>
-                            {canLogin && (
+                            {isAuthenticated && dashboardRoute ? (
+                                <div className="flex items-center gap-4">
+                                    <Link
+                                        href={dashboardRoute}
+                                        className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-lg font-medium hover:shadow-lg transition transform hover:scale-105"
+                                    >
+                                        Panel de Usuario
+                                    </Link>
+                                </div>
+                            ) : canLogin ? (
                                 <div className="flex items-center gap-4">
                                     <div className="relative inline-block text-left">
                                         <div className="group">
@@ -66,7 +92,7 @@ export default function Welcome({ canLogin, canRegister }) {
                                         </div>
                                     )}
                                 </div>
-                            )}
+                            ) : null}
                         </div>
                     </div>
                 </nav>

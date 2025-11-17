@@ -270,9 +270,11 @@ class StudentControllerIntegrationTest extends TestCase
         // Primera petición - debe cachear
         $this->actingAs($student)->get(route('student.dashboard'));
 
-        // Verificar que el cache fue creado
+        // Verificar que el cache fue creado (usando versión como el controller)
         $studentAreaIds = $aprendiz->areasInteres->pluck('id');
-        $cacheKey = 'mentor_suggestions_' . md5($studentAreaIds->sort()->implode(','));
+        $version = Cache::get('mentor_suggestions_version', 0);
+        $baseKey = md5($studentAreaIds->sort()->implode(','));
+        $cacheKey = "mentor_suggestions_{$version}_{$baseKey}";
         
         $this->assertTrue(Cache::has($cacheKey));
 

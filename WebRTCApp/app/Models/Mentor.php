@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 class Mentor extends Model
 {
@@ -104,5 +105,35 @@ class Mentor extends Model
     public function solicitudesMentoria()
     {
         return $this->hasMany(\App\Models\SolicitudMentoria::class, 'mentor_id', 'user_id');
+    }
+
+    /**
+     * Reseñas del mentor.
+     */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(MentorReview::class);
+    }
+
+    /**
+     * Recalcular y guardar la calificación promedio desde las reseñas (1–5).
+     */
+    public function updateAverageRating(): void
+    {
+        $avg = (float) ($this->reviews()->avg('rating') ?? 0);
+        $this->calificacionPromedio = round($avg, 2);
+        $this->saveQuietly();
+    }
+
+    /**
+     * Devolver reseñas anonimizada para props de Inertia.
+     */
+    public function getAnonymizedReviewsAttribute(): array
+    {
+        return $this->reviews()
+            ->latest()
+            ->get()
+            ->map(fn ($r) => $r->toAnonymousArray())
+            ->all();
     }
 }

@@ -56,7 +56,7 @@ export default function Edit({ mustVerifyEmail, status, certificate, mentorCv, c
                                 <MentorCV cv={mentorCv} cvVerified={cvVerified} className="max-w-xl" />
                             </div>
                             <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
-                                <UpdateMentorProfile cvVerified={cvVerified} className="max-w-xl" />
+                                <UpdateMentorProfile className="max-w-xl" />
                             </div>
                         </>
                     )}

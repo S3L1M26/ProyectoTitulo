@@ -55,7 +55,7 @@ class HandleInertiaRequests extends Middleware
             ]);
         } elseif ($user->role === 'mentor') {
             $user->loadMissing([
-                'mentor:id,user_id,experiencia,biografia,años_experiencia,disponibilidad',
+                'mentor:id,user_id,experiencia,biografia,años_experiencia,disponibilidad,cv_verified',
                 'mentor.areasInteres:id,nombre',
             ]);
         }

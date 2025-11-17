@@ -8,6 +8,7 @@ use App\Http\Controllers\Student\CertificateController;
 use App\Http\Controllers\Mentor\MentorController;
 use App\Http\Controllers\SolicitudMentoriaController;
 use App\Http\Controllers\MentoriaController;
+use App\Http\Controllers\MentorReviewController;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -19,6 +20,9 @@ Route::get('/', function () {
         'canRegister' => Route::has('register'),
         'laravelVersion' => Application::VERSION,
         'phpVersion' => PHP_VERSION,
+        'auth' => [
+            'user' => auth()->user(),
+        ],
     ]);
 });
 
@@ -32,6 +36,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['role:student', 'performance'])->group(function () {
         Route::get('/student/dashboard', [StudentController::class, 'index'])->name('student.dashboard');
         Route::post('/student/certificate/upload', [CertificateController::class, 'upload'])->name('student.certificate.upload');
+
+        // Reseñas de mentores (única reseña por estudiante/mentor, editable). Bind por user_id
+        Route::post('/mentors/{mentor:user_id}/reviews', [MentorReviewController::class, 'store'])
+            ->name('mentors.reviews.store');
     });
 
     // Rutas para mentores con monitoreo de performance
@@ -70,6 +78,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
     Route::get('/api/areas-interes', [ProfileController::class, 'getAreasInteres'])
         ->name('api.areas-interes');
+    
+    // API para obtener calificación fresca del mentor (no cacheada)
+    Route::get('/api/mentor/calificacion', [ProfileController::class, 'getMentorCalificacion'])
+        ->middleware('role:mentor')
+        ->name('api.mentor.calificacion');
+    
+    // API para obtener disponibilidad fresca del mentor (no cacheada)
+    Route::get('/api/mentor/disponibilidad', [ProfileController::class, 'getMentorDisponibilidad'])
+        ->middleware('role:mentor')
+        ->name('api.mentor.disponibilidad');
 });
 
 // Rutas para solicitudes de mentoría

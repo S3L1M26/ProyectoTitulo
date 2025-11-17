@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\MentorReview;
+use App\Models\Mentoria;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class StudentController extends Controller
@@ -77,7 +80,19 @@ class StudentController extends Controller
         
         // Cargar sugerencias de mentores directamente (eager loading)
         // Lazy props no funcionan en primera carga - necesitan solicitud explícita del frontend
-        $mentorSuggestions = $this->getMentorSuggestions();
+        try {
+            $mentorSuggestions = $this->getMentorSuggestions();
+        } catch (\Throwable $e) {
+            logger()->error('StudentController::index - getMentorSuggestions failed', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            // Re-throw so tests still observe failure, but we have a log entry with full trace
+            throw $e;
+        }
         
         return Inertia::render('Student/Dashboard/Index', [
             // Datos críticos (siempre cargados) - optimizados con cache
@@ -123,43 +138,115 @@ class StudentController extends Controller
         
         $studentAreaIds = $student->aprendiz->areasInteres->pluck('id');
         
-        // CACHÉ INTELIGENTE: Múltiples niveles de cache con Redis
-        $cacheKey = 'mentor_suggestions_' . md5($studentAreaIds->sort()->implode(','));
-        $longTermCacheKey = 'mentor_pool_' . md5($studentAreaIds->sort()->implode(','));
+        // CACHÉ INTELIGENTE: Cache solo datos básicos, NO el calificacionPromedio
+        // El calificacionPromedio SIEMPRE se obtiene fresco de la BD
+        // VERSIÓN: Incluir versión global para invalidar todos los cachés cuando cambia disponibilidad
+        $version = Cache::get('mentor_suggestions_version', 0);
+        $baseKey = md5($studentAreaIds->sort()->implode(','));
+        $cacheKey = "mentor_suggestions_{$version}_{$baseKey}";
+        $longTermCacheKey = "mentor_pool_{$version}_{$baseKey}";
         
-        // Nivel 1: Cache rápido (2 minutos) para requests frecuentes
-        $suggestions = Cache::remember($cacheKey, 120, function() use ($studentAreaIds, $longTermCacheKey) {
+        // Nivel 1: Cache rápido (2 minutos) para requests frecuentes - mentores sin promedios
+        $mentorsBasicData = Cache::remember($cacheKey, 120, function() use ($studentAreaIds, $longTermCacheKey) {
             // Nivel 2: Cache a largo plazo (10 minutos) para el pool de mentores
             return Cache::remember($longTermCacheKey, 600, function() use ($studentAreaIds) {
                 return $this->buildMentorSuggestionsQuery($studentAreaIds);
             });
         });
         
-        return $suggestions;
+        // CRÍTICO: Obtener calificacionPromedio FRESCO de la BD (no cacheado)
+        $mentorIds = collect($mentorsBasicData)->pluck('id')->toArray();
+        $freshRatings = DB::table('mentors')
+            ->whereIn('user_id', $mentorIds)
+            ->pluck('calificacionPromedio', 'user_id');
+        
+        // CRÍTICO: Computar can_review FUERA del cache para que siempre sea fresco
+        $student = auth()->user();
+        $mentorRecordIds = DB::table('mentors')->whereIn('user_id', $mentorIds)->pluck('id')->toArray();
+        
+        $userReviews = MentorReview::whereIn('mentor_id', $mentorRecordIds)
+            ->where('user_id', $student->id)
+            ->get()
+            ->keyBy('mentor_id');
+        
+        $completedMentorships = Mentoria::whereIn('mentor_id', $mentorIds)
+            ->where('aprendiz_id', $student->id)
+            ->where('estado', 'completada')
+            ->pluck('mentor_id')
+            ->toArray();
+
+        logger()->debug('Review debug (fresh)', [
+            'mentorIds' => $mentorIds,
+            'mentorRecordIds' => $mentorRecordIds,
+            'completedMentorships' => $completedMentorships,
+            'userReviewsCount' => $userReviews->count(),
+            'freshRatingsCount' => $freshRatings->count(),
+        ]);
+
+        // Enriquecer datos cacheados con can_review fresco + calificacionPromedio actualizado
+        return array_map(function($mentor) use ($userReviews, $completedMentorships, $freshRatings) {
+            $mentorUserId = $mentor['id'];
+            $mentorProfileId = $mentor['mentor']['id'] ?? null;
+            $userReview = $userReviews->get($mentorProfileId);
+            $hasCompletedMentoria = in_array($mentorUserId, $completedMentorships);
+            $canReview = $hasCompletedMentoria || ($userReview !== null);
+            
+            // CRÍTICO: Obtener el calificacionPromedio fresco de la BD, no del caché
+            $freshRating = $freshRatings[$mentorUserId] ?? 0;
+            
+            $mentor['mentor']['user_review'] = $userReview ? [
+                'id' => $userReview->id,
+                'rating' => (int) $userReview->rating,
+                'comment' => $userReview->comment,
+                'created_at' => $userReview->created_at,
+            ] : null;
+            $mentor['mentor']['can_review'] = $canReview;
+            $mentor['mentor']['calificacionPromedio'] = (float) $freshRating; // Siempre fresco
+            $mentor['mentor']['stars_rating'] = round($freshRating, 1); // Recalcular
+            $mentor['mentor']['rating_percentage'] = ($freshRating / 5) * 100; // Recalcular
+            
+            return $mentor;
+        }, $mentorsBasicData);
+
     }
 
     /**
-     * Build the optimized mentor suggestions query
+     * Build the optimized mentor suggestions query (cached mentor data without can_review or calificacionPromedio)
+     * NOTE: calificacionPromedio is fetched FRESH in getMentorSuggestions(), never cached
      */
     private function buildMentorSuggestionsQuery($studentAreaIds)
     {
-        // OPTIMIZACIÓN CRÍTICA: Usar joins en lugar de whereHas + eager loading completo
+        // OPTIMIZACIÓN CRÍTICA: Usar subquery para evitar problemas con distinct + join
+        // Primero obtener IDs de mentores que tienen al menos 1 área en común
+        $mentorUserIds = DB::table('mentors')
+            ->join('mentor_area_interes', 'mentors.id', '=', 'mentor_area_interes.mentor_id')
+            ->whereIn('mentor_area_interes.area_interes_id', $studentAreaIds)
+            ->where('mentors.disponible_ahora', true)
+            ->distinct()
+            ->pluck('mentors.user_id');
+
+        // Luego cargar los usuarios con eager loading completo
         $mentors = User::select('users.id', 'users.name', 'mentors.calificacionPromedio')
             ->join('mentors', 'users.id', '=', 'mentors.user_id')
-            ->join('mentor_area_interes', 'mentors.id', '=', 'mentor_area_interes.mentor_id')
             ->where('users.role', 'mentor')
-            ->where('mentors.disponible_ahora', true)
-            ->whereIn('mentor_area_interes.area_interes_id', $studentAreaIds)
+            ->whereIn('users.id', $mentorUserIds)
+            ->orderBy('mentors.calificacionPromedio', 'desc') // Ordenar por rating de mayor a menor
             ->with([
                 'mentor' => function($query) {
-                    // Solo cargar campos necesarios
+                    // Solo cargar campos necesarios (SIN calificacionPromedio)
                     $query->select([
                         'id', 'user_id', 'experiencia', 'biografia', 'años_experiencia',
                         'disponibilidad', 'disponibilidad_detalle', 'disponible_ahora', 
-                        'calificacionPromedio', 'cv_verified'
+                        'cv_verified'
                     ]);
                 },
                 'mentor.areasInteres:id,nombre', // Solo campos necesarios de áreas
+                'mentor.reviews' => function($query) {
+                    // Cargar SOLO la reseña más reciente para mostrar en valoraciones
+                    $query->select('id', 'mentor_id', 'rating', 'comment', 'created_at')
+                          ->latest('created_at')
+                          ->limit(1);
+                },
                 'mentorDocuments' => function($query) {
                     // Cargar solo el último documento aprobado y público
                     $query->where('status', 'approved')
@@ -168,40 +255,46 @@ class StudentController extends Controller
                           ->limit(1);
                 }
             ])
-            ->orderByDesc('mentors.calificacionPromedio')
-            ->distinct()
             ->limit(6)
-            ->get()
-            ->map(function($user) {
+            ->get();
+
+        // Retornar datos cacheables sin can_review ni calificacionPromedio (se computan fresco después)
+        return $mentors->map(function($user) {
                 // OPTIMIZACIÓN: Acceder a relaciones ya cargadas, evitar accessors pesados
                 $mentorProfile = $user->mentor;
-                $calificacion = $mentorProfile->calificacionPromedio ?? 0;
-                
+
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
                     'mentor' => [
+                        'id' => $mentorProfile->id, // Agregado para batch queries posteriores
                         'experiencia' => $mentorProfile->experiencia,
                         'biografia' => $mentorProfile->biografia,
                         'años_experiencia' => $mentorProfile->años_experiencia,
                         'disponibilidad' => $mentorProfile->disponibilidad,
                         'disponibilidad_detalle' => $mentorProfile->disponibilidad_detalle,
                         'disponible_ahora' => $mentorProfile->disponible_ahora,
-                        'calificacionPromedio' => $calificacion,
-                        // OPTIMIZACIÓN: Calcular aquí en lugar de usar accessors
-                        'stars_rating' => round($calificacion, 1),
-                        'rating_percentage' => ($calificacion / 5) * 100,
+                        'calificacionPromedio' => 0, // Placeholder, se reemplaza con dato fresco
+                        'stars_rating' => 0, // Placeholder
+                        'rating_percentage' => 0, // Placeholder
                         'areas_interes' => $mentorProfile->areasInteres->map(fn($a) => [
                             'id' => $a->id,
                             'nombre' => $a->nombre
                         ]),
                         'cv_verified' => $mentorProfile->cv_verified,
                         'has_public_cv' => $user->mentorDocuments->isNotEmpty(),
+                        // Reseñas anónimas para mostrar en modal (pre-cargadas en eager load)
+                        'anonymized_reviews' => $mentorProfile->reviews->map(fn($r) => [
+                            'id' => $r->id,
+                            'rating' => (int) $r->rating,
+                            'comment' => $r->comment,
+                            'created_at' => $r->created_at,
+                        ])->all(),
+                        'user_review' => null, // Se enriquece después
+                        'can_review' => false, // Se enriquece después con lógica fresca
                     ]
                 ];
             })
             ->toArray();
-        
-        return $mentors;
     }
 }

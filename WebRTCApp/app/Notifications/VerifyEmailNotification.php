@@ -6,10 +6,44 @@ use Illuminate\Auth\Notifications\VerifyEmail as BaseVerifyEmail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class VerifyEmailNotification extends BaseVerifyEmail implements ShouldQueue
 {
     use Queueable;
+    
+    /**
+     * Determine if the notification should be sent.
+     */
+    public function shouldSend($notifiable, $channel): bool
+    {
+        // Idempotencia: verificar si ya se envió recientemente
+        $lockKey = 'verify_email_notification_' . $notifiable->id;
+        
+        if (Cache::has($lockKey)) {
+            Log::warning('⛔ EMAIL VERIFICATION NOTIFICATION DUPLICATE SKIP', [
+                'user_id' => $notifiable->id,
+                'user_email' => $notifiable->email,
+                'channel' => $channel,
+                'timestamp' => microtime(true),
+            ]);
+            return false;
+        }
+        
+        // Establecer lock por 60 segundos (1 minuto)
+        Cache::put($lockKey, true, 60);
+        
+        Log::info('📧 SENDING EMAIL VERIFICATION NOTIFICATION', [
+            'user_id' => $notifiable->id,
+            'user_email' => $notifiable->email,
+            'channel' => $channel,
+            'timestamp' => microtime(true),
+        ]);
+        
+        return true;
+    }
+    
     /**
      * Get the mail representation of the notification.
      */

@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use App\Models\MentorDocument;
 use App\Models\StudentDocument;
+use App\Models\MentorReview;
 use App\Observers\MentorDocumentObserver;
 use App\Observers\StudentDocumentObserver;
+use App\Observers\MentorReviewObserver;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Vite;
 use App\Policies\MentoriaPolicy;
@@ -33,6 +35,7 @@ class AppServiceProvider extends ServiceProvider
         // Registrar observers
         StudentDocument::observe(StudentDocumentObserver::class);
         MentorDocument::observe(MentorDocumentObserver::class);
+        MentorReview::observe(MentorReviewObserver::class);
 
         // Gates de mentorías
         Gate::define('mentoria.confirmar', [MentoriaPolicy::class, 'confirmar']); // SolicitudMentoria
