@@ -1,158 +1,243 @@
 # ===========================================
-# DOCKER COMPOSE - PRODUCCIÓN
+# DOCKER COMPOSE - PRODUCCIÓN (DigitalOcean)
 # ===========================================
-# Para usar: docker-compose -f docker-compose.production.yml up -d
-# 
-# NOTAS IMPORTANTES:
-# 1. Usar un load balancer externo (nginx, cloudflare, etc.)
-# 2. Base de datos externa (RDS, Azure DB, etc.)
-# 3. Cache externo (Redis/ElastiCache)
-# 4. Storage externo (S3, Azure Blob, etc.)
+#
+# SERVICIOS GESTIONADOS POR DIGITALOCEAN (NO en Docker):
+# --------------------------------------------------------
+# ✅ MySQL Database       → DigitalOcean Managed Database (uso: $DB_HOST)
+# ✅ Redis Cache/Queue    → DigitalOcean Managed Redis (uso: $REDIS_HOST)
+# ✅ Object Storage (S3)  → DigitalOcean Spaces (uso: $AWS_ENDPOINT)
+# ✅ Email Service        → SendGrid SMTP o similar (uso: $MAIL_HOST)
+# ✅ SSL/TLS Certificates → DigitalOcean Load Balancer o App Platform
+# ✅ CDN                  → DigitalOcean CDN o Cloudflare
+# ✅ Backups              → Automáticos en Managed Database
+# ✅ Monitoring           → Sentry (uso: $SENTRY_LARAVEL_DSN)
+#
+# SERVICIOS EN DOCKER (solo app):
+# --------------------------------
+# ✅ app       → Laravel + Octane + RoadRunner
+# ✅ web       → Nginx (reverse proxy a app)
+# ✅ queue     → Worker para jobs asíncronos
+# ✅ scheduler → Cron tasks (recordatorios de mentorías)
+#
+# ===========================================
+
+name: webrtcapp-production
 
 services:
   # ===========================================
-  # APLICACIÓN PRINCIPAL
+  # APP: Laravel + RoadRunner + Octane
   # ===========================================
   app:
     build:
       context: .
-      target: runtime  # Usa la imagen de producción del Dockerfile
+      dockerfile: Dockerfile
+      target: runtime
       args:
-        PUID: 1000
-        PGID: 1000
-    container_name: webrtcapp-prod
+        PHP_VERSION: "8.4.3"
+        NODE_VERSION: "20"
+        INSTALL_XDEBUG: 0
     restart: always
+    working_dir: /var/www/html
+    command: php artisan octane:start --server=roadrunner --host=0.0.0.0 --port=8000 --workers=4
+    
     environment:
-      - APP_ENV=production
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY}
+      APP_URL: ${APP_URL}
+      LOG_CHANNEL: stack
+      
+      # Database (DigitalOcean Managed MySQL - externo)
+      DB_CONNECTION: mysql
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      
+      # Redis (DigitalOcean Managed Redis - externo)
+      CACHE_DRIVER: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      
+      # Storage (DigitalOcean Spaces - externo)
+      FILESYSTEM_DISK: s3
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-nyc3}
+      AWS_BUCKET: ${AWS_BUCKET}
+      AWS_ENDPOINT: ${AWS_ENDPOINT}
+      AWS_USE_PATH_STYLE_ENDPOINT: "true"
+      
+      # Mail (SendGrid u otro SMTP - externo)
+      MAIL_MAILER: ${MAIL_MAILER:-smtp}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-"WebRTC App"}
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_ENCRYPTION: ${MAIL_ENCRYPTION:-tls}
+      
+      # Monitoring (Sentry - externo)
+      SENTRY_LARAVEL_DSN: ${SENTRY_LARAVEL_DSN}
+      
+      # Timezone (para logs y scheduler)
+      TZ: America/Santiago
+    
     volumes:
-      # Solo montamos storage para logs/cache temporal
-      - storage_data:/var/www/html/storage
-    networks:
-      - app-network
+      - ./storage:/var/www/html/storage
+      - ./bootstrap/cache:/var/www/html/bootstrap/cache
+    
     healthcheck:
-      test: ["CMD", "php", "-v"]
+      test: ["CMD-SHELL", "pgrep -f 'artisan octane' || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 60s
 
   # ===========================================
-  # SERVIDOR WEB (NGINX)
+  # WEB: Nginx Reverse Proxy
   # ===========================================
   web:
     image: nginx:1.27-alpine
-    container_name: webrtcapp-web-prod
     restart: always
     ports:
-      - "${WEB_PORT:-80}:80"
-      - "${WEB_SSL_PORT:-443}:443"
+      - "80:80"
+    
     volumes:
       - ./docker/nginx/production.conf:/etc/nginx/conf.d/default.conf:ro
       - ./public:/var/www/html/public:ro
-      - storage_data:/var/www/html/storage:ro
-      # Para SSL certificates (si manejas SSL aquí)
-      # - ./ssl:/etc/nginx/ssl:ro
+    
     depends_on:
       app:
         condition: service_healthy
-    networks:
-      - app-network
+    
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
 
   # ===========================================
-  # QUEUE WORKER
+  # QUEUE: Worker para Jobs Asíncronos
   # ===========================================
   queue:
     build:
       context: .
+      dockerfile: Dockerfile
       target: runtime
-    container_name: webrtcapp-queue-prod
+      args:
+        PHP_VERSION: "8.4.3"
+        NODE_VERSION: "20"
+        INSTALL_XDEBUG: 0
     restart: always
-    command: ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--max-time=3600"]
+    working_dir: /var/www/html
+    command: php artisan queue:work redis --queue=emails,default --sleep=3 --tries=3 --timeout=90 --max-jobs=100 --max-time=3600 --verbose
+    
     environment:
-      - APP_ENV=production
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY}
+      LOG_CHANNEL: stack
+      TZ: America/Santiago
+      
+      # Database
+      DB_CONNECTION: mysql
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      
+      # Redis
+      CACHE_DRIVER: redis
+      QUEUE_CONNECTION: redis
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      
+      # Mail
+      MAIL_MAILER: ${MAIL_MAILER:-smtp}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-"WebRTC App"}
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_ENCRYPTION: ${MAIL_ENCRYPTION:-tls}
+      
+      # Monitoring
+      SENTRY_LARAVEL_DSN: ${SENTRY_LARAVEL_DSN}
+    
     volumes:
-      - storage_data:/var/www/html/storage
+      - ./storage:/var/www/html/storage
+      - ./bootstrap/cache:/var/www/html/bootstrap/cache
+    
     depends_on:
       app:
         condition: service_healthy
-    networks:
-      - app-network
-    healthcheck:
-      test: ["CMD", "php", "artisan", "queue:work", "--stop-when-empty"]
-      interval: 60s
-      timeout: 30s
-      retries: 2
 
   # ===========================================
-  # CRON SCHEDULER
+  # SCHEDULER: Tareas Programadas (Cron)
+  # Ejecuta: mentorias:enviar-recordatorios (09:00 AM diario)
   # ===========================================
   scheduler:
     build:
       context: .
+      dockerfile: Dockerfile
       target: runtime
-    container_name: webrtcapp-scheduler-prod
+      args:
+        PHP_VERSION: "8.4.3"
+        NODE_VERSION: "20"
+        INSTALL_XDEBUG: 0
     restart: always
-    command: ["sh", "-c", "while true; do php artisan schedule:run --verbose --no-interaction; sleep 60; done"]
+    working_dir: /var/www/html
+    command: sh -c "while true; do php artisan schedule:run --verbose --no-interaction; sleep 60; done"
+    
     environment:
-      - APP_ENV=production
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY}
+      LOG_CHANNEL: stack
+      TZ: America/Santiago
+      
+      # Database
+      DB_CONNECTION: mysql
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      
+      # Redis
+      CACHE_DRIVER: redis
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      
+      # Mail
+      MAIL_MAILER: ${MAIL_MAILER:-smtp}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-"WebRTC App"}
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_ENCRYPTION: ${MAIL_ENCRYPTION:-tls}
+      
+      # Monitoring
+      SENTRY_LARAVEL_DSN: ${SENTRY_LARAVEL_DSN}
+    
     volumes:
-      - storage_data:/var/www/html/storage
+      - ./storage:/var/www/html/storage
+      - ./bootstrap/cache:/var/www/html/bootstrap/cache
+    
     depends_on:
       app:
         condition: service_healthy
-    networks:
-      - app-network
 
-# ===========================================
-# VOLUMES
-# ===========================================
-volumes:
-  storage_data:
-    driver: local
-
-# ===========================================
-# NETWORKS
-# ===========================================
-networks:
-  app-network:
-    driver: bridge
-
-# ===========================================
-# NOTAS PARA DEPLOY:
-# ===========================================
-# 
-# 1. VARIABLES DE ENTORNO:
-#    - Copia .env.production a .env
-#    - Ajusta valores según tu proveedor cloud
-# 
-# 2. SERVICIOS EXTERNOS (recomendado):
-#    - Base de datos: AWS RDS, Azure Database, Google Cloud SQL
-#    - Cache: AWS ElastiCache, Azure Cache for Redis
-#    - Storage: AWS S3, Azure Blob Storage, Google Cloud Storage
-#    - Email: AWS SES, SendGrid, Mailgun
-# 
-# 3. SEGURIDAD:
-#    - Usar secrets management (AWS Secrets Manager, Azure Key Vault)
-#    - Configurar SSL/TLS certificates
-#    - Firewall y VPC configuration
-# 
-# 4. MONITORING:
-#    - Logs: CloudWatch, Azure Monitor, Google Cloud Logging
-#    - Metrics: New Relic, Datadog, Prometheus
-#    - Errors: Sentry, Bugsnag
-# 
-# 5. BACKUP:
-#    - Database backups automáticos
-#    - Storage backups
-#    - Disaster recovery plan
-# 
-# 6. CI/CD:
-#    - GitHub Actions, GitLab CI, Jenkins
-#    - Blue-green deployment
-#    - Health checks y rollback automático
-#
