@@ -18,7 +18,7 @@
         "laravel/socialite": "^5.23",
         "laravel/tinker": "^2.9",
         "laravel/ui": "^4.6",
-        "league/flysystem-aws-s3-v3": "^3.0",
+        "league/flysystem-aws-s3-v3": "^3.30",
         "predis/predis": "^3.2",
         "socialiteproviders/microsoft-azure": "^5.2",
         "spiral/roadrunner-cli": "^2.6.0",
