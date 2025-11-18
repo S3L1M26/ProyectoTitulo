@@ -99,8 +99,8 @@ ARG PUID=1000
 ARG PGID=1000
 RUN addgroup -g ${PGID} appgroup || true \
     && adduser -D -G appgroup -u ${PUID} appuser || true \
-    && chown -R appuser:appgroup storage bootstrap/cache \
-    && chmod -R ug+rw storage bootstrap/cache
+    && chown -R appuser:appgroup /var/www/html \
+    && chmod -R ug+rw /var/www/html
 
 USER appuser
 
