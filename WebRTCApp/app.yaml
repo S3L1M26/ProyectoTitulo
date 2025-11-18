@@ -20,7 +20,7 @@ services:
   # Aplicación principal (PHP + RoadRunner + Octane)
   - name: app
     github:
-      repo: your-github-username/WebRTCApp
+      repo: S3L1M26/ProyectoTitulo
       branch: main
     
     # Usar Dockerfile (último stage = runtime por defecto)
@@ -128,7 +128,7 @@ services:
   # Queue Worker
   - name: queue
     github:
-      repo: your-github-username/WebRTCApp
+      repo: S3L1M26/ProyectoTitul0
       branch: main
     build_command: |
       composer install --no-dev --prefer-dist --optimize-autoloader && \
@@ -189,7 +189,7 @@ services:
   # Scheduler (Tareas programadas - cron)
   - name: scheduler
     github:
-      repo: your-github-username/WebRTCApp
+      repo: S3L1M26/ProyectoTitulo
       branch: main
     build_command: |
       composer install --no-dev --prefer-dist --optimize-autoloader && \
@@ -249,7 +249,7 @@ services:
 jobs:
   - name: db-migrate
     github:
-      repo: your-github-username/WebRTCApp
+      repo: S3L1M26/ProyectoTitulo
       branch: main
     build_command: |
       composer install --no-dev --prefer-dist --optimize-autoloader && \
