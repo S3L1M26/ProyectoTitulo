@@ -63,18 +63,31 @@ RUN npm run build
 # 4) Final runtime image
 ############################
 FROM php-base AS runtime
+
+# Instalar RoadRunner
+RUN curl -L https://github.com/roadrunner-server/roadrunner/releases/download/v2024.1.0/roadrunner-2024.1.0-linux-amd64.tar.gz -o rr.tar.gz \
+    && tar -xzf rr.tar.gz \
+    && mv roadrunner-2024.1.0-linux-amd64/rr /usr/local/bin/rr \
+    && chmod +x /usr/local/bin/rr \
+    && rm -rf rr.tar.gz roadrunner-2024.1.0-linux-amd64
+
 COPY --from=vendor /var/www/html/vendor ./vendor
 COPY . ./
 COPY --from=node-build /app/public/build ./public/build
+
 ARG PUID=1000
 ARG PGID=1000
 RUN addgroup -g ${PGID} appgroup || true \
     && adduser -D -G appgroup -u ${PUID} appuser || true \
     && chown -R appuser:appgroup storage bootstrap/cache \
     && chmod -R ug+rw storage bootstrap/cache
+
 USER appuser
-EXPOSE 9000
-CMD ["php-fpm"]
+
+EXPOSE 8000
+
+# Usar Octane con RoadRunner
+CMD ["php", "artisan", "octane:start", "--server=roadrunner", "--host=0.0.0.0", "--port=8000", "--workers=4", "--max-requests=500"]
 
 ############################
 # 5) Dev image (Hot reload)
