@@ -60,7 +60,27 @@ COPY postcss.config.js .
 RUN npm run build
 
 ############################
-# 4) Final runtime image
+# 4) Dev image (Hot reload - para desarrollo local)
+############################
+FROM php-base AS dev
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+WORKDIR /var/www/html
+COPY composer.json composer.lock ./
+# Instalamos dependencias sin ejecutar scripts (porque artisan aún no existe)
+RUN composer install --no-scripts --no-interaction --prefer-dist
+
+# Ahora copiamos el resto del código fuente (incluye artisan y bootstrap/)
+COPY . ./
+
+# Ejecutamos scripts diferidos (package:discover, etc.)
+RUN composer run-script post-autoload-dump || true
+
+USER root
+EXPOSE 9000
+CMD ["php-fpm"]
+
+############################
+# 5) Final runtime image - PRODUCCIÓN (último stage = default)
 ############################
 FROM php-base AS runtime
 
@@ -89,30 +109,3 @@ EXPOSE 8000
 # Usar Octane con RoadRunner
 CMD ["php", "artisan", "octane:start", "--server=roadrunner", "--host=0.0.0.0", "--port=8000", "--workers=4", "--max-requests=500"]
 
-############################
-# 5) Dev image (Hot reload)
-############################
-FROM php-base AS dev
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-WORKDIR /var/www/html
-COPY composer.json composer.lock ./
-# Instalamos dependencias sin ejecutar scripts (porque artisan aún no existe)
-RUN composer install --no-scripts --no-interaction --prefer-dist
-
-# Ahora copiamos el resto del código fuente (incluye artisan y bootstrap/)
-COPY . ./
-
-# Ejecutamos scripts diferidos (package:discover, etc.)
-RUN composer run-script post-autoload-dump || true
-
-# Nota: No instalamos Node dentro del contenedor PHP en modo dev
-# porque ya existe un servicio separado 'vite' (node:${NODE_VERSION}-alpine)
-# que monta el mismo volumen y ejecuta npm install + npm run dev.
-# Si en el futuro quieres tener Node aquí (por ejemplo para ejecutar artisan vite:...)
-# puedes copiar el binario desde la imagen oficial:
-#   COPY --from=node:${NODE_VERSION}-alpine /usr/local/bin/node /usr/local/bin/
-#   COPY --from=node:${NODE_VERSION}-alpine /usr/local/lib/node_modules /usr/local/lib/node_modules
-#   RUN ln -sf /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm
-USER root
-EXPOSE 9000
-CMD ["php-fpm"]

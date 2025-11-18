@@ -22,10 +22,9 @@ services:
     github:
       repo: your-github-username/WebRTCApp
       branch: main
-    build_command: |
-      composer install --no-dev --prefer-dist --optimize-autoloader && \
-      npm install && \
-      npm run build
+    
+    # Usar Dockerfile (último stage = runtime por defecto)
+    dockerfile_path: Dockerfile
     
     http_port: 8000
     
@@ -37,9 +36,6 @@ services:
       timeout_seconds: 10
       healthy_threshold: 2
       unhealthy_threshold: 3
-    
-    # Entrypoint para RoadRunner (Octane)
-    run_command: php artisan octane:start --server=roadrunner --host=0.0.0.0 --port=8000 --workers=4 --max-requests=500
     
     # Recursos
     instance_count: 1
