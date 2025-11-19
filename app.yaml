@@ -42,8 +42,6 @@ ingress:
   - component:
       name: proyectotitulo-app
     match:
-      authority:
-        exact: ""
       path:
         prefix: /
 
