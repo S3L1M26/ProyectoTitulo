@@ -1,479 +1,204 @@
-# ===========================================
-# DIGITALOCEAN APP PLATFORM CONFIGURATION
-# ===========================================
-# Archivo de configuración para desplegar en DigitalOcean App Platform
-# 
-# Basado en docker-compose.production.yml
-# Servicios gestionados externos: MySQL, Redis, Spaces, Mailtrap
-# Servicios en App Platform: app (RoadRunner), queue (worker), scheduler
-
-name: proyectotitulo-app
+name: tesis-app
 region: atl
 
-# ===========================================
-# ALERTAS
-# ===========================================
 alerts:
-- rule: DEPLOYMENT_FAILED
-- rule: DOMAIN_FAILED
+  - rule: DEPLOYMENT_FAILED
+  - rule: DOMAIN_FAILED
 
-# ===========================================
-# BASES DE DATOS GESTIONADAS
-# ===========================================
-databases:
-- name: db-prod-laravel
-  cluster_name: db-prod-laravel
-  engine: MYSQL
-  production: true
-  db_name: laravel
-  db_user: doadmin
-
-# ===========================================
-# FEATURES
-# ===========================================
 features:
-- buildpack-stack=ubuntu-22
+  - buildpack-stack=ubuntu-22
 
-# ===========================================
-# PRE-DEPLOY JOBS
-# ===========================================
+databases:
+  - name: db-prod-laravel
+    cluster_name: db-prod-laravel
+    engine: MYSQL
+    production: true
+    db_name: laravel
+    db_user: doadmin
+
+# ===========================
+# JOBS (PRE DEPLOY)
+# ===========================
 jobs:
-- name: db-migrate
-  kind: PRE_DEPLOY
-  github:
-    repo: S3L1M26/ProyectoTitulo
-    branch: main
-    deploy_on_push: true
-  dockerfile_path: WebRTCApp/Dockerfile
-  source_dir: WebRTCApp
-  instance_size_slug: basic-xs
-  instance_count: 1
-  run_command: |
-    php -r 'for($i=0;$i<30;$i++){try{$pdo=new PDO("mysql:host=".getenv("DB_HOST").";port=".getenv("DB_PORT").";dbname=".getenv("DB_DATABASE").";charset=utf8mb4",getenv("DB_USERNAME"),getenv("DB_PASSWORD"),[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);echo "db ready\n";exit(0);}catch(Throwable $e){echo "waiting DB...\n";sleep(2);} } echo "db unreachable\n"; exit(1);'
-    php artisan migrate --force
-  envs:
-  - key: APP_NAME
-    scope: RUN_TIME
-    value: MentorMatch
-  - key: APP_ENV
-    scope: RUN_TIME
-    value: production
-  - key: APP_KEY
-    scope: RUN_TIME
-    value: ${APP_KEY}
-  - key: DB_CONNECTION
-    scope: RUN_TIME
-    value: mysql
-  - key: DB_HOST
-    scope: RUN_TIME
-    value: ${db-prod-laravel.HOSTNAME}
-  - key: DB_PORT
-    scope: RUN_TIME
-    value: ${db-prod-laravel.PORT}
-  - key: DB_DATABASE
-    scope: RUN_TIME
-    value: ${db-prod-laravel.DATABASE}
-  - key: DB_USERNAME
-    scope: RUN_TIME
-    value: ${db-prod-laravel.USERNAME}
-  - key: DB_PASSWORD
-    scope: RUN_TIME
-    type: SECRET
-    value: ${db-prod-laravel.PASSWORD}
+  - name: db-migrate
+    kind: PRE_DEPLOY
+    github:
+      repo: S3L1M26/ProyectoTitulo
+      branch: main
+      deploy_on_push: true
+    dockerfile_path: WebRTCApp/Dockerfile
+    source_dir: WebRTCApp
+    instance_size_slug: basic-xs
+    instance_count: 1
+    run_command: |
+      php -r 'for($i=0;$i<30;$i++){try{$pdo=new PDO("mysql:host=".getenv("DB_HOST").";port=".getenv("DB_PORT").";dbname=".getenv("DB_DATABASE").";charset=utf8mb4",getenv("DB_USERNAME"),getenv("DB_PASSWORD"),[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);echo "db ready\n";exit(0);}catch(Throwable $e){echo "waiting DB...\n";sleep(2);} } echo "db unreachable\n"; exit(1);'
+      php artisan migrate --force
+    envs:
+      - key: APP_NAME
+        value: MentorMatch
+      - key: APP_ENV
+        value: production
+      - key: APP_KEY
+        value: ${APP_KEY}
+      - key: DB_CONNECTION
+        value: mysql
+      - key: DB_HOST
+        value: ${db-prod-laravel.HOSTNAME}
+      - key: DB_PORT
+        value: ${db-prod-laravel.PORT}
+      - key: DB_DATABASE
+        value: ${db-prod-laravel.DATABASE}
+      - key: DB_USERNAME
+        value: ${db-prod-laravel.USERNAME}
+      - key: DB_PASSWORD
+        type: SECRET
+        value: ${db-prod-laravel.PASSWORD}
 
-# ===========================================
-# SERVICIOS
-# ===========================================
+  - name: scheduler
+    kind: SCHEDULED
+    schedule:
+      cron: "*/15 * * * *"   # ejecuta cada minuto
+    github:
+      repo: S3L1M26/ProyectoTitulo
+      branch: main
+      deploy_on_push: true
+    dockerfile_path: WebRTCApp/Dockerfile
+    source_dir: WebRTCApp
+    run_command: "php artisan schedule:run"
+    envs:
+      - key: APP_ENV
+        value: production
+      - key: APP_KEY
+        value: ${APP_KEY}
+      - key: DB_CONNECTION
+        value: mysql
+      - key: DB_HOST
+        value: ${db-prod-laravel.HOSTNAME}
+      - key: DB_PORT
+        value: ${db-prod-laravel.PORT}
+      - key: DB_DATABASE
+        value: ${db-prod-laravel.DATABASE}
+      - key: DB_USERNAME
+        value: ${db-prod-laravel.USERNAME}
+      - key: DB_PASSWORD
+        type: SECRET
+        value: ${db-prod-laravel.PASSWORD}
+      - key: REDIS_HOST
+        value: 129.212.187.206
+      - key: REDIS_PORT
+        value: "6379"
+      - key: REDIS_PASSWORD
+        type: SECRET
+        value: ${REDIS_PASSWORD}
+# ===========================
+# WORKERS
+# ===========================
+workers:
+  - name: queue
+    github:
+      repo: S3L1M26/ProyectoTitulo
+      branch: main
+      deploy_on_push: true
+    dockerfile_path: WebRTCApp/Dockerfile
+    source_dir: WebRTCApp
+    run_command: |
+      php artisan queue:work redis --queue=emails,default --sleep=3 --tries=3 --timeout=90 --verbose
+    envs:
+      - key: APP_ENV
+        value: production
+      - key: APP_KEY
+        value: ${APP_KEY}
+      - key: DB_CONNECTION
+        value: mysql
+      - key: DB_HOST
+        value: ${db-prod-laravel.HOSTNAME}
+      - key: DB_PORT
+        value: ${db-prod-laravel.PORT}
+      - key: DB_DATABASE
+        value: ${db-prod-laravel.DATABASE}
+      - key: DB_USERNAME
+        value: ${db-prod-laravel.USERNAME}
+      - key: DB_PASSWORD
+        type: SECRET
+        value: ${db-prod-laravel.PASSWORD}
+      - key: REDIS_HOST
+        value: 129.212.187.206
+      - key: REDIS_PORT
+        value: "6379"
+      - key: REDIS_PASSWORD
+        type: SECRET
+        value: ${REDIS_PASSWORD}
+
+# ===========================
+# WEB SERVICE
+# ===========================
 services:
-# -------------------------------------------
-# APP: Laravel + RoadRunner + Octane
-# -------------------------------------------
-- name: proyectotitulo-app
-  github:
-    repo: S3L1M26/ProyectoTitulo
-    branch: main
-    deploy_on_push: true
-  dockerfile_path: WebRTCApp/Dockerfile
-  source_dir: WebRTCApp
-  http_port: 8000
-  instance_size_slug: apps-s-1vcpu-1gb-fixed
-  instance_count: 1
-  
-  envs:
-  # App
-  - key: APP_NAME
-    scope: RUN_AND_BUILD_TIME
-    value: MentorMatch
-  - key: APP_ENV
-    scope: RUN_AND_BUILD_TIME
-    value: production
-  - key: APP_KEY
-    scope: RUN_AND_BUILD_TIME
-    value: ${APP_KEY}
-  - key: APP_DEBUG
-    scope: RUN_AND_BUILD_TIME
-    value: "false"
-  - key: APP_TIMEZONE
-    scope: RUN_AND_BUILD_TIME
-    value: America/Santiago
-  - key: APP_URL
-    scope: RUN_AND_BUILD_TIME
-    value: https://proyectotitulo-app-4prsq.ondigitalocean.app
-  - key: APP_LOCALE
-    scope: RUN_AND_BUILD_TIME
-    value: es
-  - key: APP_FALLBACK_LOCALE
-    scope: RUN_AND_BUILD_TIME
-    value: es
-  - key: APP_FAKER_LOCALE
-    scope: RUN_AND_BUILD_TIME
-    value: es_ES
-  
-  # Security
-  - key: BCRYPT_ROUNDS
-    scope: RUN_AND_BUILD_TIME
-    value: "12"
-  
-  # Logging
-  - key: LOG_CHANNEL
-    scope: RUN_AND_BUILD_TIME
-    value: stack
-  - key: LOG_STACK
-    scope: RUN_AND_BUILD_TIME
-    value: single
-  - key: LOG_LEVEL
-    scope: RUN_AND_BUILD_TIME
-    value: warning
-  
-  # Database (Managed DB)
-  - key: DB_CONNECTION
-    scope: RUN_AND_BUILD_TIME
-    value: mysql
-  - key: DB_HOST
-    scope: RUN_AND_BUILD_TIME
-    value: ${db-prod-laravel.HOSTNAME}
-  - key: DB_PORT
-    scope: RUN_AND_BUILD_TIME
-    value: ${db-prod-laravel.PORT}
-  - key: DB_DATABASE
-    scope: RUN_AND_BUILD_TIME
-    value: ${db-prod-laravel.DATABASE}
-  - key: DB_USERNAME
-    scope: RUN_AND_BUILD_TIME
-    value: ${db-prod-laravel.USERNAME}
-  - key: DB_PASSWORD
-    scope: RUN_AND_BUILD_TIME
-    type: SECRET
-    value: ${db-prod-laravel.PASSWORD}
-  
-  # Octane / RoadRunner
-  - key: OCTANE_SERVER
-    scope: RUN_AND_BUILD_TIME
-    value: roadrunner
-  - key: PHP_CLI_SERVER_WORKERS
-    scope: RUN_AND_BUILD_TIME
-    value: "4"
-  
-  # Redis (Self-hosted Droplet)
-  - key: REDIS_CLIENT
-    scope: RUN_AND_BUILD_TIME
-    value: phpredis
-  - key: REDIS_HOST
-    scope: RUN_AND_BUILD_TIME
-    value: 129.212.187.206
-  - key: REDIS_PORT
-    scope: RUN_AND_BUILD_TIME
-    value: "6379"
-  - key: REDIS_PASSWORD
-    scope: RUN_AND_BUILD_TIME
-    type: SECRET
-    value: ${REDIS_PASSWORD}
-  
-  # Session
-  - key: SESSION_DRIVER
-    scope: RUN_AND_BUILD_TIME
-    value: redis
-  - key: SESSION_LIFETIME
-    scope: RUN_AND_BUILD_TIME
-    value: "480"
-  - key: SESSION_ENCRYPT
-    scope: RUN_AND_BUILD_TIME
-    value: "true"
-  - key: SESSION_SECURE_COOKIE
-    scope: RUN_AND_BUILD_TIME
-    value: "true"
-  - key: SESSION_DOMAIN
-    scope: RUN_AND_BUILD_TIME
-    value: proyectotitulo-app-4prsq.ondigitalocean.app
-  
-  # Cache
-  - key: CACHE_STORE
-    scope: RUN_AND_BUILD_TIME
-    value: redis
-  - key: CACHE_PREFIX
-    scope: RUN_AND_BUILD_TIME
-    value: webrtcapp_
-  
-  # Queue
-  - key: QUEUE_CONNECTION
-    scope: RUN_AND_BUILD_TIME
-    value: redis
-  
-  # Broadcasting
-  - key: BROADCAST_CONNECTION
-    scope: RUN_AND_BUILD_TIME
-    value: log
-  
-  # Mail (Mailtrap)
-  - key: MAIL_MAILER
-    scope: RUN_AND_BUILD_TIME
-    value: smtp
-  - key: MAIL_HOST
-    scope: RUN_AND_BUILD_TIME
-    value: sandbox.smtp.mailtrap.io
-  - key: MAIL_PORT
-    scope: RUN_AND_BUILD_TIME
-    value: "587"
-  - key: MAIL_USERNAME
-    scope: RUN_AND_BUILD_TIME
-    value: ${MAIL_USERNAME}
-  - key: MAIL_PASSWORD
-    scope: RUN_AND_BUILD_TIME
-    type: SECRET
-    value: ${MAIL_PASSWORD}
-  - key: MAIL_ENCRYPTION
-    scope: RUN_AND_BUILD_TIME
-    value: tls
-  - key: MAIL_FROM_ADDRESS
-    scope: RUN_AND_BUILD_TIME
-    value: noreply@test.com
-  - key: MAIL_FROM_NAME
-    scope: RUN_AND_BUILD_TIME
-    value: ${APP_NAME}
-  
-  # Zoom Integration
-  - key: ZOOM_CLIENT_ID
-    scope: RUN_AND_BUILD_TIME
-    value: ${ZOOM_CLIENT_ID}
-  - key: ZOOM_CLIENT_SECRET
-    scope: RUN_AND_BUILD_TIME
-    type: SECRET
-    value: ${ZOOM_CLIENT_SECRET}
-  - key: ZOOM_ACCOUNT_ID
-    scope: RUN_AND_BUILD_TIME
-    value: ${ZOOM_ACCOUNT_ID}
-  - key: ZOOM_API_BASE_URL
-    scope: RUN_AND_BUILD_TIME
-    value: https://api.zoom.us/v2/
-  
-  # Storage (DigitalOcean Spaces)
-  - key: FILESYSTEM_DISK
-    scope: RUN_AND_BUILD_TIME
-    value: s3
-  - key: AWS_ACCESS_KEY_ID
-    scope: RUN_AND_BUILD_TIME
-    value: ${AWS_ACCESS_KEY_ID}
-  - key: AWS_SECRET_ACCESS_KEY
-    scope: RUN_AND_BUILD_TIME
-    type: SECRET
-    value: ${AWS_SECRET_ACCESS_KEY}
-  - key: AWS_DEFAULT_REGION
-    scope: RUN_AND_BUILD_TIME
-    value: atl1
-  - key: AWS_BUCKET
-    scope: RUN_AND_BUILD_TIME
-    value: mentoria-space
-  - key: AWS_ENDPOINT
-    scope: RUN_AND_BUILD_TIME
-    value: https://atl1.digitaloceanspaces.com
-  - key: AWS_URL
-    scope: RUN_AND_BUILD_TIME
-    value: https://mentoria-space.atl1.digitaloceanspaces.com
-  - key: AWS_USE_PATH_STYLE_ENDPOINT
-    scope: RUN_AND_BUILD_TIME
-    value: "false"
-  
-  # Vite
-  - key: VITE_APP_NAME
-    scope: RUN_AND_BUILD_TIME
-    value: ${APP_NAME}
-  - key: VITE_APP_ENV
-    scope: RUN_AND_BUILD_TIME
-    value: ${APP_ENV}
-  
-  # Assets
-  - key: ASSET_URL
-    scope: RUN_AND_BUILD_TIME
-    value: https://proyectotitulo-app-4prsq.ondigitalocean.app
-  
-  # Sanctum
-  - key: SANCTUM_STATEFUL_DOMAINS
-    scope: RUN_AND_BUILD_TIME
-    value: proyectotitulo-app-4prsq.ondigitalocean.app
-  
-  # Debug
-  - key: DEBUGBAR_ENABLED
-    scope: RUN_AND_BUILD_TIME
-    value: "false"
+  - name: tesis-app
+    github:
+      repo: S3L1M26/ProyectoTitulo
+      branch: main
+      deploy_on_push: true
+    dockerfile_path: WebRTCApp/Dockerfile
+    source_dir: WebRTCApp
+    http_port: 8000
+    instance_size_slug: apps-s-1vcpu-1gb-fixed
+    instance_count: 1
 
-# -------------------------------------------
-# QUEUE WORKER: Procesa jobs asíncronos
-# -------------------------------------------
-- name: queue
-  github:
-    repo: S3L1M26/ProyectoTitulo
-    branch: main
-    deploy_on_push: true
-  dockerfile_path: WebRTCApp/Dockerfile
-  source_dir: WebRTCApp
-  instance_size_slug: basic-xs
-  instance_count: 1
-  run_command: |
-    php artisan queue:work redis \
-      --queue=emails,default \
-      --sleep=3 \
-      --tries=3 \
-      --timeout=90 \
-      --max-jobs=100 \
-      --max-time=3600 \
-      --verbose
-  
-  envs:
-  - key: APP_NAME
-    value: MentorMatch
-  - key: APP_ENV
-    value: production
-  - key: APP_KEY
-    value: ${APP_KEY}
-  - key: APP_DEBUG
-    value: "false"
-  - key: LOG_CHANNEL
-    value: stack
-  
-  # Database
-  - key: DB_CONNECTION
-    value: mysql
-  - key: DB_HOST
-    value: ${db-prod-laravel.HOSTNAME}
-  - key: DB_PORT
-    value: ${db-prod-laravel.PORT}
-  - key: DB_DATABASE
-    value: ${db-prod-laravel.DATABASE}
-  - key: DB_USERNAME
-    value: ${db-prod-laravel.USERNAME}
-  - key: DB_PASSWORD
-    type: SECRET
-    value: ${db-prod-laravel.PASSWORD}
-  
-  # Redis
-  - key: REDIS_CLIENT
-    value: phpredis
-  - key: REDIS_HOST
-    value: 129.212.187.206
-  - key: REDIS_PORT
-    value: "6379"
-  - key: REDIS_PASSWORD
-    type: SECRET
-    value: ${REDIS_PASSWORD}
-  - key: CACHE_DRIVER
-    value: redis
-  - key: QUEUE_CONNECTION
-    value: redis
-  
-  # Mail
-  - key: MAIL_MAILER
-    value: smtp
-  - key: MAIL_HOST
-    value: sandbox.smtp.mailtrap.io
-  - key: MAIL_PORT
-    value: "587"
-  - key: MAIL_USERNAME
-    value: ${MAIL_USERNAME}
-  - key: MAIL_PASSWORD
-    type: SECRET
-    value: ${MAIL_PASSWORD}
-  - key: MAIL_ENCRYPTION
-    value: tls
-  - key: MAIL_FROM_ADDRESS
-    value: noreply@test.com
-  - key: MAIL_FROM_NAME
-    value: MentorMatch
-
-# -------------------------------------------
-# SCHEDULER: Tareas programadas (Cron)
-# -------------------------------------------
-- name: scheduler
-  github:
-    repo: S3L1M26/ProyectoTitulo
-    branch: main
-    deploy_on_push: true
-  dockerfile_path: WebRTCApp/Dockerfile
-  source_dir: WebRTCApp
-  instance_size_slug: basic-xs
-  instance_count: 1
-  run_command: |
-    while true; do
-      php artisan schedule:run --verbose --no-interaction
-      sleep 60
-    done
-  
-  envs:
-  - key: APP_NAME
-    value: MentorMatch
-  - key: APP_ENV
-    value: production
-  - key: APP_KEY
-    value: ${APP_KEY}
-  - key: APP_DEBUG
-    value: "false"
-  - key: LOG_CHANNEL
-    value: stack
-  - key: APP_TIMEZONE
-    value: America/Santiago
-  
-  # Database
-  - key: DB_CONNECTION
-    value: mysql
-  - key: DB_HOST
-    value: ${db-prod-laravel.HOSTNAME}
-  - key: DB_PORT
-    value: ${db-prod-laravel.PORT}
-  - key: DB_DATABASE
-    value: ${db-prod-laravel.DATABASE}
-  - key: DB_USERNAME
-    value: ${db-prod-laravel.USERNAME}
-  - key: DB_PASSWORD
-    type: SECRET
-    value: ${db-prod-laravel.PASSWORD}
-  
-  # Redis
-  - key: REDIS_CLIENT
-    value: phpredis
-  - key: REDIS_HOST
-    value: 129.212.187.206
-  - key: REDIS_PORT
-    value: "6379"
-  - key: REDIS_PASSWORD
-    type: SECRET
-    value: ${REDIS_PASSWORD}
-  - key: CACHE_DRIVER
-    value: redis
-  
-  # Mail
-  - key: MAIL_MAILER
-    value: smtp
-  - key: MAIL_HOST
-    value: sandbox.smtp.mailtrap.io
-  - key: MAIL_PORT
-    value: "587"
-  - key: MAIL_USERNAME
-    value: ${MAIL_USERNAME}
-  - key: MAIL_PASSWORD
-    type: SECRET
-    value: ${MAIL_PASSWORD}
-  - key: MAIL_ENCRYPTION
-    value: tls
-  - key: MAIL_FROM_ADDRESS
-    value: noreply@test.com
-  - key: MAIL_FROM_NAME
-    value: MentorMatch
+    envs:
+      - key: APP_ENV
+        value: production
+      - key: APP_KEY
+        value: ${APP_KEY}
+      - key: APP_URL
+        value: https://tesis-app-4prsq.ondigitalocean.app
+      - key: DB_CONNECTION
+        value: mysql
+      - key: DB_HOST
+        value: ${db-prod-laravel.HOSTNAME}
+      - key: DB_PORT
+        value: ${db-prod-laravel.PORT}
+      - key: DB_DATABASE
+        value: ${db-prod-laravel.DATABASE}
+      - key: DB_USERNAME
+        value: ${db-prod-laravel.USERNAME}
+      - key: DB_PASSWORD
+        type: SECRET
+        value: ${db-prod-laravel.PASSWORD}
+      - key: REDIS_HOST
+        value: 129.212.187.206
+      - key: REDIS_PORT
+        value: "6379"
+      - key: REDIS_PASSWORD
+        type: SECRET
+        value: ${REDIS_PASSWORD}
+      - key: FILESYSTEM_DISK
+        value: s3
+      - key: AWS_ACCESS_KEY_ID
+        value: ${AWS_ACCESS_KEY_ID}
+      - key: AWS_SECRET_ACCESS_KEY
+        type: SECRET
+        value: ${AWS_SECRET_ACCESS_KEY}
+      - key: AWS_DEFAULT_REGION
+        value: atl1
+      - key: AWS_BUCKET
+        value: mentoria-space
+      - key: AWS_ENDPOINT
+        value: https://atl1.digitaloceanspaces.com
+      - key: MAIL_MAILER
+        value: smtp
+      - key: MAIL_HOST
+        value: sandbox.smtp.mailtrap.io
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_USERNAME
+        value: ${MAIL_USERNAME}
+      - key: MAIL_PASSWORD
+        type: SECRET
+        value: ${MAIL_PASSWORD}
+      - key: ZOOM_CLIENT_ID
+        value: ${ZOOM_CLIENT_ID}
+      - key: ZOOM_CLIENT_SECRET
+        type: SECRET
+        value: ${ZOOM_CLIENT_SECRET}
+      - key: ZOOM_ACCOUNT_ID
+        value: ${ZOOM_ACCOUNT_ID}
