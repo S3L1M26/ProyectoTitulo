@@ -35,6 +35,17 @@ features:
 - buildpack-stack=ubuntu-22
 
 # ===========================================
+# INGRESS (ROUTING)
+# ===========================================
+ingress:
+  rules:
+  - component:
+      name: proyectotitulo-app
+    match:
+      domain:
+        exact: ""
+
+# ===========================================
 # PRE-DEPLOY JOBS
 # ===========================================
 jobs:
