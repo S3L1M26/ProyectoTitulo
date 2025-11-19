@@ -41,9 +41,6 @@ ingress:
   rules:
   - component:
       name: proyectotitulo-app
-    match:
-      path:
-        prefix: /
 
 # ===========================================
 # PRE-DEPLOY JOBS
