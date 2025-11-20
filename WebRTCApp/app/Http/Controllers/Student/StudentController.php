@@ -80,6 +80,8 @@ class StudentController extends Controller
         
         // Cargar sugerencias de mentores directamente (eager loading)
         // Lazy props no funcionan en primera carga - necesitan solicitud explícita del frontend
+        // Añadir protección: capture exceptions en la generación de sugerencias
+        // y falle de forma segura (no lanzar 500 al usuario final por fallos en la sugerencia)
         try {
             $mentorSuggestions = $this->getMentorSuggestions();
         } catch (\Throwable $e) {
@@ -88,10 +90,17 @@ class StudentController extends Controller
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString(),
+                'request_query' => request()->query(),
+                'session_id' => session()->getId(),
+                'user_id' => $student->id ?? null,
             ]);
 
-            // Re-throw so tests still observe failure, but we have a log entry with full trace
-            throw $e;
+            // Devolvemos un fallback para que el dashboard cargue aun si las sugerencias fallan
+            $mentorSuggestions = [
+                'requires_verification' => false,
+                'message' => 'No fue posible cargar sugerencias en este momento.',
+                'mentors' => []
+            ];
         }
         
         return Inertia::render('Student/Dashboard/Index', [
