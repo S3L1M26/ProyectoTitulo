@@ -144,8 +144,49 @@ class ProcessStudentCertificateJob implements ShouldQueue
         }
 
         // Otherwise stream the file from the configured disk to a local temp file
-        $stream = Storage::disk($disk)->readStream($storagePath);
+        logger()->info('Attempting to stream remote file', [
+            'document_id' => $this->document->id,
+            'disk' => $disk,
+            'storage_path' => $storagePath,
+            's3_endpoint' => env('AWS_ENDPOINT'),
+            's3_bucket' => env('AWS_BUCKET'),
+        ]);
+
+        try {
+            $exists = Storage::disk($disk)->exists($storagePath);
+        } catch (Exception $e) {
+            logger()->error('Error checking existence on disk', ['error' => $e->getMessage(), 'disk' => $disk, 'path' => $storagePath]);
+            $exists = false;
+        }
+
+        logger()->info('Remote file existence check', ['document_id' => $this->document->id, 'exists' => $exists]);
+
+        $stream = null;
+        try {
+            $stream = Storage::disk($disk)->readStream($storagePath);
+        } catch (Exception $e) {
+            logger()->warning('readStream threw exception', ['error' => $e->getMessage(), 'disk' => $disk, 'path' => $storagePath]);
+        }
+
         if (! $stream) {
+            // Try an alternative: Storage::get (may throw with details)
+            try {
+                logger()->info('Attempting Storage::get as fallback', ['document_id' => $this->document->id]);
+                $contents = Storage::disk($disk)->get($storagePath);
+                if ($contents === null || $contents === '') {
+                    logger()->warning('Storage::get returned empty content', ['document_id' => $this->document->id]);
+                } else {
+                    // write contents to temp file and return path
+                    $localPath = sys_get_temp_dir() . '/' . uniqid('cert_pdf_') . '_' . basename($storagePath);
+                    file_put_contents($localPath, $contents);
+                    logger()->info('Wrote fallback get() contents to local file', ['local_path' => $localPath, 'document_id' => $this->document->id]);
+                    return $localPath;
+                }
+            } catch (Exception $e) {
+                logger()->error('Storage::get fallback failed', ['error' => $e->getMessage(), 'document_id' => $this->document->id]);
+            }
+
+            // If we reach here, streaming and get both failed
             throw new Exception('No se pudo leer el archivo remoto para procesar');
         }
 
