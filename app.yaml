@@ -33,7 +33,8 @@ jobs:
     run_command: |
       php -r 'for($i=0;$i<30;$i++){try{$pdo=new PDO("mysql:host=".getenv("DB_HOST").";port=".getenv("DB_PORT").";dbname=".getenv("DB_DATABASE").";charset=utf8mb4",getenv("DB_USERNAME"),getenv("DB_PASSWORD"),[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);echo "db ready\n";exit(0);}catch(Throwable $e){echo "waiting DB...\n";sleep(2);} } echo "db unreachable\n"; exit(1);'
       php artisan migrate --force
-      php artisan db:seed --class=AreasInteresSeeder --force
+      php artisan db:seed --class=AreasInteresSeeder --force --verbose
+      php -r "require 'vendor/autoload.php'; $app = require 'bootstrap/app.php'; $kernel = $app->make(Illuminate\\Contracts\\Console\\Kernel::class); $kernel->bootstrap(); echo \App\\Models\\AreaInteres::count() . PHP_EOL;"
     envs:
       - key: APP_NAME
         value: MentorMatch
