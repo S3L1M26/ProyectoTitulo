@@ -15,7 +15,13 @@ class StudentController extends Controller
 {
     public function index()
     {
-        $student = Auth::user()->load('aprendiz');
+        // Ensure we have an authenticated user (route is protected, but be defensive)
+        $student = Auth::user();
+        if (! $student) {
+            abort(401);
+        }
+        /** @var \App\Models\User $student */
+        $student->load('aprendiz');
         
         logger()->debug('📊 Student Dashboard accessed', [
             'user_id' => $student->id,
@@ -121,7 +127,18 @@ class StudentController extends Controller
     private function getMentorSuggestions()
     {
         // Early return con menos queries - cargar con eager loading
-        $student = Auth::user()->load('aprendiz.areasInteres');
+        $student = Auth::user();
+        if (! $student) {
+            // If somehow unauthenticated, return empty suggestions
+            return [
+                'requires_verification' => false,
+                'message' => 'Usuario no autenticado',
+                'action' => null,
+                'mentors' => []
+            ];
+        }
+        /** @var \App\Models\User $student */
+        $student->load('aprendiz.areasInteres');
         
         // Verificar certificado de alumno regular
         if (!$student->aprendiz || !$student->aprendiz->certificate_verified) {
@@ -170,7 +187,9 @@ class StudentController extends Controller
             ->pluck('calificacionPromedio', 'user_id');
         
         // CRÍTICO: Computar can_review FUERA del cache para que siempre sea fresco
-        $student = auth()->user();
+        // Reuse authenticated user (already loaded above)
+        $student = Auth::user();
+        /** @var \App\Models\User $student */
         $mentorRecordIds = DB::table('mentors')->whereIn('user_id', $mentorIds)->pluck('id')->toArray();
         
         $userReviews = MentorReview::whereIn('mentor_id', $mentorRecordIds)
