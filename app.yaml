@@ -39,7 +39,7 @@ jobs:
       - key: APP_ENV
         value: production
       - key: APP_KEY
-        value: ${APP_KEY}
+        value: base64:XyKAGLdjDvvq6zfIy6tz8HoJMSaS5lqDIKEeVHTYTkE=
       - key: DB_CONNECTION
         value: mysql
       - key: DB_HOST
@@ -52,7 +52,7 @@ jobs:
         value: ${db-prod-laravel.USERNAME}
       - key: DB_PASSWORD
         type: SECRET
-        value: ${db-prod-laravel.PASSWORD}
+        value: EV[1:gNd1foK58/3EGSPuuEjZeXoy6u4CYzaP:mCdpaXqmItwLWcSm5qNhlrPEQS7Ri2V0Swd0rUomP2A574pa1+OSNukwPg==]
 
   - name: scheduler
     kind: SCHEDULED
@@ -69,7 +69,11 @@ jobs:
       - key: APP_ENV
         value: production
       - key: APP_KEY
-        value: ${APP_KEY}
+        value: base64:XyKAGLdjDvvq6zfIy6tz8HoJMSaS5lqDIKEeVHTYTkE=
+      - key: APP_URL
+        value: https://tesis-app-he9qn.ondigitalocean.app
+      - key: APP_TIMEZONE
+        value: America/Santiago
       - key: DB_CONNECTION
         value: mysql
       - key: DB_HOST
@@ -82,14 +86,33 @@ jobs:
         value: ${db-prod-laravel.USERNAME}
       - key: DB_PASSWORD
         type: SECRET
-        value: ${db-prod-laravel.PASSWORD}
+        value: EV[1:CKsi1nAvsNXKrt4pRpgkkAEjbzVXfvY0:2TnQ4MhTvx/Yh5VwXCVAnYDY55/trQu+yORqyw9a0uVoKmtCQz9q11SqRg==]
       - key: REDIS_HOST
         value: 129.212.187.206
       - key: REDIS_PORT
         value: "6379"
       - key: REDIS_PASSWORD
-        type: SECRET
-        value: ${REDIS_PASSWORD}
+        value: secret_prod_redis
+      - key: MAIL_MAILER
+        value: smtp
+      - key: MAIL_HOST
+        value: sandbox.smtp.mailtrap.io
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_USERNAME
+        value: 0fb2f742909f76
+      - key: MAIL_PASSWORD
+        value: 157983ec50d138
+      - key: MAIL_FROM_ADDRESS
+        value: hello@example.com
+      - key: MAIL_FROM_NAME
+        value: ${APP_NAME}
+      - key: MAIL_ENCRYPTION
+        value: tls
+      - key: QUEUE_CONNECTION
+        value: redis
+      - key: CACHE_STORE
+        value: redis
 # ===========================
 # WORKERS
 # ===========================
@@ -107,7 +130,11 @@ workers:
       - key: APP_ENV
         value: production
       - key: APP_KEY
-        value: ${APP_KEY}
+        value: base64:XyKAGLdjDvvq6zfIy6tz8HoJMSaS5lqDIKEeVHTYTkE=
+      - key: APP_URL
+        value: https://tesis-app-he9qn.ondigitalocean.app
+      - key: APP_TIMEZONE
+        value: America/Santiago
       - key: DB_CONNECTION
         value: mysql
       - key: DB_HOST
@@ -120,14 +147,33 @@ workers:
         value: ${db-prod-laravel.USERNAME}
       - key: DB_PASSWORD
         type: SECRET
-        value: ${db-prod-laravel.PASSWORD}
+        value: EV[1:ghorVb5XoEjtczbj8GIKTPO4AYgEv2+P:uOIJ25NMFpPokb3X/Qxuq7A7tvyMsek273vasroWzTabjBC9ak6QdLhZlA==]
       - key: REDIS_HOST
         value: 129.212.187.206
       - key: REDIS_PORT
         value: "6379"
       - key: REDIS_PASSWORD
-        type: SECRET
-        value: ${REDIS_PASSWORD}
+        value: secret_prod_redis
+      - key: MAIL_MAILER
+        value: smtp
+      - key: MAIL_HOST
+        value: sandbox.smtp.mailtrap.io
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_USERNAME
+        value: 0fb2f742909f76
+      - key: MAIL_PASSWORD
+        value: 157983ec50d138
+      - key: MAIL_FROM_ADDRESS
+        value: hello@example.com
+      - key: MAIL_FROM_NAME
+        value: ${APP_NAME}
+      - key: MAIL_ENCRYPTION
+        value: tls
+      - key: QUEUE_CONNECTION
+        value: redis
+      - key: CACHE_STORE
+        value: redis
 
 # ===========================
 # WEB SERVICE
@@ -143,14 +189,33 @@ services:
     http_port: 8000
     instance_size_slug: apps-s-1vcpu-1gb-fixed
     instance_count: 1
-
+    run_command: >
+      sh -lc "php artisan config:clear && php artisan cache:clear && php artisan route:clear && php artisan config:cache && php artisan octane:reload || php artisan octane:start --server=roadrunner --host=0.0.0.0 --port=8000"
     envs:
       - key: APP_ENV
         value: production
       - key: APP_KEY
-        value: ${APP_KEY}
+        value: base64:XyKAGLdjDvvq6zfIy6tz8HoJMSaS5lqDIKEeVHTYTkE=
       - key: APP_URL
-        value: https://tesis-app-4prsq.ondigitalocean.app
+        value: https://tesis-app-he9qn.ondigitalocean.app
+      - key: APP_TIMEZONE
+        value: America/Santiago
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_LOCALE
+        value: es
+      - key: APP_FALLBACK_LOCALE
+        value: es
+      - key: APP_FAKER_LOCALE
+        value: es_ES
+      - key: LOG_CHANNEL
+        value: stack
+      - key: LOG_STACK
+        value: single
+      - key: LOG_DEPRECATIONS_CHANNEL
+        value: null
+      - key: LOG_LEVEL
+        value: debug
       - key: DB_CONNECTION
         value: mysql
       - key: DB_HOST
@@ -163,27 +228,26 @@ services:
         value: ${db-prod-laravel.USERNAME}
       - key: DB_PASSWORD
         type: SECRET
-        value: ${db-prod-laravel.PASSWORD}
+        value: EV[1:xtZn88lEJG8HXJQbd1kkVmo/mRCjSbPs:GDM7u18bdrL86XiBBHtHhSl9XqKGG8xcUlhriB9DvdH6HhAhMr5sIdPjhw==]
       - key: REDIS_HOST
         value: 129.212.187.206
       - key: REDIS_PORT
         value: "6379"
       - key: REDIS_PASSWORD
-        type: SECRET
-        value: ${REDIS_PASSWORD}
+        value: secret_prod_redis
       - key: FILESYSTEM_DISK
         value: s3
       - key: AWS_ACCESS_KEY_ID
-        value: ${AWS_ACCESS_KEY_ID}
+        value: DO801GNMJDYBBMHMUTTC
       - key: AWS_SECRET_ACCESS_KEY
         type: SECRET
-        value: ${AWS_SECRET_ACCESS_KEY}
+        value: W1FiiomZkNXaVVzCsU++8yrukLH7uo/Jav+MRnEpn7E
       - key: AWS_DEFAULT_REGION
         value: atl1
       - key: AWS_BUCKET
         value: mentoria-space
       - key: AWS_ENDPOINT
-        value: https://atl1.digitaloceanspaces.com
+        value: https://mentoria-space.atl1.digitaloceanspaces.com
       - key: MAIL_MAILER
         value: smtp
       - key: MAIL_HOST
@@ -191,14 +255,36 @@ services:
       - key: MAIL_PORT
         value: "587"
       - key: MAIL_USERNAME
-        value: ${MAIL_USERNAME}
+        value: 0fb2f742909f76
       - key: MAIL_PASSWORD
-        type: SECRET
-        value: ${MAIL_PASSWORD}
+        value: 157983ec50d138
       - key: ZOOM_CLIENT_ID
-        value: ${ZOOM_CLIENT_ID}
+        value: CAe2UjpwRuu_Z1TgDnf3Lw
       - key: ZOOM_CLIENT_SECRET
-        type: SECRET
-        value: ${ZOOM_CLIENT_SECRET}
+        value: 2hxjdrtqQX3f8oaTSMX9IV7A0u4Fggg2
       - key: ZOOM_ACCOUNT_ID
-        value: ${ZOOM_ACCOUNT_ID}
+        value: kDuuuE0PTduByeUJoNlUcw
+      - key: ZOOM_API_BASE_URL
+        value: https://api.zoom.us/v2/
+      - key: MAIL_FROM_ADDRESS
+        value: hello@example.com
+      - key: MAIL_FROM_NAME
+        value: ${APP_NAME}
+      - key: MAIL_ENCRYPTION
+        value: tls
+      - key: QUEUE_CONNECTION
+        value: redis
+      - key: SESSION_DRIVER
+        value: redis
+      - key: CACHE_STORE
+        value: redis
+      - key: SESSION_LIFETIME
+        value: "480"
+      - key: SESSION_PATH
+        value: /
+      - key: SESSION_DOMAIN
+        value: tesis-app-he9qn.ondigitalocean.app
+      - key: SESSION_SECURE_COOKIE
+        value: "true"
+      - key: SANCTUM_STATEFUL_DOMAINS
+        value: tesis-app-he9qn.ondigitalocean.app

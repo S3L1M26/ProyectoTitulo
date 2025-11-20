@@ -15,20 +15,41 @@ class VerifyEmailController extends Controller
      */
     public function __invoke(EmailVerificationRequest $request): RedirectResponse
     {
-        $redirectRoute = match(Auth::user()->role) {
+        $user = $request->user();
+
+        if (! $user) {
+            return redirect()->route('login');
+        }
+
+        $role = $user->role ?? null;
+
+        $redirectRoute = match($role) {
             'mentor' => 'mentor.dashboard',
             'student' => 'student.dashboard',
             'admin' => 'admin.dashboard',
             default => 'login'
         };
-        if ($request->user()->hasVerifiedEmail()) {
+
+        try {
+            if ($user->hasVerifiedEmail()) {
+                return redirect()->intended(route($redirectRoute, absolute: false).'?verified=1');
+            }
+
+            if ($user->markEmailAsVerified()) {
+                event(new Verified($user));
+            }
+
             return redirect()->intended(route($redirectRoute, absolute: false).'?verified=1');
-        }
+        } catch (\Throwable $e) {
+            // Log full exception to help diagnose production-only failures
+            \Illuminate\Support\Facades\Log::error('Email verification handler failed', [
+                'user_id' => $user->id ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
 
-        if ($request->user()->markEmailAsVerified()) {
-            event(new Verified($request->user()));
+            // Fail gracefully: send user to login with an error message
+            return redirect()->route('login')->with('error', 'Ocurrió un error al verificar el correo. Por favor, inicia sesión e intenta nuevamente.');
         }
-
-        return redirect()->intended(route($redirectRoute, absolute: false).'?verified=1');
     }
 }
