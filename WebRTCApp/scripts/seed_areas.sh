@@ -2,7 +2,7 @@
 set -e
 
 echo "-> Waiting for DB (up to ~60s)..."
-php -r 'for($i=0;$i<30;$i++){try{$pdo=new PDO("mysql:host=".getenv("DB_HOST").";port=".getenv("DB_PORT").";dbname=".getenv("DB_DATABASE").";charset=utf8mb4",getenv("DB_USERNAME"),getenv("DB_PASSWORD"),[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);echo "db ready\n";exit(0);}catch(Throwable $e){echo "waiting DB...\n";sleep(2);} } echo "db unreachable\n"; exit(1); }'
+php -r 'for($i=0;$i<30;$i++){try{$pdo=new PDO("mysql:host=".getenv("DB_HOST").";port=".getenv("DB_PORT").";dbname=".getenv("DB_DATABASE").";charset=utf8mb4",getenv("DB_USERNAME"),getenv("DB_PASSWORD"),[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);echo "db ready\n";exit(0);}catch(Throwable $e){echo "waiting DB...\n";sleep(2);} } echo "db unreachable\n"; exit(1);'
 
 echo "-> Running AreasInteresSeeder"
 php artisan db:seed --class=AreasInteresSeeder --force --verbose || {
