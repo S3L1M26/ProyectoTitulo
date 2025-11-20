@@ -33,10 +33,13 @@ class ProcessStudentCertificateJob implements ShouldQueue
             $startTime = microtime(true);
             $extractedText = '';
             $imagePath = null;
+
+            // Ensure we have a local copy of the PDF (in production files may be on S3/Spaces)
+            $localPdfPath = $this->downloadToLocal($this->document->file_path);
             
             // 1. Intentar extracción directa de texto del PDF (si tiene texto seleccionable)
             $stepStart = microtime(true);
-            $extractedText = $this->extractTextDirectly($this->document->file_path);
+            $extractedText = $this->extractTextDirectly($localPdfPath);
             
             if (!empty(trim($extractedText))) {
                 logger()->info('PDF text extracted directly', [
@@ -52,7 +55,7 @@ class ProcessStudentCertificateJob implements ShouldQueue
                 
                 // 2a. Convertir PDF a imagen
                 $stepStart = microtime(true);
-                $imagePath = $this->convertPdfToImage($this->document->file_path);
+                $imagePath = $this->convertPdfToImage($localPdfPath);
                 logger()->info('PDF converted to image', [
                     'document_id' => $this->document->id,
                     'time_ms' => round((microtime(true) - $stepStart) * 1000)
@@ -86,9 +89,14 @@ class ProcessStudentCertificateJob implements ShouldQueue
                 'processed_at' => now(),
             ]);
             
-            // Limpiar imagen temporal si se creó
-            if ($imagePath && Storage::exists($imagePath)) {
-                Storage::delete($imagePath);
+            // Limpiar imagen temporal si se creó (local filesystem)
+            if ($imagePath && file_exists($imagePath)) {
+                @unlink($imagePath);
+            }
+
+            // Limpiar pdf local temporal
+            if (!empty($localPdfPath) && file_exists($localPdfPath)) {
+                @unlink($localPdfPath);
             }
             
             $totalTime = round((microtime(true) - $startTime) * 1000);
@@ -117,12 +125,60 @@ class ProcessStudentCertificateJob implements ShouldQueue
     }
 
     /**
+     * Download a remote storage file to a local temporary path and return local path.
+     * Works with S3/Spaces or local disk.
+     */
+    private function downloadToLocal(string $storagePath): string
+    {
+        // Determine disk from config (default disk)
+        $disk = config('filesystems.default');
+
+        // If the storage is local and Storage::path works, just return that path
+        try {
+            $local = Storage::path($storagePath);
+            if (file_exists($local)) {
+                return $local;
+            }
+        } catch (Exception $e) {
+            // ignore and fallback to streaming
+        }
+
+        // Otherwise stream the file from the configured disk to a local temp file
+        $stream = Storage::disk($disk)->readStream($storagePath);
+        if (! $stream) {
+            throw new Exception('No se pudo leer el archivo remoto para procesar');
+        }
+
+        $localPath = sys_get_temp_dir() . '/' . uniqid('cert_pdf_') . '_' . basename($storagePath);
+        $out = fopen($localPath, 'w');
+        if (! $out) {
+            throw new Exception('No se pudo crear archivo temporal local');
+        }
+
+        while (! feof($stream)) {
+            fwrite($out, fread($stream, 1024 * 8));
+        }
+
+        if (is_resource($stream)) {
+            fclose($stream);
+        }
+        fclose($out);
+
+        return $localPath;
+    }
+
+    /**
      * Intentar extraer texto directamente del PDF sin OCR
      * (si el PDF tiene texto seleccionable)
      */
     private function extractTextDirectly(string $pdfPath): string
     {
-        $fullPath = Storage::path($pdfPath);
+        // If $pdfPath is already a local path, use it; otherwise try Storage::path
+        if (file_exists($pdfPath)) {
+            $fullPath = $pdfPath;
+        } else {
+            $fullPath = Storage::path($pdfPath);
+        }
         
         try {
             $output = [];
@@ -156,13 +212,17 @@ class ProcessStudentCertificateJob implements ShouldQueue
      */
     private function convertPdfToImage(string $pdfPath): string
     {
-        $fullPath = Storage::path($pdfPath);
+        // Accept local path or storage path
+        if (file_exists($pdfPath)) {
+            $fullPath = $pdfPath;
+        } else {
+            $fullPath = Storage::path($pdfPath);
+        }
+
         $outputBaseName = uniqid('cert_');
-        $outputDir = Storage::path('temp');
-        
-        // Crear directorio temp si no existe
-        if (!Storage::exists('temp')) {
-            Storage::makeDirectory('temp');
+        $outputDir = sys_get_temp_dir();
+        if (!file_exists($outputDir)) {
+            mkdir($outputDir, 0777, true);
         }
         
         try {
@@ -180,23 +240,23 @@ class ProcessStudentCertificateJob implements ShouldQueue
             
             if ($returnVar !== 0 || !Storage::exists($outputPath)) {
                 // Método 2: Fallback con ImageMagick convert
-                $outputPath = 'temp/' . $outputBaseName . '_fallback.jpg';
-                $fullOutputPath = Storage::path($outputPath);
-                
+                $outputPath = $outputDir . '/' . $outputBaseName . '_fallback.jpg';
+
                 $command = sprintf(
                     'convert -density 300 %s[0] -quality 90 %s',
                     escapeshellarg($fullPath),
-                    escapeshellarg($fullOutputPath)
+                    escapeshellarg($outputPath)
                 );
                 
                 exec($command . ' 2>&1', $output2, $returnVar2);
                 
-                if ($returnVar2 !== 0 || !Storage::exists($outputPath)) {
+                if ($returnVar2 !== 0 || !file_exists($outputPath)) {
                     throw new Exception("No se pudo convertir el PDF a imagen con ningún método");
                 }
             }
             
-            return $outputPath;
+            // Return local output path
+            return isset($outputPath) ? (file_exists($outputDir . '/' . $outputBaseName . '.jpg') ? $outputDir . '/' . $outputBaseName . '.jpg' : $outputPath) : '';
             
         } catch (Exception $e) {
             throw new Exception("No se pudo convertir el PDF a imagen: " . $e->getMessage());
@@ -208,7 +268,12 @@ class ProcessStudentCertificateJob implements ShouldQueue
      */
     private function extractTextFromImage(string $imagePath): string
     {
-        $fullPath = Storage::path($imagePath);
+        // Accept local path or storage path
+        if (file_exists($imagePath)) {
+            $fullPath = $imagePath;
+        } else {
+            $fullPath = Storage::path($imagePath);
+        }
         
         try {
             // Preprocesar imagen para mejorar OCR
