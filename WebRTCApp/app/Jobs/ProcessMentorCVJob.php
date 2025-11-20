@@ -96,10 +96,10 @@ class ProcessMentorCVJob implements ShouldQueue
                 'processed_at' => now(),
             ]);
             
-            // Limpiar imágenes temporales si se crearon
+            // Limpiar imágenes temporales si se crearon (local temp files)
             foreach ($imagePaths as $imagePath) {
-                if (Storage::exists($imagePath)) {
-                    Storage::delete($imagePath);
+                if (file_exists($imagePath)) {
+                    @unlink($imagePath);
                 }
             }
             
@@ -130,11 +130,62 @@ class ProcessMentorCVJob implements ShouldQueue
     }
 
     /**
+     * Download a remote storage file to a local temporary path and return local path.
+     * Works with S3/Spaces or local disk.
+     */
+    private function downloadToLocal(string $storagePath): string
+    {
+        $disk = config('filesystems.default');
+
+        // If the storage is local and Storage::path works, just return that path
+        try {
+            $local = Storage::disk($disk)->path($storagePath);
+            if (file_exists($local)) {
+                return $local;
+            }
+        } catch (Exception $e) {
+            // ignore and fallback to streaming
+        }
+
+        // Otherwise stream the file from the configured disk to a local temp file
+        $stream = Storage::disk($disk)->readStream($storagePath);
+        if ($stream === false) {
+            throw new Exception('No se pudo leer el archivo remoto para procesar');
+        }
+
+        $localPath = sys_get_temp_dir() . '/' . uniqid('cv_pdf_') . '_' . basename($storagePath);
+        $out = fopen($localPath, 'w');
+        if (!$out) {
+            throw new Exception('No se pudo crear archivo temporal local');
+        }
+
+        while (!feof($stream)) {
+            fwrite($out, fread($stream, 1024 * 8));
+        }
+
+        if (is_resource($stream)) {
+            fclose($stream);
+        }
+        fclose($out);
+
+        return $localPath;
+    }
+
+    /**
      * Intentar extraer texto directamente del PDF sin OCR (TODAS las páginas)
      */
     private function extractTextDirectly(string $pdfPath): string
     {
-        $fullPath = Storage::path($pdfPath);
+        $disk = config('filesystems.default', 'local');
+        try {
+            $fullPath = Storage::disk($disk)->path($pdfPath);
+            if (!file_exists($fullPath)) {
+                // Try downloading to local temp if path doesn't exist
+                $fullPath = $this->downloadToLocal($pdfPath);
+            }
+        } catch (Exception $e) {
+            $fullPath = $this->downloadToLocal($pdfPath);
+        }
         
         try {
             $output = [];
@@ -168,13 +219,20 @@ class ProcessMentorCVJob implements ShouldQueue
      */
     private function convertPdfToImages(string $pdfPath): array
     {
-        $fullPath = Storage::path($pdfPath);
+        $disk = config('filesystems.default', 'local');
+        try {
+            $fullPath = Storage::disk($disk)->path($pdfPath);
+            if (!file_exists($fullPath)) {
+                $fullPath = $this->downloadToLocal($pdfPath);
+            }
+        } catch (Exception $e) {
+            $fullPath = $this->downloadToLocal($pdfPath);
+        }
         $outputBaseName = uniqid('cv_');
-        $outputDir = Storage::path('temp');
+        $outputDir = sys_get_temp_dir();
         
-        // Crear directorio temp si no existe
-        if (!Storage::exists('temp')) {
-            Storage::makeDirectory('temp');
+        if (!file_exists($outputDir)) {
+            mkdir($outputDir, 0777, true);
         }
         
         try {
@@ -192,13 +250,13 @@ class ProcessMentorCVJob implements ShouldQueue
             }
             
             // pdftoppm genera archivos con formato: outputBaseName-1.jpg, outputBaseName-2.jpg, etc.
-            // Buscar todos los archivos generados
+            // Buscar todos los archivos generados en el directorio temporal
             $imagePaths = [];
-            $files = Storage::files('temp');
+            $files = scandir($outputDir);
             
             foreach ($files as $file) {
-                if (str_starts_with(basename($file), $outputBaseName)) {
-                    $imagePaths[] = $file;
+                if (str_starts_with($file, $outputBaseName) && pathinfo($file, PATHINFO_EXTENSION) === 'jpg') {
+                    $imagePaths[] = $outputDir . '/' . $file;
                 }
             }
             
@@ -224,7 +282,8 @@ class ProcessMentorCVJob implements ShouldQueue
         $allText = [];
         
         foreach ($imagePaths as $imagePath) {
-            $fullPath = Storage::path($imagePath);
+            // $imagePath is already a full local path from convertPdfToImages
+            $fullPath = $imagePath;
             
             try {
                 // Preprocesar imagen para mejorar OCR

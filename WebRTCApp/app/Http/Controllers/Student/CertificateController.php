@@ -24,15 +24,16 @@ class CertificateController extends Controller
             'certificate.max' => 'El archivo no debe superar los 5MB.',
         ]);
 
-        $user = auth()->user();
+        $user = $request->user();
 
         // Guardar archivo en storage/app/student_certificates/{user_id}/
         $file = $request->file('certificate');
         $fileName = time() . '_certificate.pdf';
+        $disk = config('filesystems.default', 'local');
         $filePath = $file->storeAs(
             "student_certificates/{$user->id}",
             $fileName,
-            'local' // Usar disco local
+            $disk
         );
 
         // Crear registro en student_documents con status pending

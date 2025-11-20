@@ -28,7 +28,7 @@ class CVController extends Controller
             'cv.max' => 'El archivo no debe superar los 10MB.',
         ]);
 
-        $user = auth()->user();
+        $user = $request->user();
 
         // Validar que el usuario sea mentor
         if ($user->role !== 'mentor' || !$user->mentor) {
@@ -38,10 +38,11 @@ class CVController extends Controller
         // Guardar archivo en storage/app/mentor_cvs/{user_id}/
         $file = $request->file('cv');
         $fileName = time() . '_cv.pdf';
+        $disk = config('filesystems.default', 'local');
         $filePath = $file->storeAs(
             "mentor_cvs/{$user->id}",
             $fileName,
-            'local' // Usar disco local
+            $disk
         );
 
         // Crear registro en mentor_documents con status pending
@@ -83,15 +84,25 @@ class CVController extends Controller
             abort(404, 'CV no disponible');
         }
 
-        // Verificar que el archivo existe
-        if (!Storage::disk('local')->exists($document->file_path)) {
+        $disk = config('filesystems.default', 'local');
+
+        // Verificar que el archivo existe en el disco configurado
+        if (!Storage::disk($disk)->exists($document->file_path)) {
             abort(404, 'Archivo no encontrado');
         }
 
-        // Retornar el archivo para visualización en el navegador
-        $filePath = Storage::disk('local')->path($document->file_path);
-        
-        return response()->file($filePath, [
+        // Stream the file from the configured disk to the response
+        $stream = Storage::disk($disk)->readStream($document->file_path);
+        if ($stream === false) {
+            abort(500, 'No se pudo abrir el archivo para lectura');
+        }
+
+        return response()->stream(function () use ($stream) {
+            fpassthru($stream);
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+        }, 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline; filename="CV_Mentor_' . $mentor->name . '.pdf"',
         ]);
@@ -106,7 +117,7 @@ class CVController extends Controller
             'is_public' => 'required|boolean',
         ]);
 
-        $user = auth()->user();
+        $user = $request->user();
 
         // Validar que el usuario sea mentor
         if ($user->role !== 'mentor' || !$user->mentor) {
