@@ -84,12 +84,19 @@ CMD ["php-fpm"]
 ############################
 FROM php-base AS runtime
 
-# Instalar RoadRunner (descarga robusta desde release 'latest')
-RUN curl -fSL -o rr.tar.gz https://github.com/roadrunner-server/roadrunner/releases/latest/download/roadrunner-linux-amd64.tar.gz \
-    && tar -xzf rr.tar.gz \
-    && mv roadrunner-*/rr /usr/local/bin/rr \
-    && chmod +x /usr/local/bin/rr \
-    && rm -rf rr.tar.gz roadrunner-*
+# Instalar RoadRunner (fijar versión, reintentos y comprobación del tarball)
+RUN set -eux; \
+    RR_VERSION="v2024.1.0"; \
+    RR_FILE="roadrunner-2024.1.0-linux-amd64.tar.gz"; \
+    RR_URL="https://github.com/roadrunner-server/roadrunner/releases/download/${RR_VERSION}/${RR_FILE}"; \
+    echo "Downloading RoadRunner from ${RR_URL}"; \
+    curl -fSL --retry 6 --retry-delay 5 --retry-connrefused -o rr.tar.gz "${RR_URL}"; \
+    # Basic tarball sanity check (tar will fail if not a valid gzip/tar)
+    tar -tzf rr.tar.gz > /dev/null; \
+    tar -xzf rr.tar.gz; \
+    mv roadrunner-*/rr /usr/local/bin/rr; \
+    chmod +x /usr/local/bin/rr; \
+    rm -rf rr.tar.gz roadrunner-*;
 
 COPY --from=vendor /var/www/html/vendor ./vendor
 COPY . ./
