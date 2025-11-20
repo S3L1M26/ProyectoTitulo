@@ -84,12 +84,12 @@ CMD ["php-fpm"]
 ############################
 FROM php-base AS runtime
 
-# Instalar RoadRunner
-RUN curl -L https://github.com/roadrunner-server/roadrunner/releases/download/v2024.1.0/roadrunner-2024.1.0-linux-amd64.tar.gz -o rr.tar.gz \
+# Instalar RoadRunner (descarga robusta desde release 'latest')
+RUN curl -fSL -o rr.tar.gz https://github.com/roadrunner-server/roadrunner/releases/latest/download/roadrunner-linux-amd64.tar.gz \
     && tar -xzf rr.tar.gz \
-    && mv roadrunner-2024.1.0-linux-amd64/rr /usr/local/bin/rr \
+    && mv roadrunner-*/rr /usr/local/bin/rr \
     && chmod +x /usr/local/bin/rr \
-    && rm -rf rr.tar.gz roadrunner-2024.1.0-linux-amd64
+    && rm -rf rr.tar.gz roadrunner-*
 
 COPY --from=vendor /var/www/html/vendor ./vendor
 COPY . ./
