@@ -265,11 +265,9 @@ class MentorCVPublicAccessTest extends TestCase
 
         $response->assertStatus(200);
         
-        // Verificar que retorna el más reciente comparando rutas
-        $returnedPath = $response->getFile()->getPathname();
-        $expectedPath = Storage::disk('local')->path($filePath2);
-        
-        $this->assertEquals($expectedPath, $returnedPath);
+        // Verificar que retorna el más reciente comparando contenido de archivos
+        $expectedContent = Storage::disk('local')->get($filePath2);
+        $this->assertEquals($expectedContent, $response->getContent());
     }
 
     public function test_cv_is_displayed_inline_not_downloaded(): void
