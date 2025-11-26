@@ -21,7 +21,7 @@ class StudentController extends Controller
             abort(401);
         }
         /** @var \App\Models\User $student */
-        $student->load('aprendiz');
+        $student->load('aprendiz', 'aprendiz.areasInteres');
         
         logger()->debug('📊 Student Dashboard accessed', [
             'user_id' => $student->id,
@@ -185,6 +185,19 @@ class StudentController extends Controller
         $freshRatings = DB::table('mentors')
             ->whereIn('user_id', $mentorIds)
             ->pluck('calificacionPromedio', 'user_id');
+
+        // CRÍTICO: Obtener métricas de solicitudes aceptadas/totales fresco desde DB
+        $mentorStats = DB::table('solicitud_mentorias')
+            ->select(
+                'mentor_id',
+                DB::raw("SUM(CASE WHEN estado = 'aceptada' THEN 1 ELSE 0 END) AS aceptadas"),
+                DB::raw("COUNT(*) AS total")
+            )
+            ->whereIn('mentor_id', $mentorIds)
+            ->whereNull('deleted_at')
+            ->groupBy('mentor_id')
+            ->get()
+            ->keyBy('mentor_id');
         
         // CRÍTICO: Computar can_review FUERA del cache para que siempre sea fresco
         // Reuse authenticated user (already loaded above)
@@ -212,7 +225,7 @@ class StudentController extends Controller
         ]);
 
         // Enriquecer datos cacheados con can_review fresco + calificacionPromedio actualizado
-        return array_map(function($mentor) use ($userReviews, $completedMentorships, $freshRatings) {
+        return array_map(function($mentor) use ($userReviews, $completedMentorships, $freshRatings, $mentorStats) {
             $mentorUserId = $mentor['id'];
             $mentorProfileId = $mentor['mentor']['id'] ?? null;
             $userReview = $userReviews->get($mentorProfileId);
@@ -222,6 +235,11 @@ class StudentController extends Controller
             // CRÍTICO: Obtener el calificacionPromedio fresco de la BD, no del caché
             $freshRating = $freshRatings[$mentorUserId] ?? 0;
             
+            $mentorStat = $mentorStats->get($mentorUserId);
+            $aceptadas = (int) ($mentorStat->aceptadas ?? 0);
+            $totales = (int) ($mentorStat->total ?? 0);
+            $tasaConcretadas = $totales > 0 ? round($aceptadas / $totales, 3) : null;
+
             $mentor['mentor']['user_review'] = $userReview ? [
                 'id' => $userReview->id,
                 'rating' => (int) $userReview->rating,
@@ -232,6 +250,9 @@ class StudentController extends Controller
             $mentor['mentor']['calificacionPromedio'] = (float) $freshRating; // Siempre fresco
             $mentor['mentor']['stars_rating'] = round($freshRating, 1); // Recalcular
             $mentor['mentor']['rating_percentage'] = ($freshRating / 5) * 100; // Recalcular
+            $mentor['mentor']['solicitudes_aceptadas'] = $aceptadas;
+            $mentor['mentor']['solicitudes_totales'] = $totales;
+            $mentor['mentor']['tasa_concretadas'] = $tasaConcretadas; // Valor 0-1, null sin datos
             
             return $mentor;
         }, $mentorsBasicData);

@@ -38,7 +38,7 @@ services:
       REDIS_PORT: 6379
       BROADCAST_DRIVER: log
       # Configuración de Vite para E2E tests en Docker
-      VITE_DEV_SERVER_URL: "http://host.docker.internal:5173"
+      VITE_DEV_SERVER_URL: "http://vite:5173"
     healthcheck:
       test: ["CMD-SHELL", "pgrep -f 'artisan octane' || exit 1"]
       interval: 30s
@@ -77,14 +77,26 @@ services:
     image: node:20-alpine
     container_name: webrtcapp-vite
     working_dir: /var/www/html
-    command: sh -c "npm install && npm run dev -- --host"
+    command: >
+      sh -c "
+        if [ ! -d node_modules ] || [ ! -x node_modules/.bin/vite ]; then
+          echo 'Installing dependencies (node_modules missing)...';
+          npm ci --no-audit --no-fund;
+        else
+          echo 'Using cached node_modules';
+        fi;
+        npm run dev -- --host 0.0.0.0 --port ${VITE_HMR_PORT:-5173}
+      "
     ports:
       - "5173:5173"
     volumes:
       - ./:/var/www/html:cached
     environment:
-      VITE_HMR_HOST: "host.docker.internal"
+      VITE_HMR_HOST: "localhost"
       VITE_HMR_PORT: 5173
+      CHOKIDAR_USEPOLLING: "true"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - app
 
