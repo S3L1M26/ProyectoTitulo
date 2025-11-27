@@ -244,6 +244,8 @@ class StudentController extends Controller
                 'id' => $userReview->id,
                 'rating' => (int) $userReview->rating,
                 'comment' => $userReview->comment,
+                'addressed_interests' => $userReview->addressed_interests,
+                'interests_clarity' => $userReview->interests_clarity ? (int) $userReview->interests_clarity : null,
                 'created_at' => $userReview->created_at,
             ] : null;
             $mentor['mentor']['can_review'] = $canReview;
@@ -337,6 +339,8 @@ class StudentController extends Controller
                             'id' => $r->id,
                             'rating' => (int) $r->rating,
                             'comment' => $r->comment,
+                            'addressed_interests' => $r->addressed_interests,
+                            'interests_clarity' => $r->interests_clarity ? (int) $r->interests_clarity : null,
                             'created_at' => $r->created_at,
                         ])->all(),
                         'user_review' => null, // Se enriquece después

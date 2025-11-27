@@ -21,6 +21,11 @@ const MentorDetailModal = memo(function MentorDetailModal({ isOpen, onClose, men
     const solicitudesAceptadas = localMentor?.mentor?.solicitudes_aceptadas ?? 0;
     const solicitudesTotales = localMentor?.mentor?.solicitudes_totales ?? 0;
     const tasaConcretadas = localMentor?.mentor?.tasa_concretadas ?? (solicitudesTotales > 0 ? solicitudesAceptadas / solicitudesTotales : null);
+    const addressedLabels = {
+        yes: 'Sí',
+        partial: 'Parcial',
+        no: 'No',
+    };
 
     const getTasaBadge = (tasa) => {
         if (tasa === null || Number.isNaN(tasa)) {
@@ -98,11 +103,15 @@ const MentorDetailModal = memo(function MentorDetailModal({ isOpen, onClose, men
                     anonymized_reviews: [{
                         rating: reviewData.rating,
                         comment: reviewData.comment,
+                        addressed_interests: reviewData.addressed_interests,
+                        interests_clarity: reviewData.interests_clarity,
                         created_at: reviewData.created_at
                     }],
                     user_review: {
                         rating: reviewData.rating,
                         comment: reviewData.comment,
+                        addressed_interests: reviewData.addressed_interests,
+                        interests_clarity: reviewData.interests_clarity,
                         created_at: reviewData.created_at
                     }
                 }
@@ -332,6 +341,26 @@ const MentorDetailModal = memo(function MentorDetailModal({ isOpen, onClose, men
                                                         <p className="mt-2 text-sm text-gray-700 italic">
                                                             "{localMentor.mentor.user_review.comment}"
                                                         </p>
+                                                    )}
+                                                    {(localMentor.mentor.user_review.addressed_interests || localMentor.mentor.user_review.interests_clarity != null) && (
+                                                        <div className="mt-3 space-y-1 text-sm text-gray-700">
+                                                            {localMentor.mentor.user_review.addressed_interests && (
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
+                                                                        Áreas abordadas
+                                                                    </span>
+                                                                    <span>{addressedLabels[localMentor.mentor.user_review.addressed_interests] || localMentor.mentor.user_review.addressed_interests}</span>
+                                                                </div>
+                                                            )}
+                                                            {localMentor.mentor.user_review.interests_clarity != null && (
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
+                                                                        Claridad de intereses
+                                                                    </span>
+                                                                    <span>{localMentor.mentor.user_review.interests_clarity} / 5</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     )}
                                                     <div className="text-xs text-gray-400 mt-2">
                                                         {new Date(localMentor.mentor.user_review.created_at).toLocaleDateString()}

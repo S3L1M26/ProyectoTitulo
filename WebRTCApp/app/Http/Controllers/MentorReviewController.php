@@ -17,6 +17,8 @@ class MentorReviewController extends Controller
         $validated = $request->validate([
             'rating' => ['required', 'integer', 'between:1,5'],
             'comment' => ['nullable', 'string', 'max:2000'],
+            'addressed_interests' => ['nullable', 'in:yes,no,partial'],
+            'interests_clarity' => ['nullable', 'integer', 'between:1,5'],
         ]);
 
         $userId = Auth::id();
@@ -50,6 +52,8 @@ class MentorReviewController extends Controller
             [
                 'rating' => (int) $validated['rating'],
                 'comment' => $validated['comment'] ?? null,
+                'addressed_interests' => $validated['addressed_interests'] ?? null,
+                'interests_clarity' => $validated['interests_clarity'] ?? null,
             ]
         );
 

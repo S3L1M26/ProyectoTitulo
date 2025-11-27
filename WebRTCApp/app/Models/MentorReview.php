@@ -15,6 +15,8 @@ class MentorReview extends Model
         'user_id',
         'rating',
         'comment',
+        'addressed_interests',
+        'interests_clarity',
     ];
 
     public function mentor(): BelongsTo
@@ -36,6 +38,8 @@ class MentorReview extends Model
             'id' => $this->id,
             'rating' => (int) $this->rating,
             'comment' => $this->comment,
+            'addressed_interests' => $this->addressed_interests,
+            'interests_clarity' => $this->interests_clarity ? (int) $this->interests_clarity : null,
             'created_at' => $this->created_at,
         ];
     }
