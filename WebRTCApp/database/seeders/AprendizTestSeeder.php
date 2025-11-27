@@ -6,6 +6,8 @@ use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Models\Aprendiz;
 use App\Models\AreaInteres;
+use App\Models\SolicitudMentoria;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Hash;
 
 class AprendizTestSeeder extends Seeder
@@ -87,7 +89,6 @@ class AprendizTestSeeder extends Seeder
                 'años_experiencia' => 8,
                 'disponibilidad' => 'Lunes a Viernes: 18:00-21:00, Sábados: 09:00-12:00',
                 'disponibilidad_detalle' => 'Conversaciones de orientación de 1 hora por videollamada. Puedo compartir mi experiencia, resolver dudas sobre el mercado laboral y ayudar a identificar áreas de interés.',
-                'calificacionPromedio' => 4.8,
             ]
         );
 
@@ -113,7 +114,7 @@ class AprendizTestSeeder extends Seeder
         );
 
         // Crear perfil parcialmente completo de mentor (solo algunos campos)
-        \App\Models\Mentor::updateOrCreate(
+        $incompleteMentorProfile = \App\Models\Mentor::updateOrCreate(
             ['user_id' => $incompleteMentor->id],
             [
                 'experiencia' => 'Desarrollador con experiencia en JavaScript.',
@@ -123,10 +124,29 @@ class AprendizTestSeeder extends Seeder
         );
 
         // Crear más estudiantes para testing diverso
-        $this->createAdditionalStudents();
+        $additionalStudents = $this->createAdditionalStudents();
         
         // Crear más mentores para testing robusto  
-        $this->createAdditionalMentors();
+        $additionalMentors = $this->createAdditionalMentors();
+
+        // Métricas de solicitudes (aceptadas vs totales) para los mentores creados
+        $mentorsForStats = array_merge(
+            [
+                'mentor.completo@example.com' => ['user' => $mentor, 'mentor' => $mentorProfile],
+                'mentor.incompleto@example.com' => ['user' => $incompleteMentor, 'mentor' => $incompleteMentorProfile],
+            ],
+            $additionalMentors
+        );
+
+        $studentsForStats = array_merge(
+            [
+                'estudiante.test@example.com' => $student,
+                'estudiante.incompleto@example.com' => $incompleteStudent,
+            ],
+            $additionalStudents
+        );
+
+        $this->seedSolicitudMentoriaStats($mentorsForStats, $studentsForStats);
 
         echo "Usuario estudiante completo creado: {$student->email}\n";
         echo "Usuario estudiante incompleto creado: {$incompleteStudent->email}\n";
@@ -139,8 +159,9 @@ class AprendizTestSeeder extends Seeder
     /**
      * Crear estudiantes adicionales para testing
      */
-    private function createAdditionalStudents()
+    private function createAdditionalStudents(): array
     {
+        $created = [];
         $students = [
             [
                 'email' => 'ana.frontend@example.com',
@@ -196,14 +217,19 @@ class AprendizTestSeeder extends Seeder
             if (!empty($areasIds)) {
                 $aprendiz->areasInteres()->sync($areasIds);
             }
+
+            $created[$studentData['email']] = $user;
         }
+
+        return $created;
     }
 
     /**
      * Crear mentores adicionales para testing robusto
      */
-    private function createAdditionalMentors()
+    private function createAdditionalMentors(): array
     {
+        $created = [];
         $mentors = [
             [
                 'email' => 'pedro.senior@example.com',
@@ -213,7 +239,6 @@ class AprendizTestSeeder extends Seeder
                 'anos_experiencia' => 12,
                 'disponibilidad' => 'Martes y Jueves: 19:00-21:00',
                 'detalle' => 'Sesiones de 90 minutos para conversar sobre experiencias reales, cultura empresarial y crecimiento profesional.',
-                'rating' => 4.9,
                 'disponible' => true,
                 'areas' => ['Desarrollo Web Backend', 'DevOps', 'Arquitectura de Software']
             ],
@@ -225,7 +250,6 @@ class AprendizTestSeeder extends Seeder
                 'anos_experiencia' => 6,
                 'disponibilidad' => 'Lunes, Miércoles, Viernes: 17:00-19:00',
                 'detalle' => 'Conversaciones sobre el día a día del diseño, diferencias entre UX y UI, y oportunidades reales en el mercado.',
-                'rating' => 4.7,
                 'disponible' => true,
                 'areas' => ['Diseño UX/UI', 'Desarrollo Web Frontend']
             ],
@@ -237,7 +261,6 @@ class AprendizTestSeeder extends Seeder
                 'anos_experiencia' => 8,
                 'disponibilidad' => 'Fines de semana: 10:00-14:00',
                 'detalle' => 'Conversaciones sobre diferentes roles en datos, industrias donde trabajar, y cómo es el día típico de un data scientist.',
-                'rating' => 4.6,
                 'disponible' => true,
                 'areas' => ['Análisis de Datos', 'Inteligencia Artificial']
             ],
@@ -249,7 +272,6 @@ class AprendizTestSeeder extends Seeder
                 'anos_experiencia' => 7,
                 'disponibilidad' => 'Martes a Jueves: 20:00-22:00',
                 'detalle' => 'Conversaciones sobre la industria móvil, tipos de proyectos, y cómo elegir tu especialización en este campo.',
-                'rating' => 4.8,
                 'disponible' => true,
                 'areas' => ['Desarrollo Mobile', 'Desarrollo Web Frontend']
             ],
@@ -261,7 +283,6 @@ class AprendizTestSeeder extends Seeder
                 'anos_experiencia' => 10,
                 'disponibilidad' => 'Lunes a Miércoles: 18:00-20:00',
                 'detalle' => 'Conversaciones sobre infraestructura, automatización, responsabilidades reales y oportunidades de crecimiento en DevOps.',
-                'rating' => 4.5,
                 'disponible' => false, // No disponible para testing
                 'areas' => ['DevOps', 'Desarrollo Web Backend']
             ],
@@ -273,7 +294,6 @@ class AprendizTestSeeder extends Seeder
                 'anos_experiencia' => 3,
                 'disponibilidad' => 'Todos los días: 16:00-18:00',
                 'detalle' => 'Conversaciones relajadas sobre la transición universidad-trabajo, primeros empleos y cómo navegar el inicio de carrera.',
-                'rating' => 4.2,
                 'disponible' => true,
                 'areas' => ['Desarrollo Web Frontend', 'Desarrollo Web Backend']
             ],
@@ -285,7 +305,6 @@ class AprendizTestSeeder extends Seeder
                 'anos_experiencia' => 9,
                 'disponibilidad' => 'Horarios muy flexibles',
                 'detalle' => 'Conversaciones sobre trabajo independiente, gestión de clientes, y si el freelancing es para ti.',
-                'rating' => 4.4,
                 'disponible' => false, // Ocupado con proyectos
                 'areas' => ['Desarrollo Web Frontend', 'Desarrollo Web Backend', 'Gestión de Proyectos']
             ],
@@ -297,7 +316,6 @@ class AprendizTestSeeder extends Seeder
                 'anos_experiencia' => 11,
                 'disponibilidad' => 'Sábados: 09:00-12:00',
                 'detalle' => 'Conversaciones sobre emprendimiento, liderazgo técnico, y el ecosistema startup desde adentro.',
-                'rating' => 4.9,
                 'disponible' => true,
                 'areas' => ['Desarrollo Web Backend', 'Arquitectura de Software', 'Gestión de Proyectos']
             ]
@@ -322,7 +340,6 @@ class AprendizTestSeeder extends Seeder
                     'años_experiencia' => $mentorData['anos_experiencia'],
                     'disponibilidad' => $mentorData['disponibilidad'],
                     'disponibilidad_detalle' => $mentorData['detalle'],
-                    'calificacionPromedio' => $mentorData['rating'],
                     'disponible_ahora' => $mentorData['disponible'],
                 ]
             );
@@ -331,6 +348,62 @@ class AprendizTestSeeder extends Seeder
             $areasIds = AreaInteres::whereIn('nombre', $mentorData['areas'])->pluck('id')->toArray();
             if (!empty($areasIds)) {
                 $mentorProfile->areasInteres()->sync($areasIds);
+            }
+
+            $created[$mentorData['email']] = ['user' => $user, 'mentor' => $mentorProfile];
+        }
+
+        return $created;
+    }
+
+    /**
+     * Crear solicitudes para reflejar métricas de concretadas vs totales.
+     */
+    private function seedSolicitudMentoriaStats(array $mentors, array $students): void
+    {
+        if (empty($mentors) || empty($students)) {
+            return;
+        }
+
+        $config = [
+            'mentor.completo@example.com' => ['aceptadas' => 5, 'pendientes' => 2, 'rechazadas' => 1],
+            'pedro.senior@example.com' => ['aceptadas' => 3, 'pendientes' => 1],
+            'camila.junior@example.com' => ['aceptadas' => 1, 'pendientes' => 3],
+            'valeria.startup@example.com' => ['aceptadas' => 0, 'pendientes' => 2],
+        ];
+
+        $studentPool = array_values($students);
+
+        foreach ($config as $email => $stats) {
+            if (!isset($mentors[$email])) {
+                continue;
+            }
+
+            $mentorUserId = $mentors[$email]['user']->id;
+            $totalCreated = 0;
+
+            foreach (['aceptadas', 'pendientes', 'rechazadas'] as $estadoKey) {
+                $count = $stats[$estadoKey] ?? 0;
+                $estadoMap = [
+                    'aceptadas' => 'aceptada',
+                    'pendientes' => 'pendiente',
+                    'rechazadas' => 'rechazada',
+                ];
+                for ($i = 0; $i < $count; $i++) {
+                    $student = $studentPool[($totalCreated + $i) % count($studentPool)];
+                    $isResolved = $estadoKey !== 'pendientes';
+                    $estado = $estadoMap[$estadoKey] ?? $estadoKey;
+
+                    SolicitudMentoria::create([
+                        'estudiante_id' => $student->id,
+                        'mentor_id' => $mentorUserId,
+                        'mensaje' => "Solicitud de prueba {$estadoKey} #" . ($i + 1),
+                        'estado' => $estado,
+                        'fecha_solicitud' => Carbon::now()->subDays(rand(5, 20)),
+                        'fecha_respuesta' => $isResolved ? Carbon::now()->subDays(rand(1, 4)) : null,
+                    ]);
+                }
+                $totalCreated += $count;
             }
         }
     }

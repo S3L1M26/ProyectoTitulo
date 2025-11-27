@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             AprendizTestSeeder::class,
             SolicitudMentoriaSeeder::class,
             MentoriaSeeder::class,
+            MentorReviewsSeeder::class,
         ]);
     }
 }
