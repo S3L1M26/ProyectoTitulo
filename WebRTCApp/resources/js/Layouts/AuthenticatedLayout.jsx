@@ -11,6 +11,7 @@ import 'react-toastify/dist/ReactToastify.css';
 export default function AuthenticatedLayout({ header, children }) {
     const user = usePage().props.auth.user;
         const { contadorNoLeidas, solicitudesPendientes } = usePage().props;
+    const currentUrl = usePage().url;
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
@@ -56,6 +57,12 @@ export default function AuthenticatedLayout({ header, children }) {
                                         active={route().current('student.dashboard')}
                                     >
                                         Panel de Usuario
+                                    </NavLink>
+                                    <NavLink
+                                        href={route('student.vocational')}
+                                        active={route().current('student.vocational')}
+                                    >
+                                        Autoevaluación
                                     </NavLink>
                                     <NavLink
                                         href={route('student.solicitudes')}
@@ -218,6 +225,12 @@ export default function AuthenticatedLayout({ header, children }) {
                                 active={route().current('student.dashboard')}
                             >
                                 Panel de Usuario
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink
+                                href={route('student.vocational')}
+                                active={route().current('student.vocational')}
+                            >
+                                Autoevaluación
                             </ResponsiveNavLink>
                             <ResponsiveNavLink
                                 href={route('student.solicitudes')}

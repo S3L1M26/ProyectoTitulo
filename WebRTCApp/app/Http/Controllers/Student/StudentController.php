@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\MentorReview;
 use App\Models\Mentoria;
+use App\Models\VocationalSurvey;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -116,6 +117,39 @@ class StudentController extends Controller
             'mentorSuggestions' => $mentorSuggestions,
             'mentoriasConfirmadas' => $mentoriasConfirmadas,
             'mentoriasHistorial' => $mentoriasHistorial,
+        ]);
+    }
+
+    /**
+     * Página de autoevaluación vocacional (historial + último snapshot).
+     */
+    public function vocationalSurvey()
+    {
+        $student = Auth::user();
+        if (!$student) {
+            abort(401);
+        }
+        /** @var \App\Models\User $student */
+
+        $history = VocationalSurvey::where('student_id', $student->id)
+            ->orderByDesc('created_at')
+            ->limit(10)
+            ->get([
+                'id',
+                'clarity_interest',
+                'confidence_area',
+                'platform_usefulness',
+                'mentorship_usefulness',
+                'recent_change_reason',
+                'icv',
+                'created_at',
+            ]);
+
+        $latest = $history->first();
+
+        return Inertia::render('Student/Vocational/Index', [
+            'vocationalSurveyLatest' => $latest,
+            'vocationalSurveyHistory' => $history,
         ]);
     }
 
