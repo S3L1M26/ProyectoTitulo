@@ -26,6 +26,15 @@ Route::middleware('guest')->group(function () {
     Route::post('login', [AuthenticatedSessionController::class, 'store'])
         ->name('login.store');
 
+    // Login dedicado para administradores
+    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::get('login', [AuthenticatedSessionController::class, 'create'])
+            ->name('login');
+        
+        Route::post('login', [AuthenticatedSessionController::class, 'store'])
+            ->name('login.store');
+    });
+
     // Rutas de restablecimiento de contraseña
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');

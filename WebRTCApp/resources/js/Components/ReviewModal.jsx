@@ -9,12 +9,16 @@ const ReviewModal = memo(function ReviewModal({ isOpen, onClose, mentor, canRevi
     const [rating, setRating] = useState(userReview?.rating || 5);
     const [hoverRating, setHoverRating] = useState(0);
     const [comment, setComment] = useState(userReview?.comment || '');
+    const [addressedInterests, setAddressedInterests] = useState(userReview?.addressed_interests || 'yes');
+    const [interestsClarity, setInterestsClarity] = useState(userReview?.interests_clarity ?? 3);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (userReview) {
             setRating(userReview.rating);
             setComment(userReview.comment || '');
+            setAddressedInterests(userReview.addressed_interests || 'yes');
+            setInterestsClarity(userReview.interests_clarity ?? 3);
         }
     }, [userReview]);
 
@@ -22,7 +26,14 @@ const ReviewModal = memo(function ReviewModal({ isOpen, onClose, mentor, canRevi
         e.preventDefault();
         setIsSubmitting(true);
 
-        axios.post(route('mentors.reviews.store', mentor.id), { rating, comment })
+        const payload = {
+            rating,
+            comment,
+            addressed_interests: addressedInterests,
+            interests_clarity: interestsClarity
+        };
+
+        axios.post(route('mentors.reviews.store', mentor.id), payload)
             .then((response) => {
                 toast.success(userReview ? '¡Reseña actualizada!' : '¡Gracias por tu valoración!');
                 setIsSubmitting(false);
@@ -31,6 +42,8 @@ const ReviewModal = memo(function ReviewModal({ isOpen, onClose, mentor, canRevi
                     onReviewSubmitted({
                         rating,
                         comment,
+                        addressed_interests: addressedInterests,
+                        interests_clarity: interestsClarity,
                         created_at: new Date().toISOString()
                     });
                 }
@@ -40,9 +53,7 @@ const ReviewModal = memo(function ReviewModal({ isOpen, onClose, mentor, canRevi
                 setIsSubmitting(false);
                 if (error.response?.status === 422) {
                     const errors = error.response.data.errors;
-                    if (errors?.rating) {
-                        toast.error(errors.rating);
-                    }
+                    Object.values(errors || {}).flat().forEach((msg) => toast.error(msg));
                 } else {
                     toast.error('Error al guardar la reseña. Intenta de nuevo.');
                 }
@@ -153,10 +164,64 @@ const ReviewModal = memo(function ReviewModal({ isOpen, onClose, mentor, canRevi
                             </div>
                         </div>
 
+                        {/* Áreas abordadas */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                ¿La mentoría abordó las áreas en las que estabas interesado?
+                            </label>
+                            <div className="grid grid-cols-3 gap-2">
+                                {[
+                                    { value: 'yes', label: 'Sí' },
+                                    { value: 'partial', label: 'Parcial' },
+                                    { value: 'no', label: 'No' }
+                                ].map((option) => (
+                                    <button
+                                        key={option.value}
+                                        type="button"
+                                        onClick={() => setAddressedInterests(option.value)}
+                                        disabled={!canReview && !userReview}
+                                        className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                                            addressedInterests === option.value
+                                                ? 'bg-blue-50 border-blue-400 text-blue-700'
+                                                : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
+                                        } ${(!canReview && !userReview) ? 'cursor-not-allowed opacity-70' : ''}`}
+                                    >
+                                        {option.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Claridad de intereses */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                ¿Sientes que esta mentoría te ayudó a aclarar tus intereses?
+                            </label>
+                            <div className="flex items-center gap-3">
+                                <input
+                                    type="range"
+                                    min="1"
+                                    max="5"
+                                    step="1"
+                                    value={interestsClarity}
+                                    onChange={(e) => setInterestsClarity(Number(e.target.value))}
+                                    disabled={!canReview && !userReview}
+                                    className="flex-1 accent-blue-600"
+                                />
+                                <span className="text-sm font-semibold text-gray-700 w-12 text-right">
+                                    {interestsClarity} / 5
+                                </span>
+                            </div>
+                            <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>Poco</span>
+                                <span>Mucho</span>
+                            </div>
+                        </div>
+
                         {/* Comentario */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Comentario (opcional)
+                                Comentario libre (opcional)
                             </label>
                             <textarea
                                 value={comment}

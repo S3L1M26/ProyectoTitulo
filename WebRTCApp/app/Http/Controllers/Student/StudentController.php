@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\MentorReview;
 use App\Models\Mentoria;
+use App\Models\VocationalSurvey;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -21,7 +22,7 @@ class StudentController extends Controller
             abort(401);
         }
         /** @var \App\Models\User $student */
-        $student->load('aprendiz');
+        $student->load('aprendiz', 'aprendiz.areasInteres');
         
         logger()->debug('📊 Student Dashboard accessed', [
             'user_id' => $student->id,
@@ -120,6 +121,39 @@ class StudentController extends Controller
     }
 
     /**
+     * Página de autoevaluación vocacional (historial + último snapshot).
+     */
+    public function vocationalSurvey()
+    {
+        $student = Auth::user();
+        if (!$student) {
+            abort(401);
+        }
+        /** @var \App\Models\User $student */
+
+        $history = VocationalSurvey::where('student_id', $student->id)
+            ->orderByDesc('created_at')
+            ->limit(10)
+            ->get([
+                'id',
+                'clarity_interest',
+                'confidence_area',
+                'platform_usefulness',
+                'mentorship_usefulness',
+                'recent_change_reason',
+                'icv',
+                'created_at',
+            ]);
+
+        $latest = $history->first();
+
+        return Inertia::render('Student/Vocational/Index', [
+            'vocationalSurveyLatest' => $latest,
+            'vocationalSurveyHistory' => $history,
+        ]);
+    }
+
+    /**
      * Get mentor suggestions for the authenticated student
      * OPTIMIZED: Eliminado N+1 queries, implementado eager loading completo, joins eficientes y caché
      * SECURITY: Requiere certificado verificado para acceder a sugerencias
@@ -185,6 +219,19 @@ class StudentController extends Controller
         $freshRatings = DB::table('mentors')
             ->whereIn('user_id', $mentorIds)
             ->pluck('calificacionPromedio', 'user_id');
+
+        // CRÍTICO: Obtener métricas de solicitudes aceptadas/totales fresco desde DB
+        $mentorStats = DB::table('solicitud_mentorias')
+            ->select(
+                'mentor_id',
+                DB::raw("SUM(CASE WHEN estado = 'aceptada' THEN 1 ELSE 0 END) AS aceptadas"),
+                DB::raw("COUNT(*) AS total")
+            )
+            ->whereIn('mentor_id', $mentorIds)
+            ->whereNull('deleted_at')
+            ->groupBy('mentor_id')
+            ->get()
+            ->keyBy('mentor_id');
         
         // CRÍTICO: Computar can_review FUERA del cache para que siempre sea fresco
         // Reuse authenticated user (already loaded above)
@@ -212,7 +259,7 @@ class StudentController extends Controller
         ]);
 
         // Enriquecer datos cacheados con can_review fresco + calificacionPromedio actualizado
-        return array_map(function($mentor) use ($userReviews, $completedMentorships, $freshRatings) {
+        return array_map(function($mentor) use ($userReviews, $completedMentorships, $freshRatings, $mentorStats) {
             $mentorUserId = $mentor['id'];
             $mentorProfileId = $mentor['mentor']['id'] ?? null;
             $userReview = $userReviews->get($mentorProfileId);
@@ -222,16 +269,26 @@ class StudentController extends Controller
             // CRÍTICO: Obtener el calificacionPromedio fresco de la BD, no del caché
             $freshRating = $freshRatings[$mentorUserId] ?? 0;
             
+            $mentorStat = $mentorStats->get($mentorUserId);
+            $aceptadas = (int) ($mentorStat->aceptadas ?? 0);
+            $totales = (int) ($mentorStat->total ?? 0);
+            $tasaConcretadas = $totales > 0 ? round($aceptadas / $totales, 3) : null;
+
             $mentor['mentor']['user_review'] = $userReview ? [
                 'id' => $userReview->id,
                 'rating' => (int) $userReview->rating,
                 'comment' => $userReview->comment,
+                'addressed_interests' => $userReview->addressed_interests,
+                'interests_clarity' => $userReview->interests_clarity ? (int) $userReview->interests_clarity : null,
                 'created_at' => $userReview->created_at,
             ] : null;
             $mentor['mentor']['can_review'] = $canReview;
             $mentor['mentor']['calificacionPromedio'] = (float) $freshRating; // Siempre fresco
             $mentor['mentor']['stars_rating'] = round($freshRating, 1); // Recalcular
             $mentor['mentor']['rating_percentage'] = ($freshRating / 5) * 100; // Recalcular
+            $mentor['mentor']['solicitudes_aceptadas'] = $aceptadas;
+            $mentor['mentor']['solicitudes_totales'] = $totales;
+            $mentor['mentor']['tasa_concretadas'] = $tasaConcretadas; // Valor 0-1, null sin datos
             
             return $mentor;
         }, $mentorsBasicData);
@@ -316,6 +373,8 @@ class StudentController extends Controller
                             'id' => $r->id,
                             'rating' => (int) $r->rating,
                             'comment' => $r->comment,
+                            'addressed_interests' => $r->addressed_interests,
+                            'interests_clarity' => $r->interests_clarity ? (int) $r->interests_clarity : null,
                             'created_at' => $r->created_at,
                         ])->all(),
                         'user_review' => null, // Se enriquece después

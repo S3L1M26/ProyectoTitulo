@@ -9,6 +9,7 @@ use App\Http\Controllers\Mentor\MentorController;
 use App\Http\Controllers\SolicitudMentoriaController;
 use App\Http\Controllers\MentoriaController;
 use App\Http\Controllers\MentorReviewController;
+use App\Http\Controllers\VocationalSurveyController;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -36,10 +37,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['role:student', 'performance'])->group(function () {
         Route::get('/student/dashboard', [StudentController::class, 'index'])->name('student.dashboard');
         Route::post('/student/certificate/upload', [CertificateController::class, 'upload'])->name('student.certificate.upload');
+        Route::get('/student/vocacional', [StudentController::class, 'vocationalSurvey'])->name('student.vocational');
 
         // Reseñas de mentores (única reseña por estudiante/mentor, editable). Bind por user_id
         Route::post('/mentors/{mentor:user_id}/reviews', [MentorReviewController::class, 'store'])
             ->name('mentors.reviews.store');
+
+        // Encuesta vocacional (historial + snapshot + guardar)
+        Route::get('/api/student/vocational-surveys', [VocationalSurveyController::class, 'index'])
+            ->name('api.student.vocational-surveys.index');
+        Route::get('/api/student/vocational-surveys/latest', [VocationalSurveyController::class, 'show'])
+            ->name('api.student.vocational-surveys.latest');
+        Route::post('/student/vocacional', [VocationalSurveyController::class, 'store'])
+            ->name('student.vocational.store');
     });
 
     // Rutas para mentores con monitoreo de performance
@@ -157,8 +167,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 require __DIR__.'/auth.php';
 
 // Rutas admin
-Route::middleware(['auth', 'adminMiddleware'])->group(function () {
-    Route::get('/admin/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
+Route::middleware(['auth', 'verified', 'adminMiddleware'])->group(function () {
+    Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
     Route::get('/admin/users', [AdminController::class, 'index'])->name('admin.users');
     Route::get('/admin/users/{user}', [AdminController::class, 'show'])->name('admin.users.show');
     Route::get('/admin/users/{user}/edit', [AdminController::class, 'edit'])->name('admin.users.edit');

@@ -68,7 +68,6 @@ class E2ETestSeeder extends Seeder
             'disponibilidad' => true,
             'disponibilidad_detalle' => 'Disponible lunes a viernes de 18:00 a 21:00',
             'disponible_ahora' => true,
-            'calificacionPromedio' => 4.8,
             'cv_verified' => true,
         ]);
 

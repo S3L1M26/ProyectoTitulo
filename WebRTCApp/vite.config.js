@@ -13,9 +13,16 @@ export default defineConfig({
     server: {
         host: '0.0.0.0',
         port: 5173,
+        // Allow requests from service hostname inside Docker (vite) and local browser
+        allowedHosts: ['vite', 'localhost'],
+        strictPort: true,
         hmr: {
             host: process.env.VITE_HMR_HOST || 'localhost',
-            port: process.env.VITE_HMR_PORT || 5173,
+            // Do not bind the websocket server to a specific host that
+            // may not be available inside the container (EADDRNOTAVAIL).
+            // Only set the client port/protocol here; the client host
+            // is resolved from the page (or via VITE_DEV_SERVER_URL).
+            port: Number(process.env.VITE_HMR_PORT) || 5173,
             protocol: 'ws'
         }
     },

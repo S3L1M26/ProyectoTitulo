@@ -18,13 +18,15 @@ class AuthenticatedSessionController extends Controller
      */
     public function create(Request $request): Response
     {
-        // Obtener el rol desde la query string
-        $role = $request->query('role', 'student');
+        // Detectar si es login de administrador y fijar rol por defecto
+        $isAdminRoute = $request->routeIs('admin.login');
+        $role = $isAdminRoute ? 'admin' : $request->query('role', 'student');
 
         return Inertia::render('Auth/Login', [
             'role' => $role,
             'canResetPassword' => Route::has('password.request'),
             'status' => session('status'),
+            'allowAdmin' => $isAdminRoute,
         ]);
     }
 
@@ -33,17 +35,39 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
+        $isAdminRoute = $request->routeIs('admin.login.store');
+        $requestedRole = $request->input('role', $isAdminRoute ? 'admin' : null);
+
         $request->authenticate();
 
-        $request->session()->regenerate();
+        $userRole = Auth::user()->role;
 
-        // Verificar que el rol del usuario coincida con el rol solicitado
-        if ($request->role && Auth::user()->role !== $request->role && Auth::user()->role !== 'admin') {
+        if ($isAdminRoute && $userRole !== 'admin') {
             Auth::logout();
             return back()->withErrors([
-                'email' => 'Las credenciales no corresponden al tipo de usuario seleccionado.',
+                'email' => 'Solo administradores pueden ingresar aquí.',
             ]);
-        } 
+        }
+
+        if (! $isAdminRoute) {
+            // Evitar que un admin ingrese por el login público
+            if ($userRole === 'admin') {
+                Auth::logout();
+                return back()->withErrors([
+                    'email' => 'Usa el acceso de administrador.',
+                ]);
+            }
+
+            // Verificar que el rol del usuario coincida con el rol solicitado
+            if ($requestedRole && $userRole !== $requestedRole) {
+                Auth::logout();
+                return back()->withErrors([
+                    'email' => 'Las credenciales no corresponden al tipo de usuario seleccionado.',
+                ]);
+            }
+        }
+
+        $request->session()->regenerate();
 
         // Verificar si hay una URL de destino específica
         $intendedUrl = $request->query('intended');
