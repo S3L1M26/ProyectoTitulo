@@ -7,18 +7,29 @@ import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, useForm } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
 
-export default function Login({ status, canResetPassword, role }) {
+export default function Login({ status, canResetPassword, role, allowAdmin = false }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
         password: '',
         remember: false,
-        role: role, 
+        role: role ?? 'student', 
     });
+
+    const isAdmin = data.role === 'admin';
+
+    const changeRole = (newRole) => {
+        if (newRole === 'admin' && !allowAdmin) {
+            return;
+        }
+        setData('role', newRole);
+    };
 
     const submit = (e) => {
         e.preventDefault();
 
-        post(route('login.store', role), {
+        const routeName = isAdmin ? 'admin.login.store' : 'login.store';
+
+        post(route(routeName), {
             onFinish: () => reset('password'),
         });
     };
@@ -28,13 +39,42 @@ export default function Login({ status, canResetPassword, role }) {
     // };
 
     const headerMsg = (
-        <h3 className="text-gray-900 text-xl font-medium mb-6 text-center">
-            {role === 'student' ? (
-                <p>Área de <strong className="text-[#ec3636]">Estudiantes</strong></p>
+        <div className="space-y-3">
+            <h3 className="text-gray-900 text-xl font-medium text-center">
+                {isAdmin ? (
+                    <p>Área de <strong className="text-[#ec3636]">Administradores</strong></p>
+                ) : data.role === 'student' ? (
+                    <p>Área de <strong className="text-[#ec3636]">Estudiantes</strong></p>
                 ) : (
-                <p>Área de <strong className="text-[#ec3636]">Mentores</strong></p>
+                    <p>Área de <strong className="text-[#ec3636]">Mentores</strong></p>
                 )}        
-        </h3>
+            </h3>
+            <div className="flex items-center justify-center gap-2 text-xs">
+                <button
+                    type="button"
+                    onClick={() => changeRole('student')}
+                    className={`px-3 py-1 rounded-full border ${data.role === 'student' ? 'bg-red-100 border-red-400 text-red-700' : 'border-gray-300 text-gray-600 hover:border-gray-400'}`}
+                >
+                    Estudiante
+                </button>
+                <button
+                    type="button"
+                    onClick={() => changeRole('mentor')}
+                    className={`px-3 py-1 rounded-full border ${data.role === 'mentor' ? 'bg-red-100 border-red-400 text-red-700' : 'border-gray-300 text-gray-600 hover:border-gray-400'}`}
+                >
+                    Mentor
+                </button>
+                {allowAdmin && (
+                    <button
+                        type="button"
+                        onClick={() => changeRole('admin')}
+                        className={`px-3 py-1 rounded-full border ${isAdmin ? 'bg-red-100 border-red-400 text-red-700' : 'border-gray-300 text-gray-600 hover:border-gray-400'}`}
+                    >
+                        Admin
+                    </button>
+                )}
+            </div>
+        </div>
     );
     
     const footerElements = (
@@ -46,31 +86,33 @@ export default function Login({ status, canResetPassword, role }) {
             >
                 INICIAR SESIÓN
             </PrimaryButton>
-            <div className="text-center space-y-2">
-                <p className="text-sm text-gray-600">
-                    ¿No tienes cuenta?{' '}
-                    <Link 
-                        className="text-[#f00808] hover:underline" 
-                        href={route('register', {role: role})}
-                    >
-                        Regístrate aquí
-                    </Link>
-                </p>
-                {canResetPassword && (
+            {!isAdmin && (
+                <div className="text-center space-y-2">
                     <p className="text-sm text-gray-600">
-                        ¿Olvidaste tu contraseña?{' '}
-                        <Link className="text-[#f00808] hover:underline" href={route('password.request')}>
-                            Recupérala aquí
+                        ¿No tienes cuenta?{' '}
+                        <Link 
+                            className="text-[#f00808] hover:underline" 
+                            href={route('register', {role: data.role})}
+                        >
+                            Regístrate aquí
                         </Link>
                     </p>
-                )}
-            </div>
+                    {canResetPassword && (
+                        <p className="text-sm text-gray-600">
+                            ¿Olvidaste tu contraseña?{' '}
+                            <Link className="text-[#f00808] hover:underline" href={route('password.request')}>
+                                Recupérala aquí
+                            </Link>
+                        </p>
+                    )}
+                </div>
+            )}
         </div>
     );
     
     return (
         <GuestLayout onSubmit={submit} headerMsg={headerMsg} footerElements={footerElements}>
-            <Head title={`Inicio Sesión - ${role === 'student' ? 'Estudiante' : 'Mentor'}`} />
+            <Head title={`Inicio Sesión - ${isAdmin ? 'Administrador' : data.role === 'student' ? 'Estudiante' : 'Mentor'}`} />
     
             {/* Status Message */}
             {status && (

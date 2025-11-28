@@ -7,6 +7,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Log;
 
 class VerifyEmailNotification extends BaseVerifyEmail implements ShouldQueue
@@ -51,12 +52,13 @@ class VerifyEmailNotification extends BaseVerifyEmail implements ShouldQueue
     {
         $verificationUrl = $this->verificationUrl($notifiable);
 
-        return (new MailMessage)
+        $mail = (new MailMessage)
             ->subject('Verificar Dirección de Correo Electrónico')
             ->greeting('¡Hola!')
             ->line('Por favor, haz clic en el botón de abajo para verificar tu dirección de correo electrónico.')
             ->action('Verificar Correo Electrónico', $verificationUrl)
-            ->line('Si no creaste una cuenta, no es necesario realizar ninguna acción.')
-            ->salutation('Saludos,<br>'.config('app.name'));
+            ->line('Si no creaste una cuenta, no es necesario realizar ninguna acción.');
+
+        return $mail->salutation('Saludos,<br>'.config('app.name'));
     }
 }

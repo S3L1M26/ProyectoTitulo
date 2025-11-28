@@ -226,9 +226,10 @@ class MentoriaControllerTest extends TestCase
             'estado' => 'aceptada',
         ]);
 
-        // Act - Hoy pero hora pasada (1 hora atrás)
-        $fecha = Carbon::now('UTC')->format('Y-m-d');
-        $horaPasada = Carbon::now('UTC')->subHour()->format('H:i');
+        // Act - Fecha/hora pasada (con fecha sincronizada al timestamp usado)
+        $pasado = Carbon::now('UTC')->subHour();
+        $fecha = $pasado->format('Y-m-d');
+        $horaPasada = $pasado->format('H:i');
         
         $response = $this->actingAs($mentor)->post(route('mentorias.confirmar', $solicitud), [
             'fecha' => $fecha,
