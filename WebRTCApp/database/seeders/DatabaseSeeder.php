@@ -14,12 +14,19 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            UsersSeeder::class,
+            // Seeders de datos base
             AreasInteresSeeder::class,
-            AprendizTestSeeder::class,
-            SolicitudMentoriaSeeder::class,
-            MentoriaSeeder::class,
-            MentorReviewsSeeder::class,
+            
+            // Seeders para demo con stakeholders (base poblada sin solicitudes/mentorías)
+            DemoStudentSeeder::class,  // 10 estudiantes demo con perfiles vacíos
+            DemoMentorSeeder::class,   // 8 mentores demo con perfiles completos y reseñas
+            
+            // Seeders de testing (deshabilitados para demo)
+            //UsersSeeder::class,
+            //AprendizTestSeeder::class,
+            //SolicitudMentoriaSeeder::class,
+            //MentoriaSeeder::class,
+            //MentorReviewsSeeder::class,
         ]);
     }
 }
