@@ -137,23 +137,40 @@ export default function UpdateAprendizProfile({ className = '' }) {
                             {areasInteres.map(area => (
                                 <div
                                     key={area.id}
-                                    onClick={() => handleAreaInteresChange(area.id)}
-                                    className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                                    className={`p-3 rounded-lg border-2 transition-all ${
                                         data.areas_interes.includes(area.id)
                                             ? 'border-blue-500 bg-blue-50 text-blue-900'
                                             : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                                     }`}
                                 >
-                                    <div className="flex items-center justify-between">
-                                        <div>
+                                    <div className="flex items-start justify-between gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAreaInteresChange(area.id)}
+                                            className="text-left flex-1"
+                                        >
                                             <h4 className="font-medium text-sm">{area.nombre}</h4>
                                             <p className="text-xs text-gray-500 mt-1">{area.descripcion}</p>
+                                        </button>
+                                        <div className="flex items-center gap-2">
+                                            {area.roadmap_url && (
+                                                <a
+                                                    href={area.roadmap_url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="px-2 py-1 text-xs rounded-md border bg-gray-50 hover:bg-gray-100 text-gray-700"
+                                                    title="Ver ruta en roadmap.sh"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    Ruta
+                                                </a>
+                                            )}
+                                            {data.areas_interes.includes(area.id) && (
+                                                <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                </svg>
+                                            )}
                                         </div>
-                                        {data.areas_interes.includes(area.id) && (
-                                            <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                            </svg>
-                                        )}
                                     </div>
                                 </div>
                             ))}
