@@ -130,7 +130,7 @@ class DemoMentorSeeder extends Seeder
                 'disponibilidad' => 'Horarios muy flexibles',
                 'detalle' => 'Conversaciones sobre trabajo independiente, gestión de clientes, y si el freelancing es para ti.',
                 'disponible' => false, // Ocupado con proyectos
-                'areas' => ['Desarrollo Web Frontend', 'Desarrollo Web Backend', 'Gestión de Proyectos'],
+                'areas' => ['Desarrollo Web Frontend', 'Desarrollo Web Backend', 'Gestión de Proyectos TI'],
                 'reviews' => [
                     ['rating' => 5, 'comment' => 'Me abrió los ojos sobre las realidades del freelancing, muy honesto.', 'addressed_interests' => 'yes', 'interests_clarity' => 5],
                     ['rating' => 4, 'comment' => 'Buen insight sobre gestión financiera y conseguir clientes.', 'addressed_interests' => 'yes', 'interests_clarity' => 4],
@@ -146,7 +146,7 @@ class DemoMentorSeeder extends Seeder
                 'disponibilidad' => 'Sábados: 09:00-12:00',
                 'detalle' => 'Conversaciones sobre emprendimiento, liderazgo técnico, y el ecosistema startup desde adentro.',
                 'disponible' => true,
-                'areas' => ['Desarrollo Web Backend', 'Arquitectura de Software', 'Gestión de Proyectos'],
+                'areas' => ['Desarrollo Web Backend', 'Arquitectura de Software', 'Gestión de Proyectos TI'],
                 'reviews' => [
                     ['rating' => 5, 'comment' => 'Inspiradora y muy realista sobre emprendimiento tech.', 'addressed_interests' => 'yes', 'interests_clarity' => 5],
                     ['rating' => 5, 'comment' => 'Me ayudó a entender si tengo el perfil para el mundo startup.', 'addressed_interests' => 'yes', 'interests_clarity' => 5],
