@@ -17,16 +17,18 @@ class DatabaseSeeder extends Seeder
             // Seeders de datos base
             AreasInteresSeeder::class,
             
-            // Seeders para demo con stakeholders (base poblada sin solicitudes/mentorías)
-            DemoStudentSeeder::class,  // 10 estudiantes demo con perfiles vacíos
-            DemoMentorSeeder::class,   // 8 mentores demo con perfiles completos y reseñas
+            // Seeders para demo en vivo con stakeholders
+            // Base poblada con datos coherentes y variados
+            DemoStudentSeeder::class,   // 5 estudiantes con perfiles vacíos + encuestas vocacionales
+            DemoMentorSeeder::class,    // 8 mentores con perfiles completos y reseñas
+            DemoMentoriasSeeder::class, // Solicitudes y mentorías con tasas de concreción variadas
             
             // Seeders de testing (deshabilitados para demo)
-            //UsersSeeder::class,
-            //AprendizTestSeeder::class,
-            //SolicitudMentoriaSeeder::class,
-            //MentoriaSeeder::class,
-            //MentorReviewsSeeder::class,
+            // UsersSeeder::class,
+            // AprendizTestSeeder::class,
+            // SolicitudMentoriaSeeder::class,  // ← Reemplazado por DemoMentoriasSeeder
+            // MentoriaSeeder::class,           // ← Reemplazado por DemoMentoriasSeeder
+            // MentorReviewsSeeder::class,
         ]);
     }
 }
