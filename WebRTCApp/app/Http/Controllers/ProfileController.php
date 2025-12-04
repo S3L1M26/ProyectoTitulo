@@ -104,7 +104,8 @@ class ProfileController extends Controller
 
     public function getAreasInteres()
     {
-        $areas = AreaInteres::all(['id', 'nombre', 'descripcion']);
+        // Incluir roadmap_url para mostrar el botón "Ruta" en el front
+        $areas = AreaInteres::all(['id', 'nombre', 'descripcion', 'roadmap_url']);
     
         return response()->json($areas);
     }
