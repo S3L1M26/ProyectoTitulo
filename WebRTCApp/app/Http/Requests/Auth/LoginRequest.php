@@ -50,6 +50,14 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        // Verificar que la cuenta esté activa
+        if (! Auth::user()->is_active) {
+            Auth::logout();
+            throw ValidationException::withMessages([
+                'email' => 'Esta cuenta ha sido desactivada. Contacta al administrador.',
+            ]);
+        }
+
         // Verificar que el rol coincida con el solicitado
         $requestedRole = $this->input('role');
         if ($requestedRole && Auth::user()->role !== $requestedRole) {
